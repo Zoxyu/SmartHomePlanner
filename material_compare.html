@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智装管家 · 选材推荐</title>
+    <style>
+        /* ---------- Reset & base ---------- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f4f7fb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --accent: #3b82f6;
+            --accent-strong: #2563eb;
+            --warn: #f59e0b;
+            --warn-light: #fff7ed;
+            --success: #10b981;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
+            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
+            --radius: 24px;
+            --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 20px 64px;
+        }
+
+        /* ---------- Header ---------- */
+        .brand {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .brand__eyebrow {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 6px 12px;
+            border-radius: 999px;
+            margin-bottom: 16px;
+        }
+
+        .brand__title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand__subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ---------- Cards grid ---------- */
+        .compare {
+            width: 100%;
+            max-width: 1120px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            align-items: center;
+        }
+
+        /* ---------- Card ---------- */
+        .card {
+            position: relative;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 32px 28px 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+            will-change: transform, box-shadow;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: var(--radius);
+            pointer-events: none;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* ---------- Side cards (basic / premium) ---------- */
+        .card--side {
+            opacity: 0.92;
+        }
+
+        .card--side .card__title,
+        .card--side .card__price {
+            color: #374151;
+        }
+
+        .card--side .card__features li {
+            color: #4b5563;
+        }
+
+        /* ---------- Highlighted middle card ---------- */
+        .card--highlight {
+            z-index: 2;
+            transform: scale(1.05);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            overflow: visible;
+            box-shadow:
+                0 0 0 1px rgba(59, 130, 246, 0.15),
+                0 12px 40px rgba(37, 99, 235, 0.18),
+                0 24px 64px rgba(37, 99, 235, 0.12);
+        }
+
+        .card--highlight:hover {
+            transform: scale(1.07) translateY(-8px);
+            box-shadow:
+                0 0 0 1px rgba(59, 130, 246, 0.25),
+                0 18px 48px rgba(37, 99, 235, 0.22),
+                0 32px 72px rgba(37, 99, 235, 0.14);
+        }
+
+        .badge {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 999px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            z-index: 3;
+        }
+
+        /* ---------- Card inner ---------- */
+        .card__name {
+            font-size: 0.875rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .card__title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        .card__price {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+        }
+
+        .card__price span {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        .card__features {
+            list-style: none;
+            flex: 1 1 auto;
+            margin-bottom: 28px;
+        }
+
+        .card__features li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 14px;
+            line-height: 1.55;
+            font-size: 0.95rem;
+        }
+
+        .card__features li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        /* Feature tone variations */
+        .card--basic .card__features li::before {
+            background: #d1d5db;
+            color: #6b7280;
+        }
+
+        .card--basic .card__features li {
+            color: #4b5563;
+        }
+
+        .card--highlight .card__features li::before {
+            background: var(--success);
+        }
+
+        .card--premium .card__features li::before {
+            background: #8b5cf6;
+        }
+
+        .feature--warn {
+            color: #b45309 !important;
+            background: var(--warn-light);
+            padding: 8px 10px;
+            border-radius: 10px;
+            margin-left: -10px;
+            width: calc(100% + 10px);
+        }
+
+        .feature--warn::before {
+            background: var(--warn) !important;
+            color: #fff !important;
+        }
+
+        /* ---------- CTA buttons ---------- */
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn--primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45);
+            filter: brightness(1.05);
+        }
+
+        .btn--secondary {
+            background: #f3f4f6;
+            color: #374151;
+            box-shadow: inset 0 0 0 1px rgba(156, 163, 175, 0.35);
+        }
+
+        .btn--secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+        }
+
+        /* ---------- Mobile responsive ---------- */
+        @media (max-width: 720px) {
+            body {
+                padding: 36px 16px 48px;
+            }
+
+            .compare {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                max-width: 420px;
+            }
+
+            .card--highlight {
+                transform: scale(1);
+                order: -1;
+            }
+
+            .card--highlight:hover {
+                transform: translateY(-8px);
+            }
+
+            .card--side {
+                opacity: 1;
+            }
+        }
+
+        @media (min-width: 721px) and (max-width: 980px) {
+            .compare {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card--highlight {
+                grid-column: 1 / -1;
+                max-width: 480px;
+                justify-self: center;
+                transform: scale(1.02);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="brand">
+        <span class="brand__eyebrow">AI 智装管家 · 选材推荐</span>
+        <h1 class="brand__title">找到适合你的室内门方案</h1>
+        <p class="brand__subtitle">三档定位，一键对比。我们推荐综合表现最优的「高性价比款」，让好装修不踩坑。</p>
+    </header>
+
+    <section class="compare" aria-label="室内门选型对比">
+
+        <!-- 基础款 -->
+        <article class="card card--side card--basic">
+            <h2 class="card__name">基础款</h2>
+            <h3 class="card__title">普通铝合金门</h3>
+            <div class="card__price">¥699<span>/ 樘</span></div>
+            <ul class="card__features">
+                <li class="feature--warn">边框较宽影响采光</li>
+                <li class="feature--warn">型材易变形</li>
+                <li class="feature--warn">滑轮存在噪音</li>
+            </ul>
+            <button class="btn btn--secondary" type="button">暂不考虑</button>
+        </article>
+
+        <!-- 高性价比款（主推） -->
+        <article class="card card--highlight">
+            <span class="badge">性价比首选</span>
+            <h2 class="card__name">高性价比款</h2>
+            <h3 class="card__title">钛镁合金门</h3>
+            <div class="card__price">¥1299<span>/ 樘</span></div>
+            <ul class="card__features">
+                <li>极简可可灰边框</li>
+                <li>高强抗形变冗余</li>
+                <li>极大提升空间通透感</li>
+            </ul>
+            <button class="btn btn--primary" type="button">加入清单</button>
+        </article>
+
+        <!-- 尊享款 -->
+        <article class="card card--side card--premium">
+            <h2 class="card__name">尊享款</h2>
+            <h3 class="card__title">高端钛镁合金门</h3>
+            <div class="card__price">¥2599<span>/ 樘</span></div>
+            <ul class="card__features">
+                <li>包含中端所有优势</li>
+                <li>升级隐藏式静音磁吸锁</li>
+                <li>顶级阻尼静音轨道</li>
+            </ul>
+            <button class="btn btn--secondary" type="button">了解详情</button>
+        </article>
+
+    </section>
+
+</body>
+</html>

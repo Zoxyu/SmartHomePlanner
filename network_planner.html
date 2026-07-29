@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智装管家 · 智能弱电与网络规划引擎</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --accent: #3b82f6;
+            --accent-strong: #2563eb;
+            --success: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
+            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
+            --radius: 20px;
+            --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* ---------- Header ---------- */
+        .brand { text-align: center; margin-bottom: 36px; }
+        .brand__eyebrow {
+            display: inline-block; font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-strong);
+            background: rgba(59, 130, 246, 0.1); padding: 6px 12px;
+            border-radius: 999px; margin-bottom: 12px;
+        }
+        .brand__title { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+        .brand__subtitle { font-size: 0.95rem; color: var(--text-muted); }
+
+        /* ---------- Layout ---------- */
+        .planner { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; align-items: start; }
+        @media (max-width: 900px) { .planner { grid-template-columns: 1fr; } }
+
+        /* ---------- Card ---------- */
+        .card {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
+            border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow);
+        }
+        .card__title {
+            font-size: 1.05rem; font-weight: 800; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card__icon {
+            width: 32px; height: 32px; border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff; display: flex; align-items: center;
+            justify-content: center; font-size: 1rem; flex-shrink: 0;
+        }
+
+        /* ---------- Accordion ---------- */
+        .config-column { display: flex; flex-direction: column; gap: 16px; }
+        .accordion {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%); border-radius: var(--radius);
+            box-shadow: var(--shadow); overflow: hidden; transition: var(--transition);
+        }
+        .accordion:hover { box-shadow: var(--shadow-hover); }
+        .accordion__header {
+            display: flex; align-items: center; gap: 12px; padding: 20px 24px;
+            cursor: pointer; user-select: none; transition: var(--transition);
+        }
+        .accordion__header:hover { background: rgba(59, 130, 246, 0.04); }
+        .accordion__icon {
+            width: 36px; height: 36px; border-radius: 12px; display: flex;
+            align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+        }
+        .accordion__icon--net { background: rgba(59, 130, 246, 0.12); }
+        .accordion__icon--dev { background: rgba(16, 185, 129, 0.12); }
+        .accordion__icon--cab { background: rgba(245, 158, 11, 0.12); }
+        .accordion__title { font-size: 1rem; font-weight: 700; flex: 1; }
+        .accordion__badge {
+            font-size: 0.72rem; font-weight: 700; padding: 4px 10px;
+            border-radius: 999px; background: rgba(59, 130, 246, 0.1); color: var(--accent);
+        }
+        .accordion__chevron {
+            font-size: 0.8rem; color: var(--text-muted);
+            transition: transform 0.3s ease; display: inline-block;
+        }
+        .accordion.open .accordion__chevron { transform: rotate(180deg); }
+        .accordion__body { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .accordion.open .accordion__body { max-height: 600px; }
+        .accordion__content { padding: 0 24px 24px; }
+
+        /* ---------- Radio ---------- */
+        .radio-group { display: flex; flex-direction: column; gap: 10px; }
+        .radio-option {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border: 2px solid rgba(156, 163, 175, 0.2);
+            border-radius: 14px; cursor: pointer; transition: var(--transition);
+        }
+        .radio-option:hover { border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.03); }
+        .radio-option.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.06); }
+        .radio-option input[type="radio"] { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+        .radio-label { flex: 1; }
+        .radio-label__title { font-size: 0.92rem; font-weight: 700; }
+        .radio-label__desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .sub-input { display: none; align-items: center; gap: 8px; margin-top: 12px; padding: 12px 16px; background: rgba(59, 130, 246, 0.04); border-radius: 12px; }
+        .sub-input.visible { display: flex; }
+        .sub-input label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+
+        /* ---------- Device rows ---------- */
+        .device-list { display: flex; flex-direction: column; gap: 10px; }
+        .device-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border: 2px solid rgba(156, 163, 175, 0.15);
+            border-radius: 14px; transition: var(--transition);
+        }
+        .device-row.active { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04); }
+        .device-row input[type="checkbox"] { accent-color: var(--success); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+        .device-info { flex: 1; min-width: 0; }
+        .device-name { font-size: 0.9rem; font-weight: 700; }
+        .device-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+        .qty-control { display: none; align-items: center; gap: 6px; }
+        .qty-control.visible { display: flex; }
+        .qty-btn {
+            width: 28px; height: 28px; border: 1px solid rgba(156, 163, 175, 0.3);
+            border-radius: 8px; background: rgba(255, 255, 255, 0.8); color: var(--text-main);
+            font-size: 1rem; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: var(--transition); font-family: inherit;
+        }
+        .qty-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.06); }
+        .qty-input {
+            width: 48px; text-align: center; border: 1px solid rgba(156, 163, 175, 0.3);
+            border-radius: 8px; padding: 5px; font-size: 0.9rem; font-weight: 700;
+            outline: none; background: rgba(255, 255, 255, 0.9); font-family: inherit;
+        }
+        .qty-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        /* ---------- Toggle ---------- */
+        .toggle-group { display: flex; gap: 10px; }
+        .toggle-option {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px; border: 2px solid rgba(156, 163, 175, 0.2);
+            border-radius: 14px; cursor: pointer; font-size: 0.9rem; font-weight: 700;
+            transition: var(--transition);
+        }
+        .toggle-option.selected { border-color: var(--accent); background: rgba(59, 130, 246, 0.06); color: var(--accent-strong); }
+        .toggle-option input { display: none; }
+
+        /* ---------- Rail check form ---------- */
+        .rail-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 640px) { .rail-form { grid-template-columns: 1fr; } }
+        .rail-field { display: flex; flex-direction: column; gap: 8px; }
+        .rail-field label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+        .rail-input-wrap { position: relative; }
+        .rail-input {
+            width: 100%; border: 1px solid rgba(156, 163, 175, 0.35);
+            border-radius: 14px; padding: 13px 48px 13px 15px; font-size: 0.95rem;
+            outline: none; background: rgba(255, 255, 255, 0.9);
+            transition: var(--transition); font-family: inherit; color: var(--text-main);
+        }
+        .rail-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
+        .rail-input::placeholder { color: #9ca3af; font-size: 0.82rem; }
+        .rail-unit {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            font-size: 0.8rem; font-weight: 700; color: var(--text-muted); pointer-events: none;
+        }
+
+        /* ---------- Results (sticky) ---------- */
+        .results { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 16px; }
+        @media (max-width: 900px) { .results { position: static; } }
+
+        .result-card { border-radius: var(--radius); padding: 22px; transition: var(--transition); }
+        .result-card--net { background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(37, 99, 235, 0.03) 100%); border: 1px solid rgba(59, 130, 246, 0.12); }
+        .result-card--pwr { background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(217, 119, 6, 0.03) 100%); border: 1px solid rgba(245, 158, 11, 0.15); }
+        .result-card--wir { background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(5, 150, 105, 0.03) 100%); border: 1px solid rgba(16, 185, 129, 0.12); }
+        .result-card__header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .result-card__emoji { font-size: 1.3rem; }
+        .result-card__title { font-size: 0.95rem; font-weight: 800; }
+        .result-card__stats { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .stat-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 6px 12px; border-radius: 999px;
+            font-size: 0.78rem; font-weight: 700;
+        }
+        .stat-chip--blue { background: rgba(59, 130, 246, 0.12); color: var(--accent-strong); }
+        .stat-chip--green { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+        .stat-chip--amber { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+        .result-list { display: flex; flex-direction: column; gap: 8px; }
+        .result-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px; background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
+        }
+        .result-item__icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+        .result-item__text { flex: 1; }
+        .result-item__text strong { font-weight: 700; }
+        .result-item--warn { background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.15); }
+        .result-item--warn .result-item__text { color: var(--danger); font-weight: 600; }
+        .result-empty { font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 16px 0; }
+
+        /* ---------- Rail gauge ---------- */
+        .rail-gauge {
+            margin-top: 14px; padding: 16px;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 14px;
+        }
+        .rail-gauge__header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .rail-gauge__title { font-size: 0.82rem; font-weight: 800; }
+        .rail-gauge__pct { font-size: 0.85rem; font-weight: 800; color: var(--accent-strong); transition: var(--transition); }
+        .rail-gauge__pct.over { color: var(--danger); }
+        .rail-track {
+            height: 12px; border-radius: 999px;
+            background: rgba(156, 163, 175, 0.2); overflow: hidden;
+        }
+        .rail-bar {
+            height: 100%; width: 0%; border-radius: 999px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            transition: width 0.45s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.3s ease;
+        }
+        .rail-bar.over {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            animation: railPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes railPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.75; }
+        }
+        .rail-gauge__msg { font-size: 0.82rem; margin-top: 10px; line-height: 1.5; color: var(--success); font-weight: 600; }
+        .rail-gauge__msg.over { color: var(--danger); font-weight: 800; }
+        .rail-gauge__msg.idle { color: var(--text-muted); font-weight: 500; }
+
+        /* ---------- Animations ---------- */
+        .panel-fade { animation: panelFade 0.3s ease; }
+        @keyframes panelFade { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+        .item-pop { animation: itemPop 0.3s ease; }
+        @keyframes itemPop { 0% { opacity: 0; transform: translateX(-8px); } 100% { opacity: 1; transform: translateX(0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="brand">
+            <span class="brand__eyebrow">AI 智装管家 · 智能弱电与网络规划引擎</span>
+            <h1 class="brand__title">全屋弱电规划 · 一键推演</h1>
+            <p class="brand__subtitle">点选您的智能设备配置，实时生成企业级弱电网络拓扑与电气配置清单。</p>
+        </header>
+
+        <div class="planner">
+            <!-- ===== Left: Config Wizard ===== -->
+            <div class="config-column">
+                <!-- Section 1: Network -->
+                <div class="accordion open" id="accNetwork">
+                    <div class="accordion__header" data-accordion="accNetwork">
+                        <span class="accordion__icon accordion__icon--net">🌐</span>
+                        <span class="accordion__title">全屋网络覆盖方案</span>
+                        <span class="accordion__badge" id="netBadge">Mesh 组网</span>
+                        <span class="accordion__chevron">▼</span>
+                    </div>
+                    <div class="accordion__body"><div class="accordion__content">
+                        <div class="radio-group">
+                            <label class="radio-option selected" id="optMesh">
+                                <input type="radio" name="netMode" value="mesh" checked>
+                                <div class="radio-label">
+                                    <div class="radio-label__title">常规大户型（推荐）</div>
+                                    <div class="radio-label__desc">Mesh 组网 · 默认 2 节点，覆盖 120-180㎡</div>
+                                </div>
+                            </label>
+                            <label class="radio-option" id="optAcAp">
+                                <input type="radio" name="netMode" value="acap">
+                                <div class="radio-label">
+                                    <div class="radio-label__title">极客 / 全屋智能</div>
+                                    <div class="radio-label__desc">AC + AP 面板组网，每房间一个 AP 面板</div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="sub-input" id="roomCountWrap">
+                            <label>需要覆盖房间数：</label>
+                            <div class="qty-control visible">
+                                <button class="qty-btn" type="button" data-target="roomCount" data-delta="-1">−</button>
+                                <input type="number" class="qty-input" id="roomCountInput" value="3" min="1" max="20">
+                                <button class="qty-btn" type="button" data-target="roomCount" data-delta="1">+</button>
+                            </div>
+                        </div>
+                    </div></div>
+                </div>
+
+                <!-- Section 2: Devices -->
+                <div class="accordion open" id="accDevices">
+                    <div class="accordion__header" data-accordion="accDevices">
+                        <span class="accordion__icon accordion__icon--dev">📱</span>
+                        <span class="accordion__title">重点智能设备选配</span>
+                        <span class="accordion__badge" id="devBadge">已选 0 项</span>
+                        <span class="accordion__chevron">▼</span>
+                    </div>
+                    <div class="accordion__body"><div class="accordion__content">
+                        <div class="device-list">
+                            <div class="device-row" data-device="camera">
+                                <input type="checkbox" id="chkCamera">
+                                <div class="device-info">
+                                    <div class="device-name">🎥 监控安防（PoE 摄像头）</div>
+                                    <div class="device-hint">PoE 网线供电，需预留网口</div>
+                                </div>
+                                <div class="qty-control" id="qtyCamera">
+                                    <button class="qty-btn" type="button" data-target="camera" data-delta="-1">−</button>
+                                    <input type="number" class="qty-input" value="2" min="1" max="16" data-field="camera">
+                                    <button class="qty-btn" type="button" data-target="camera" data-delta="1">+</button>
+                                </div>
+                            </div>
+                            <div class="device-row" data-device="nas">
+                                <input type="checkbox" id="chkNas">
+                                <div class="device-info">
+                                    <div class="device-name">💾 NAS 服务器</div>
+                                    <div class="device-hint">需独立网口，建议配 UPS</div>
+                                </div>
+                                <div class="qty-control" id="qtyNas">
+                                    <button class="qty-btn" type="button" data-target="nas" data-delta="-1">−</button>
+                                    <input type="number" class="qty-input" value="1" min="1" max="4" data-field="nas">
+                                    <button class="qty-btn" type="button" data-target="nas" data-delta="1">+</button>
+                                </div>
+                            </div>
+                            <div class="device-row" data-device="tv">
+                                <input type="checkbox" id="chkTv">
+                                <div class="device-info">
+                                    <div class="device-name">📺 智能电视</div>
+                                    <div class="device-hint">建议有线连接，更稳定</div>
+                                </div>
+                                <div class="qty-control" id="qtyTv">
+                                    <button class="qty-btn" type="button" data-target="tv" data-delta="-1">−</button>
+                                    <input type="number" class="qty-input" value="1" min="1" max="8" data-field="tv">
+                                    <button class="qty-btn" type="button" data-target="tv" data-delta="1">+</button>
+                                </div>
+                            </div>
+                            <div class="device-row" data-device="curtain">
+                                <input type="checkbox" id="chkCurtain">
+                                <div class="device-info">
+                                    <div class="device-name">🪟 电动窗帘</div>
+                                    <div class="device-hint">需顶部预留 220V 零火线</div>
+                                </div>
+                                <div class="qty-control" id="qtyCurtain">
+                                    <button class="qty-btn" type="button" data-target="curtain" data-delta="-1">−</button>
+                                    <input type="number" class="qty-input" value="2" min="1" max="10" data-field="curtain">
+                                    <button class="qty-btn" type="button" data-target="curtain" data-delta="1">+</button>
+                                </div>
+                            </div>
+                            <div class="device-row" data-device="toilet">
+                                <input type="checkbox" id="chkToilet">
+                                <div class="device-info">
+                                    <div class="device-name">🚿 智能马桶</div>
+                                    <div class="device-hint">需预留带防溅盒插座</div>
+                                </div>
+                                <div class="qty-control" id="qtyToilet">
+                                    <button class="qty-btn" type="button" data-target="toilet" data-delta="-1">−</button>
+                                    <input type="number" class="qty-input" value="1" min="1" max="4" data-field="toilet">
+                                    <button class="qty-btn" type="button" data-target="toilet" data-delta="1">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div></div>
+                </div>
+
+                <!-- Section 3: Cabinet -->
+                <div class="accordion open" id="accCabinet">
+                    <div class="accordion__header" data-accordion="accCabinet">
+                        <span class="accordion__icon accordion__icon--cab">🗄️</span>
+                        <span class="accordion__title">核心机柜 / 弱电箱预设</span>
+                        <span class="accordion__chevron">▼</span>
+                    </div>
+                    <div class="accordion__body"><div class="accordion__content">
+                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;">是否有独立机柜或大号弱电箱？（影响设备尺寸与散热建议）</p>
+                        <div class="toggle-group">
+                            <label class="toggle-option selected" id="togCabYes">
+                                <input type="radio" name="cabinet" value="yes" checked> 🗄️ 有独立机柜
+                            </label>
+                            <label class="toggle-option" id="togCabNo">
+                                <input type="radio" name="cabinet" value="no"> 📦 普通弱电箱
+                            </label>
+                        </div>
+                    </div></div>
+                </div>
+
+                <!-- Section 4: Rail space check -->
+                <div class="accordion open" id="accRail">
+                    <div class="accordion__header" data-accordion="accRail">
+                        <span class="accordion__icon accordion__icon--cab">⚡</span>
+                        <span class="accordion__title">强电箱排布空间校验</span>
+                        <span class="accordion__badge" id="railBadge">待输入</span>
+                        <span class="accordion__chevron">▼</span>
+                    </div>
+                    <div class="accordion__body"><div class="accordion__content">
+                        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">核算买来的空开/漏保能否塞进强电箱，避免安装当天才发现导轨不够长。</p>
+                        <div class="rail-form">
+                            <div class="rail-field">
+                                <label for="railTotalInput">导轨可用总长</label>
+                                <div class="rail-input-wrap">
+                                    <input type="number" class="rail-input" id="railTotalInput" min="0" step="1" placeholder="例如 16位箱约为 288mm">
+                                    <span class="rail-unit">mm</span>
+                                </div>
+                            </div>
+                            <div class="rail-field">
+                                <label for="railUsedInput">待装空开总宽</label>
+                                <div class="rail-input-wrap">
+                                    <input type="number" class="rail-input" id="railUsedInput" min="0" step="1" placeholder="将买来的空开/漏保宽度相加">
+                                    <span class="rail-unit">mm</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div></div>
+                </div>
+            </div>
+
+            <!-- ===== Right: Results ===== -->
+            <aside class="results" id="resultsPanel">
+                <div class="result-card result-card--net" id="resultNet">
+                    <div class="result-card__header">
+                        <span class="result-card__emoji">🌐</span>
+                        <span class="result-card__title">网络设备推荐清单</span>
+                    </div>
+                    <div class="result-card__stats" id="netStats"></div>
+                    <div class="result-list" id="netList"><div class="result-empty">请配置左侧选项</div></div>
+                </div>
+                <div class="result-card result-card--pwr" id="resultPwr">
+                    <div class="result-card__header">
+                        <span class="result-card__emoji">⚡</span>
+                        <span class="result-card__title">强电预留与空开规划</span>
+                    </div>
+                    <div class="result-list" id="pwrList"><div class="result-empty">请配置左侧选项</div></div>
+                    <div class="rail-gauge" id="railGauge">
+                        <div class="rail-gauge__header">
+                            <span class="rail-gauge__title">📏 物理空间占用进度条</span>
+                            <span class="rail-gauge__pct" id="railPct">--</span>
+                        </div>
+                        <div class="rail-track">
+                            <div class="rail-bar" id="railBar"></div>
+                        </div>
+                        <div class="rail-gauge__msg idle" id="railMsg">在左侧“强电箱排布空间校验”中输入导轨长度与空开总宽，实时核算安装可行性。</div>
+                    </div>
+                </div>
+                <div class="result-card result-card--wir" id="resultWir">
+                    <div class="result-card__header">
+                        <span class="result-card__emoji">🔌</span>
+                        <span class="result-card__title">底层布线建议</span>
+                    </div>
+                    <div class="result-list" id="wirList"><div class="result-empty">请配置左侧选项</div></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        // ========== State ==========
+        const config = {
+            netMode: 'mesh',
+            meshNodes: 2,
+            roomCount: 3,
+            camera:  { on: false, qty: 2 },
+            nas:     { on: false, qty: 1 },
+            tv:      { on: false, qty: 1 },
+            curtain: { on: false, qty: 2 },
+            toilet:  { on: false, qty: 1 },
+            cabinet: 'yes'
+        };
+
+        // ========== DOM ==========
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => document.querySelectorAll(s);
+
+        const netBadge  = $('#netBadge');
+        const devBadge  = $('#devBadge');
+        const roomWrap  = $('#roomCountWrap');
+        const roomInput = $('#roomCountInput');
+        const resultNet = $('#resultNet');
+        const resultPwr = $('#resultPwr');
+        const resultWir = $('#resultWir');
+        const netStats  = $('#netStats');
+        const netList   = $('#netList');
+        const pwrList   = $('#pwrList');
+        const wirList   = $('#wirList');
+
+        // ========== Accordion ==========
+        $$('.accordion__header').forEach(h => {
+            h.addEventListener('click', () => {
+                document.getElementById(h.dataset.accordion).classList.toggle('open');
+            });
+        });
+
+        // ========== Network mode ==========
+        $$('input[name="netMode"]').forEach(r => {
+            r.addEventListener('change', () => {
+                config.netMode = r.value;
+                $('#optMesh').classList.toggle('selected', r.value === 'mesh');
+                $('#optAcAp').classList.toggle('selected', r.value === 'acap');
+                roomWrap.classList.toggle('visible', r.value === 'acap');
+                netBadge.textContent = r.value === 'mesh' ? 'Mesh 组网' : 'AC+AP 组网';
+                recalc();
+            });
+        });
+
+        roomInput.addEventListener('input', () => {
+            config.roomCount = Math.max(1, parseInt(roomInput.value, 10) || 1);
+            recalc();
+        });
+
+        // ========== Devices ==========
+        const deviceKeys = ['camera', 'nas', 'tv', 'curtain', 'toilet'];
+        deviceKeys.forEach(key => {
+            const chk = $(`#chk${cap(key)}`);
+            const qtyEl = $(`#qty${cap(key)}`);
+            const numIn = qtyEl.querySelector('input');
+            chk.addEventListener('change', () => {
+                config[key].on = chk.checked;
+                qtyEl.classList.toggle('visible', chk.checked);
+                $(`[data-device="${key}"]`).classList.toggle('active', chk.checked);
+                recalc();
+            });
+            numIn.addEventListener('input', () => {
+                config[key].qty = Math.max(1, parseInt(numIn.value, 10) || 1);
+                recalc();
+            });
+        });
+
+        // ========== Qty +/− buttons ==========
+        $$('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const delta = parseInt(btn.dataset.delta, 10);
+                const target = btn.dataset.target;
+                if (target === 'roomCount') {
+                    const v = Math.max(1, Math.min(20, config.roomCount + delta));
+                    config.roomCount = v; roomInput.value = v;
+                } else if (deviceKeys.includes(target)) {
+                    const inp = btn.closest('.qty-control').querySelector('input');
+                    const mx = parseInt(inp.max, 10) || 99;
+                    const v = Math.max(1, Math.min(mx, config[target].qty + delta));
+                    config[target].qty = v; inp.value = v;
+                }
+                recalc();
+            });
+        });
+
+        // ========== Cabinet toggle ==========
+        $$('input[name="cabinet"]').forEach(r => {
+            r.addEventListener('change', () => {
+                config.cabinet = r.value;
+                $('#togCabYes').classList.toggle('selected', r.value === 'yes');
+                $('#togCabNo').classList.toggle('selected', r.value === 'no');
+                recalc();
+            });
+        });
+
+        // ========== Helpers ==========
+        function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+        function activeDevices() { return deviceKeys.filter(k => config[k].on); }
+
+        function totalWiredPorts() {
+            let n = 0;
+            if (config.netMode === 'mesh') {
+                n += config.meshNodes;
+            } else {
+                n += config.roomCount; // AP per room
+            }
+            if (config.camera.on) n += config.camera.qty;
+            if (config.nas.on)    n += config.nas.qty;
+            if (config.tv.on)     n += config.tv.qty;
+            return n;
+        }
+
+        function totalPoE() {
+            let n = 0;
+            if (config.netMode === 'acap') n += config.roomCount;
+            if (config.camera.on) n += config.camera.qty;
+            return n;
+        }
+
+        function switchSize(ports) {
+            if (ports <= 0) return 0;
+            if (ports <= 8) return 8;
+            if (ports <= 16) return 16;
+            return 24;
+        }
+
+        // ========== Core: recalc ==========
+        function recalc() {
+            const active = activeDevices();
+            devBadge.textContent = `已选 ${active.length} 项`;
+
+            // ---- Network ----
+            const wired  = totalWiredPorts();
+            const poe    = totalPoE();
+            const swSize = switchSize(wired);
+            const chips  = [];
+            const items  = [];
+
+            // Network mode recommendation
+            if (config.netMode === 'mesh') {
+                items.push({ icon: '📡', text: `<strong>Mesh 分布式路由</strong> × ${config.meshNodes} 节点，适合 120-180㎡ 大户型，无缝漫游` });
+                chips.push({ cls: 'blue', text: `${config.meshNodes} 个 Mesh 节点` });
+            } else {
+                items.push({ icon: '📶', text: `<strong>AC 控制器</strong> × 1 + <strong>AP 面板</strong> × ${config.roomCount}，每房间独立覆盖` });
+                chips.push({ cls: 'blue', text: `AC × 1` });
+                chips.push({ cls: 'blue', text: `AP × ${config.roomCount}` });
+            }
+
+            // PoE switch
+            if (poe > 0) {
+                const poeSw = switchSize(poe);
+                items.push({ icon: '🔀', text: `<strong>${poeSw} 口千兆 PoE 交换机</strong> × 1（${poe} 个 PoE 设备，预留 ${poeSw - poe} 口余量）` });
+                chips.push({ cls: 'green', text: `PoE ${poe} 口` });
+            }
+
+            // Non-PoE switch
+            const nonPoe = wired - poe;
+            if (nonPoe > 0 && poe > 0) {
+                items.push({ icon: '🔀', text: `<strong>${swSize} 口千兆交换机</strong> × 1（承接 ${nonPoe} 个非 PoE 有线设备）` });
+            } else if (nonPoe > 0 && poe === 0 && swSize > 0) {
+                items.push({ icon: '🔀', text: `<strong>${swSize} 口千兆交换机</strong> × 1（承接全部 ${wired} 个有线设备）` });
+            }
+            chips.push({ cls: 'amber', text: `网线端口 ${wired} 个` });
+
+            // Router
+            items.push({ icon: '🌍', text: '<strong>千兆有线路由器</strong> × 1（拨号 + DHCP 核心网关）' });
+
+            netStats.innerHTML = chips.map(c => `<span class="stat-chip stat-chip--${c.cls}">${c.text}</span>`).join('');
+            netList.innerHTML  = items.map(i => `<div class="result-item item-pop"><span class="result-item__icon">${i.icon}</span><span class="result-item__text">${i.text}</span></div>`).join('');
+
+            // ---- Electrical ----
+            const pwr = [];
+            if (config.toilet.on)  pwr.push({ icon: '🔌', text: `智能马桶 × ${config.toilet.qty} — 每个需预留<strong>带防溅盒五孔插座</strong>（距地 40cm）` });
+            if (config.curtain.on) pwr.push({ icon: '🪟', text: `电动窗帘 × ${config.curtain.qty} — 窗帘盒旁<strong>顶部预留 220V 零火线</strong>（单轨/双轨各一路）` });
+            if (config.camera.on)  pwr.push({ icon: '🎥', text: `PoE 摄像头 × ${config.camera.qty} — 网线供电<strong>无需额外强电</strong>，但 NVR 端需 1 路插座` });
+            if (config.nas.on)     pwr.push({ icon: '🔋', text: `<strong>NAS 强烈建议配备 UPS 不间断电源</strong>（推荐在线式 ≥ 600VA），防止意外断电损坏硬盘` });
+            if (config.tv.on)      pwr.push({ icon: '📺', text: `智能电视 × ${config.tv.qty} — 建议<strong>独立回路 4㎡ 铜线</strong>，配 16A 空开` });
+
+            const hasActive = active.length > 0;
+            if (hasActive) {
+                pwr.push({ icon: '📦', text: config.cabinet === 'yes'
+                    ? '独立机柜 — 建议柜内加装 <strong>12cm 散热风扇</strong>（2 进 1 出），配 16A PDU 排插'
+                    : '普通弱电箱 — 建议更换<strong>加大号弱电箱</strong>（≥ 400×300mm），预留散热空间' });
+                pwr.push({ icon: '⚡', text: '弱电箱/机柜建议 <strong>独立回路供电</strong>，空开选 1P+N 漏保（20A）' });
+            }
+
+            pwrList.innerHTML = pwr.length
+                ? pwr.map(p => `<div class="result-item item-pop"><span class="result-item__icon">${p.icon}</span><span class="result-item__text">${p.text}</span></div>`).join('')
+                : '<div class="result-empty">暂未选配需特殊供电的设备</div>';
+
+            // ---- Wiring ----
+            const wr = [];
+            if (wired > 0) {
+                // Safety warning always ranks first
+                wr.push({ icon: '⚠️', text: '<strong style="color:var(--danger)">严禁网线与强电 (220V 电源线) 同管同槽，平行间距应 ≥ 30cm。</strong>如实际施工中遇到强弱电不可避免的交叉，交叉处必须呈 90 度垂直跨越，并使用铝箔纸将相交处的弱电管线至少包裹 15-20cm，以屏蔽电磁干扰。', warn: true });
+                wr.push({ icon: '✅', text: `全屋建议统一铺设 <strong>CAT6（六类）非屏蔽网线</strong>，支持千兆有线网络，共需约 <strong>${wired} 根</strong>成品跳线` });
+                if (config.netMode === 'acap') {
+                    wr.push({ icon: '📶', text: `每个 AP 点位需预埋 <strong>1 根 CAT6 网线</strong>至弱电箱/机柜，共 ${config.roomCount} 根` });
+                }
+                if (config.camera.on) {
+                    wr.push({ icon: '🎥', text: `摄像头点位各预埋 <strong>1 根 CAT6 网线</strong>至 PoE 交换机位置，共 ${config.camera.qty} 根` });
+                }
+                if (config.nas.on) {
+                    wr.push({ icon: '💾', text: 'NAS 建议<strong>直连交换机</strong>，预埋 1 根 CAT6 网线至机柜' });
+                }
+                wr.push({ icon: '📏', text: '长距离布线（> 50m）建议预留 <strong>10%-15% 冗余长度</strong>，两端贴标签标记用途' });
+            } else {
+                wr.push({ icon: '💡', text: '选配智能设备后将自动生成布线建议' });
+            }
+
+            wirList.innerHTML = wr.map(w =>
+                `<div class="result-item${w.warn ? ' result-item--warn' : ''} item-pop"><span class="result-item__icon">${w.icon}</span><span class="result-item__text">${w.text}</span></div>`
+            ).join('');
+
+            // Panel fade
+            [resultNet, resultPwr, resultWir].forEach(c => {
+                c.classList.remove('panel-fade');
+                void c.offsetWidth;
+                c.classList.add('panel-fade');
+            });
+        }
+
+        // ========== Init ==========
+        recalc();
+
+        // ========== Rail space check ==========
+        const railTotalInput = $('#railTotalInput');
+        const railUsedInput  = $('#railUsedInput');
+        const railBadge = $('#railBadge');
+        const railPct   = $('#railPct');
+        const railBar   = $('#railBar');
+        const railMsg   = $('#railMsg');
+
+        function checkRailSpace() {
+            const total = parseFloat(railTotalInput.value);
+            const used  = parseFloat(railUsedInput.value);
+
+            // Idle state: incomplete or invalid input
+            if (!(total > 0) || !(used >= 0) || railUsedInput.value === '') {
+                railPct.textContent = '--';
+                railPct.classList.remove('over');
+                railBar.style.width = '0%';
+                railBar.classList.remove('over');
+                railMsg.className = 'rail-gauge__msg idle';
+                railMsg.textContent = '在左侧“强电箱排布空间校验”中输入导轨长度与空开总宽，实时核算安装可行性。';
+                railBadge.textContent = '待输入';
+                railBadge.style.background = '';
+                railBadge.style.color = '';
+                return;
+            }
+
+            const ratio = (used / total) * 100;
+            const isOver = ratio > 100;
+            railPct.textContent = `${ratio.toFixed(1)}%`;
+            railPct.classList.toggle('over', isOver);
+            railBar.style.width = `${Math.min(100, ratio)}%`;
+            railBar.classList.toggle('over', isOver);
+
+            if (isOver) {
+                const overload = (used - total).toFixed(0);
+                railMsg.className = 'rail-gauge__msg over';
+                railMsg.innerHTML = `❌ 空间不足！空开总宽已超出导轨极限，请精简回路或更换大尺寸强电箱（超载 <strong>${overload} mm</strong>）`;
+                railBadge.textContent = '⚠ 超载';
+                railBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                railBadge.style.color = 'var(--danger)';
+            } else {
+                const remain = (total - used).toFixed(0);
+                railMsg.className = 'rail-gauge__msg';
+                railMsg.innerHTML = `✅ 空间充足，可正常安装（剩余可用空间 <strong>${remain} mm</strong>）`;
+                railBadge.textContent = `占用 ${ratio.toFixed(0)}%`;
+                railBadge.style.background = 'rgba(16, 185, 129, 0.12)';
+                railBadge.style.color = 'var(--success)';
+            }
+        }
+
+        [railTotalInput, railUsedInput].forEach(inp => inp.addEventListener('input', checkRailSpace));
+        checkRailSpace();
+    </script>
+</body>
+</html>

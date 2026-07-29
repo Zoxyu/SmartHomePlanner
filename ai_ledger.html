@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 智装管家 · 智能记账本</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --accent: #3b82f6;
+            --accent-strong: #2563eb;
+            --success: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
+            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
+            --radius: 20px;
+            --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 40px 20px 140px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* ---------- Header ---------- */
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand__eyebrow {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-strong);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 6px 12px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
+
+        .brand__title {
+            font-size: clamp(1.75rem, 5vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .brand__subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        /* ---------- Dashboard ---------- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .stat-card__label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-card__value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-card--primary .stat-card__value {
+            color: var(--accent-strong);
+        }
+
+        .stat-card--success .stat-card__value {
+            color: var(--success);
+        }
+
+        .stat-card--warn .stat-card__value {
+            color: var(--warn);
+        }
+
+        /* ---------- Progress ---------- */
+        .progress-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 32px;
+        }
+
+        .progress__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .progress__label {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .progress__percent {
+            font-size: 0.875rem;
+            font-weight: 800;
+            color: var(--accent-strong);
+        }
+
+        .progress__bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(203, 213, 225, 0.5);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress__fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 999px;
+            transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* ---------- Ledger ---------- */
+        .ledger {
+            margin-bottom: 40px;
+        }
+
+        .ledger__title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+
+        .ledger-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ledger-item {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(18px) saturate(150%);
+            -webkit-backdrop-filter: blur(18px) saturate(150%);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            opacity: 0;
+            transform: translateY(12px);
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ledger-item__left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .ledger-item__icon {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .ledger-item__info {
+            min-width: 0;
+        }
+
+        .ledger-item__meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .ledger-item__date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .ledger-item__tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-strong);
+            white-space: nowrap;
+        }
+
+        .ledger-item__summary {
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ledger-item__amount {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-main);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* ---------- AI Input ---------- */
+        .ai-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px 24px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border-top: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 -8px 32px rgba(17, 24, 39, 0.06);
+            z-index: 100;
+        }
+
+        .ai-bar__container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .ai-bar__input {
+            flex: 1;
+            min-width: 0;
+            border: 1px solid rgba(156, 163, 175, 0.35);
+            border-radius: 16px;
+            padding: 14px 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .ai-bar__input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+        }
+
+        .ai-bar__btn {
+            flex-shrink: 0;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .ai-bar__btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+        }
+
+        .ai-bar__btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ai-bar__hint {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 640px) {
+            body {
+                padding: 32px 16px 140px;
+            }
+
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card__value {
+                font-size: 1.35rem;
+            }
+
+            .ledger-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .ledger-item__amount {
+                align-self: flex-end;
+            }
+
+            .ai-bar__container {
+                flex-direction: column;
+            }
+
+            .ai-bar__btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="brand">
+            <span class="brand__eyebrow">AI 智装管家 · 智能记账本</span>
+            <h1 class="brand__title">装修账本</h1>
+            <p class="brand__subtitle">一句话让 AI 帮你自动分类、记账、算预算。</p>
+        </header>
+
+        <!-- Dashboard -->
+        <section class="dashboard" aria-label="预算看板">
+            <div class="stat-card stat-card--primary">
+                <div class="stat-card__label">总预算</div>
+                <div class="stat-card__value" id="totalBudget">¥0</div>
+            </div>
+            <div class="stat-card stat-card--warn">
+                <div class="stat-card__label">已支出</div>
+                <div class="stat-card__value" id="totalSpent">¥0</div>
+            </div>
+            <div class="stat-card stat-card--success">
+                <div class="stat-card__label">剩余可用</div>
+                <div class="stat-card__value" id="totalRemaining">¥0</div>
+            </div>
+        </section>
+
+        <!-- Progress -->
+        <div class="progress-card">
+            <div class="progress__header">
+                <span class="progress__label">预算消耗进度</span>
+                <span class="progress__percent" id="progressPercent">0%</span>
+            </div>
+            <div class="progress__bar">
+                <div class="progress__fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Ledger -->
+        <section class="ledger" aria-label="记账流水">
+            <h2 class="ledger__title">记账流水</h2>
+            <div class="ledger-list" id="ledgerList"></div>
+        </section>
+    </div>
+
+    <!-- AI Input -->
+    <div class="ai-bar">
+        <div class="ai-bar__container">
+            <input
+                type="text"
+                class="ai-bar__input"
+                id="aiInput"
+                placeholder="告诉AI：今天买水泥和沙子花了850..."
+                autocomplete="off"
+            />
+            <button class="ai-bar__btn" id="aiSendBtn" type="button">发送 / 记账</button>
+        </div>
+        <p class="ai-bar__hint">AI 会自动识别金额、分类并生成记账记录</p>
+    </div>
+
+    <script>
+        // ---------- Data & State ----------
+        const BUDGET = 300000;
+
+        let transactions = [
+            {
+                id: 1,
+                date: '2026-07-27',
+                category: '硬装',
+                subcategory: '水电改造',
+                summary: '水电改造材料与人工',
+                amount: 5000,
+                icon: '🔧'
+            },
+            {
+                id: 2,
+                date: '2026-07-28',
+                category: '家电',
+                subcategory: '洗碗机',
+                summary: '洗碗机采购',
+                amount: 4500,
+                icon: '🍽️'
+            }
+        ];
+
+        // ---------- DOM refs ----------
+        const elTotalBudget = document.getElementById('totalBudget');
+        const elTotalSpent = document.getElementById('totalSpent');
+        const elTotalRemaining = document.getElementById('totalRemaining');
+        const elProgressPercent = document.getElementById('progressPercent');
+        const elProgressFill = document.getElementById('progressFill');
+        const elLedgerList = document.getElementById('ledgerList');
+        const elInput = document.getElementById('aiInput');
+        const elBtn = document.getElementById('aiSendBtn');
+
+        // ---------- Helpers ----------
+        const formatCurrency = (num) => {
+            return '¥' + num.toLocaleString('zh-CN');
+        };
+
+        const getIcon = (category) => {
+            const map = {
+                '硬装': '🔧',
+                '软装': '🛋️',
+                '家电': '❄️',
+                '家具': '🪑',
+                '灯具': '💡',
+                '卫浴': '',
+                '门窗': '🚪',
+                '其他': ''
+            };
+            return map[category] || '📝';
+        };
+
+        const getTagColor = (category) => {
+            const colors = {
+                '硬装': { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb' },
+                '软装': { bg: 'rgba(139, 92, 246, 0.1)', text: '#7c3aed' },
+                '家电': { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669' },
+                '家具': { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706' },
+                '灯具': { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706' },
+                '卫浴': { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7' },
+                '门窗': { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5' },
+                '其他': { bg: 'rgba(107, 114, 128, 0.1)', text: '#4b5563' }
+            };
+            return colors[category] || colors['其他'];
+        };
+
+        // ---------- Render ----------
+        const renderDashboard = () => {
+            const spent = transactions.reduce((sum, t) => sum + t.amount, 0);
+            const remaining = BUDGET - spent;
+            const percent = Math.min((spent / BUDGET) * 100, 100);
+
+            elTotalBudget.textContent = formatCurrency(BUDGET);
+            elTotalSpent.textContent = formatCurrency(spent);
+            elTotalRemaining.textContent = formatCurrency(remaining);
+            elProgressPercent.textContent = percent.toFixed(1) + '%';
+            elProgressFill.style.width = percent + '%';
+        };
+
+        const createLedgerItem = (t) => {
+            const item = document.createElement('div');
+            item.className = 'ledger-item';
+
+            const tagColor = getTagColor(t.category);
+
+            item.innerHTML = `
+                <div class="ledger-item__left">
+                    <div class="ledger-item__icon">${t.icon}</div>
+                    <div class="ledger-item__info">
+                        <div class="ledger-item__meta">
+                            <span class="ledger-item__date">${t.date}</span>
+                            <span class="ledger-item__tag" style="background:${tagColor.bg};color:${tagColor.text}">
+                                ${t.category} · ${t.subcategory}
+                            </span>
+                        </div>
+                        <div class="ledger-item__summary">${t.summary}</div>
+                    </div>
+                </div>
+                <div class="ledger-item__amount">${formatCurrency(t.amount)}</div>
+            `;
+
+            return item;
+        };
+
+        const renderLedger = () => {
+            elLedgerList.innerHTML = '';
+            transactions.slice().reverse().forEach(t => {
+                elLedgerList.appendChild(createLedgerItem(t));
+            });
+        };
+
+        const updateUI = () => {
+            renderDashboard();
+            renderLedger();
+        };
+
+        // ---------- AI Parser (client-side simulation) ----------
+        const parseInput = (text) => {
+            const normalized = text.trim();
+            if (!normalized) return null;
+
+            // Try to extract the last number as amount
+            const numberMatches = normalized.match(/\d+(?:\.\d+)?/g);
+            let amount = numberMatches ? parseFloat(numberMatches[numberMatches.length - 1]) : 0;
+
+            // Category detection
+            const rules = [
+                { key: ['水电', '水泥', '沙子', '瓷砖', '地板', '油漆', '木工', '吊顶', '防水'], category: '硬装', subcategory: '装修材料' },
+                { key: ['洗碗', '冰箱', '洗衣机', '家电', '电视', '空调'], category: '家电', subcategory: '家电采购' },
+                { key: ['沙发', '床', '桌椅', '柜子', '家具', '床垫'], category: '家具', subcategory: '家具采购' },
+                { key: ['灯', '灯具', '照明'], category: '灯具', subcategory: '灯具照明' },
+                { key: ['马桶', '淋浴', '卫浴', '龙头'], category: '卫浴', subcategory: '卫浴洁具' },
+                { key: ['门', '窗', '门窗'], category: '门窗', subcategory: '门窗定制' },
+                { key: ['窗帘', '地毯', '装饰', '挂画'], category: '软装', subcategory: '软装布置' }
+            ];
+
+            let matched = rules.find(rule => rule.key.some(k => normalized.includes(k)));
+            const category = matched ? matched.category : '其他';
+            const subcategory = matched ? matched.subcategory : '通用支出';
+
+            // Build a concise summary
+            const cleaned = normalized
+                .replace(/[\d,\.]+/g, '')
+                .replace(/(元|块|人民币|花了|用了|消费|支出|买了|买了点)/g, '')
+                .trim();
+
+            const summary = cleaned || 'AI 自动识别支出';
+
+            return {
+                date: new Date().toISOString().split('T')[0],
+                category,
+                subcategory,
+                summary,
+                amount,
+                icon: getIcon(category)
+            };
+        };
+
+        // ---------- Send Handler ----------
+        const handleSend = () => {
+            const rawText = elInput.value.trim();
+            if (!rawText) return;
+
+            // 1. Button loading state
+            const originalText = elBtn.textContent;
+            elBtn.disabled = true;
+            elBtn.textContent = 'AI 分析中...';
+
+            setTimeout(() => {
+                const parsed = parseInput(rawText);
+
+                if (parsed) {
+                    transactions.push({
+                        id: Date.now(),
+                        ...parsed
+                    });
+                    updateUI();
+                }
+
+                // Reset input & button
+                elInput.value = '';
+                elBtn.disabled = false;
+                elBtn.textContent = originalText;
+            }, 1500);
+        };
+
+        // ---------- Events ----------
+        elBtn.addEventListener('click', handleSend);
+        elInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+        // ---------- Init ----------
+        updateUI();
+    </script>
+</body>
+</html>

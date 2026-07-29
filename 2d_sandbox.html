@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智装管家 · 全屋平面布局编辑器</title>
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-canvas: #f8fafc;
+            --grid-line: rgba(100, 116, 139, 0.18);
+            --grid-line-bold: rgba(100, 116, 139, 0.32);
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warn: #fbbf24;
+            --radius: 16px;
+            --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(circle at 15% 15%, #1e293b 0%, #0f172a 60%);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding: 28px 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* ---------- Header ---------- */
+        .brand { text-align: center; margin-bottom: 24px; }
+        .brand__eyebrow {
+            display: inline-block; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 5px 14px; border-radius: 999px; margin-bottom: 10px;
+        }
+        .brand__title { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800; letter-spacing: -0.02em; }
+        .brand__subtitle { font-size: 0.88rem; color: var(--text-dim); margin-top: 6px; }
+
+        /* ---------- Layout ---------- */
+        .sandbox { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+        @media (max-width: 900px) { .sandbox { grid-template-columns: 1fr; } }
+
+        /* ---------- Library panel ---------- */
+        .library {
+            background: var(--bg-panel);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: var(--radius); padding: 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+        }
+        .library__title {
+            font-size: 0.95rem; font-weight: 800; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .lib-group { margin-bottom: 16px; }
+        .lib-group__label {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 9px;
+        }
+
+        /* Upload buttons */
+        .upload-btn {
+            width: 100%; border: 1px solid rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.12); color: var(--accent);
+            font-size: 0.8rem; font-weight: 700; padding: 11px;
+            border-radius: 10px; cursor: pointer; transition: var(--transition);
+            font-family: inherit; margin-bottom: 8px;
+        }
+        .upload-btn:hover { background: rgba(56, 189, 248, 0.22); }
+        .upload-btn--ghost { border-color: rgba(148, 163, 184, 0.3); background: transparent; color: var(--text-dim); }
+        .upload-btn--ghost:hover { border-color: var(--accent); color: var(--accent); background: rgba(56, 189, 248, 0.06); }
+
+        /* Custom shape generator */
+        .gen-row { display: flex; gap: 8px; }
+        .gen-btn {
+            flex: 1; border: 1px dashed rgba(168, 85, 247, 0.5);
+            background: rgba(168, 85, 247, 0.08); color: #c084fc;
+            font-size: 0.74rem; font-weight: 700; padding: 10px 4px;
+            border-radius: 10px; cursor: pointer; font-family: inherit;
+            transition: var(--transition);
+        }
+        .gen-btn:hover { background: rgba(168, 85, 247, 0.18); border-style: solid; }
+
+        /* Accordion */
+        .acc {
+            border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 12px;
+            margin-bottom: 10px; overflow: hidden; background: rgba(15, 23, 42, 0.4);
+        }
+        .acc__head {
+            display: flex; align-items: center; gap: 8px; padding: 11px 14px;
+            cursor: pointer; font-size: 0.8rem; font-weight: 800; user-select: none;
+            transition: var(--transition);
+        }
+        .acc__head:hover { background: rgba(56, 189, 248, 0.06); }
+        .acc__chev { margin-left: auto; transition: transform 0.3s ease; color: var(--text-dim); font-size: 0.68rem; }
+        .acc.open .acc__chev { transform: rotate(180deg); }
+        .acc__body { max-height: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .acc.open .acc__body { max-height: 420px; }
+        .acc__content { padding: 4px 10px 12px; }
+
+        /* Library items */
+        .lib-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; margin-bottom: 6px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 10px; cursor: grab; user-select: none;
+            transition: var(--transition);
+        }
+        .lib-item:hover { border-color: var(--accent); transform: translateX(3px); box-shadow: 0 4px 16px rgba(56, 189, 248, 0.15); }
+        .lib-item:active { cursor: grabbing; }
+        .lib-item__swatch {
+            width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+        }
+        .lib-item__meta { flex: 1; min-width: 0; }
+        .lib-item__name { font-size: 0.8rem; font-weight: 700; }
+        .lib-item__size { font-size: 0.66rem; color: var(--text-dim); margin-top: 1px; }
+
+        .lib-tip {
+            font-size: 0.7rem; color: var(--text-dim); line-height: 1.7;
+            padding: 11px; background: rgba(56, 189, 248, 0.06);
+            border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 10px;
+        }
+
+        /* ---------- Board ---------- */
+        .board-wrap {
+            background: var(--bg-panel);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: var(--radius); padding: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+        }
+        .board-status {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 12px; font-size: 0.78rem; color: var(--text-dim);
+        }
+        .status-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 999px; font-weight: 700;
+            background: rgba(148, 163, 184, 0.1);
+        }
+        .status-chip__dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-chip--ok { color: var(--success); }
+        .status-chip--ok .status-chip__dot { background: var(--success); }
+        .status-chip--alarm { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
+        .status-chip--alarm .status-chip__dot { background: var(--danger); animation: blink 0.6s ease-in-out infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .export-btn {
+            margin-left: auto;
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.12) 100%);
+            color: var(--accent); font-size: 0.78rem; font-weight: 800;
+            padding: 9px 18px; border-radius: 10px; cursor: pointer;
+            font-family: inherit; transition: var(--transition);
+        }
+        .export-btn:hover { background: rgba(56, 189, 248, 0.3); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); }
+
+        .grid-canvas {
+            position: relative;
+            height: 660px;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            background-image:
+                linear-gradient(var(--grid-line-bold) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line-bold) 1px, transparent 1px),
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            cursor: default;
+        }
+        .grid-canvas.drag-over { box-shadow: inset 0 0 0 3px rgba(56, 189, 248, 0.5); }
+        .grid-canvas.calibrating { cursor: crosshair; }
+        .grid-canvas.calibrating .placed { pointer-events: none; }
+        .canvas-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #94a3b8; font-size: 0.9rem; font-weight: 600;
+            pointer-events: none; text-align: center; line-height: 1.8;
+        }
+
+        /* Floor plan layer */
+        .floorplan-img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: contain; z-index: 1;
+            pointer-events: none; user-select: none; opacity: 0.95;
+            transition: transform 0.2s ease;
+        }
+
+        /* Floor plan transform toolbar */
+        .fp-toolbar {
+            position: absolute; top: 12px; right: 12px; z-index: 75;
+            display: none; gap: 6px; align-items: center;
+            background: rgba(15, 23, 42, 0.9); padding: 6px;
+            border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+        .fp-toolbar.visible { display: flex; }
+        .fp-btn {
+            width: 34px; height: 34px; border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(30, 41, 59, 0.9); color: var(--text-light);
+            cursor: pointer; font-size: 0.95rem; font-family: inherit;
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .fp-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .fp-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .fp-btn--lock {
+            width: auto; padding: 0 14px; font-size: 0.74rem; font-weight: 800;
+            color: var(--warn); border-color: rgba(251, 191, 36, 0.45);
+            background: rgba(251, 191, 36, 0.08); white-space: nowrap;
+        }
+        .fp-btn--lock:hover { border-color: var(--warn); color: #fde68a; }
+        .fp-btn--lock.locked {
+            color: var(--success); border-color: rgba(34, 197, 94, 0.45);
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        /* Calibration overlay */
+        .calib-banner {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            z-index: 70; background: rgba(15, 23, 42, 0.9); color: var(--accent);
+            font-size: 0.78rem; font-weight: 700; padding: 8px 18px;
+            border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.4);
+            pointer-events: none; white-space: nowrap; max-width: 92%;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .calib-dot {
+            position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+            border-radius: 50%; background: var(--accent-strong);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.3);
+            z-index: 65; pointer-events: none;
+        }
+        .calib-line {
+            position: absolute; height: 0;
+            border-top: 2px dashed var(--accent-strong);
+            transform-origin: 0 0; z-index: 64; pointer-events: none;
+        }
+        .scale-badge {
+            position: absolute; right: 12px; bottom: 10px; z-index: 78;
+            background: rgba(15, 23, 42, 0.82); color: var(--text-dim);
+            font-size: 0.72rem; font-weight: 700; padding: 6px 12px;
+            border-radius: 999px; pointer-events: none;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        .scale-badge.calibrated { color: var(--success); border-color: rgba(34, 197, 94, 0.35); }
+
+        /* Toast */
+        .toast {
+            position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
+            z-index: 80; background: rgba(239, 68, 68, 0.92); color: #fff;
+            padding: 7px 16px; border-radius: 999px; font-size: 0.75rem;
+            font-weight: 700; pointer-events: none; white-space: nowrap;
+            opacity: 0; transition: opacity 0.25s ease;
+        }
+        .toast.show { opacity: 1; }
+
+        /* ---------- Placed items ---------- */
+        .placed {
+            position: absolute;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 1px;
+            border-radius: 6px; cursor: move; user-select: none;
+            font-size: 0.68rem; font-weight: 800; color: #fff;
+            border: 2px solid transparent;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+            z-index: 10;
+        }
+        .placed:hover { box-shadow: 0 10px 26px rgba(15, 23, 42, 0.4); }
+        .placed.selected { outline: 2px dashed var(--accent-strong); outline-offset: 3px; }
+        .placed__label { pointer-events: none; text-align: center; padding: 0 4px; line-height: 1.2; overflow: hidden; max-width: 100%; }
+        .placed__size { pointer-events: none; font-size: 0.58rem; font-weight: 600; opacity: 0.8; white-space: nowrap; }
+        .placed__alarm {
+            display: none; pointer-events: none;
+            position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+            white-space: nowrap; font-size: 0.68rem; font-weight: 800;
+            color: #fff; background: var(--danger);
+            padding: 2px 8px; border-radius: 6px; z-index: 2;
+        }
+
+        /* Shape variants */
+        .shape--circle { border-radius: 50%; }
+        .shape--door { border-radius: 0 0 100% 0; border-left-width: 5px !important; }
+
+        /* Collision state */
+        .placed.colliding {
+            border-color: var(--danger) !important;
+            animation: alarmBlink 0.5s ease-in-out infinite;
+        }
+        .placed.colliding .placed__alarm { display: block; }
+        @keyframes alarmBlink {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.55), 0 6px 18px rgba(239, 68, 68, 0.35); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.12), 0 6px 18px rgba(239, 68, 68, 0.2); }
+        }
+
+        /* Resize handles (custom shapes only, visible when selected) */
+        .rz {
+            position: absolute; width: 10px; height: 10px;
+            background: #fff; border: 2px solid var(--accent-strong);
+            border-radius: 3px; z-index: 3; display: none;
+        }
+        .placed.selected .rz { display: block; }
+        .rz--nw { left: -6px; top: -6px; cursor: nwse-resize; }
+        .rz--n  { left: calc(50% - 5px); top: -6px; cursor: ns-resize; }
+        .rz--ne { right: -6px; top: -6px; cursor: nesw-resize; }
+        .rz--e  { right: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+        .rz--se { right: -6px; bottom: -6px; cursor: nwse-resize; }
+        .rz--s  { left: calc(50% - 5px); bottom: -6px; cursor: ns-resize; }
+        .rz--sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
+        .rz--w  { left: -6px; top: calc(50% - 5px); cursor: ew-resize; }
+
+        /* ---------- Wi-Fi signal circle ---------- */
+        .signal-ring {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle,
+                rgba(34, 197, 94, 0.30) 0%,
+                rgba(34, 197, 94, 0.18) 40%,
+                rgba(250, 204, 21, 0.16) 62%,
+                rgba(239, 68, 68, 0.12) 82%,
+                rgba(239, 68, 68, 0.04) 94%,
+                transparent 100%);
+            border: 2px dashed rgba(239, 68, 68, 0.3);
+            pointer-events: none;
+            z-index: 5;
+            animation: signalPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes signalPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.04); opacity: 0.75; }
+        }
+
+        /* ---------- Property editor modal ---------- */
+        .modal-mask {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(2, 6, 23, 0.6);
+            backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* hidden 属性依赖 UA 默认 display:none，会被上面的 display:flex 覆盖，
+           必须显式补回，否则弹窗无法关闭且页面加载即弹出 */
+        .modal-mask[hidden] { display: none; }
+        .modal {
+            width: 320px; background: var(--bg-panel);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            border-radius: 16px; padding: 22px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+        }
+        .modal__title { font-size: 0.95rem; font-weight: 800; margin-bottom: 16px; }
+        .modal-field { margin-bottom: 14px; }
+        .modal-field label {
+            display: block; font-size: 0.72rem; font-weight: 700;
+            color: var(--text-dim); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .modal-input {
+            width: 100%; border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 10px; padding: 10px 12px; font-size: 0.88rem;
+            background: rgba(15, 23, 42, 0.6); color: var(--text-light);
+            outline: none; font-family: inherit; transition: var(--transition);
+        }
+        .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
+        .modal-color {
+            width: 100%; height: 40px; border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 10px; background: rgba(15, 23, 42, 0.6);
+            cursor: pointer; padding: 4px;
+        }
+        .rot-row { display: flex; align-items: center; gap: 10px; }
+        .rot-val { font-size: 0.85rem; font-weight: 800; color: var(--accent); }
+        .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+        .m-btn {
+            border-radius: 10px; padding: 10px 14px; font-size: 0.8rem;
+            font-weight: 700; cursor: pointer; font-family: inherit;
+            transition: var(--transition); border: 1px solid transparent;
+        }
+        .m-btn--primary { flex: 1; background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); color: #0f172a; border: none; }
+        .m-btn--primary:hover { box-shadow: 0 6px 20px rgba(56, 189, 248, 0.35); }
+        .m-btn--ghost { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-dim); }
+        .m-btn--ghost:hover { border-color: var(--accent); color: var(--accent); }
+        .m-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); color: var(--danger); }
+        .m-btn--danger:hover { background: var(--danger); color: #fff; }
+
+        /* ---------- Footer hint ---------- */
+        .board-footer {
+            margin-top: 10px; font-size: 0.72rem; color: var(--text-dim);
+            display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="brand">
+            <span class="brand__eyebrow">Phase 4 · Layout Editor</span>
+            <h1 class="brand__title">全屋平面布局编辑器</h1>
+            <p class="brand__subtitle">底图自由变换 · 两点比例尺标定 · 物理尺寸图元 · 布局数据 JSON 序列化</p>
+        </header>
+
+        <div class="sandbox">
+            <!-- ===== Left: Component Library ===== -->
+            <aside class="library">
+                <h2 class="library__title">🧰 图元组件库</h2>
+
+                <div class="lib-group">
+                    <div class="lib-group__label">户型图底图</div>
+                    <button class="upload-btn" id="uploadBtn" type="button">🖼️ 上传户型图 (PNG/JPG)</button>
+                    <input type="file" id="floorplanInput" accept="image/png,image/jpeg" hidden>
+                    <button class="upload-btn upload-btn--ghost" id="recalibBtn" type="button" hidden>📐 重新标定比例尺</button>
+                </div>
+
+                <div class="lib-group">
+                    <div class="lib-group__label">自定义形状生成器</div>
+                    <div class="gen-row">
+                        <button class="gen-btn" id="genRectBtn" type="button">▭ 添加自定义矩形</button>
+                        <button class="gen-btn" id="genCircleBtn" type="button">◯ 添加自定义圆形</button>
+                    </div>
+                </div>
+
+                <div class="acc open">
+                    <div class="acc__head">🧱 硬装与定制 <span class="acc__chev">▼</span></div>
+                    <div class="acc__body"><div class="acc__content">
+                        <div class="lib-item" draggable="true" data-type="door" data-name="门开启扇形" data-cat="hard" data-real-width="900" data-real-height="900" data-color="#d97706" data-shape="door">
+                            <span class="lib-item__swatch" style="background:#d9770633;border:1px solid #d9770680">🚪</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">门开启扇形</span>
+                                <div class="lib-item__size">900 × 900 mm（开门回转半径）</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="cabinet" data-name="高低橱柜" data-cat="hard" data-real-width="900" data-real-height="600" data-color="#8b5cf6" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#8b5cf633;border:1px solid #8b5cf680">🗄️</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">高低橱柜</span>
+                                <div class="lib-item__size">900 × 600 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="wall" data-name="墙体隔断" data-cat="hard" data-real-width="1800" data-real-height="240" data-color="#475569" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#47556933;border:1px solid #47556980">🧱</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">墙体隔断</span>
+                                <div class="lib-item__size">1800 × 240 mm</div>
+                            </span>
+                        </div>
+                    </div></div>
+                </div>
+
+                <div class="acc">
+                    <div class="acc__head">🛋️ 软装与家具 <span class="acc__chev">▼</span></div>
+                    <div class="acc__body"><div class="acc__content">
+                        <div class="lib-item" draggable="true" data-type="bed" data-name="实木床" data-cat="soft" data-real-width="2000" data-real-height="1800" data-color="#a855f7" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#a855f733;border:1px solid #a855f780">🛏️</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">实木床</span>
+                                <div class="lib-item__size">2000 × 1800 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="table" data-name="餐桌" data-cat="soft" data-real-width="1600" data-real-height="900" data-color="#f59e0b" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#f59e0b33;border:1px solid #f59e0b80">🍽️</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">餐桌</span>
+                                <div class="lib-item__size">1600 × 900 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="sofa" data-name="沙发" data-cat="soft" data-real-width="2200" data-real-height="900" data-color="#14b8a6" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#14b8a633;border:1px solid #14b8a680">🛋️</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">沙发</span>
+                                <div class="lib-item__size">2200 × 900 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="rug" data-name="地毯" data-cat="soft" data-real-width="2000" data-real-height="1400" data-color="#94a3b8" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#94a3b833;border:1px solid #94a3b880">🧶</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">地毯</span>
+                                <div class="lib-item__size">2000 × 1400 mm（可重叠）</div>
+                            </span>
+                        </div>
+                    </div></div>
+                </div>
+
+                <div class="acc">
+                    <div class="acc__head">📡 家电与弱电 <span class="acc__chev">▼</span></div>
+                    <div class="acc__body"><div class="acc__content">
+                        <div class="lib-item" draggable="true" data-type="fridge" data-name="双开门冰箱" data-cat="appliance" data-real-width="900" data-real-height="600" data-color="#6366f1" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#6366f133;border:1px solid #6366f180">🧊</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">双开门冰箱</span>
+                                <div class="lib-item__size">900 × 600 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="washer" data-name="洗衣机" data-cat="appliance" data-real-width="600" data-real-height="600" data-color="#0ea5e9" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#0ea5e933;border:1px solid #0ea5e980">🌀</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">洗衣机</span>
+                                <div class="lib-item__size">600 × 600 mm</div>
+                            </span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="router" data-name="路由器 AP" data-cat="appliance" data-real-width="86" data-real-height="86" data-signal-radius="12000" data-color="#10b981" data-shape="circle">
+                            <span class="lib-item__swatch" style="background:#10b98133;border:1px solid #10b98180">📶</span>
+                            <span class="lib-item__meta">
+                                <span class="lib-item__name">路由器 AP</span>
+                                <div class="lib-item__size">信号半径 12000 mm</div>
+                            </span>
+                        </div>
+                    </div></div>
+                </div>
+
+                <div class="lib-tip">
+                    💡 工作流：<br>
+                    ① 上传底图 → 调整缩放旋转 → 🔒 锁定<br>
+                    ② 两点标定比例尺（Esc 退出）<br>
+                    ③ 拖入图元 · 点击置顶 · 双击编辑属性<br>
+                    ④ 自定义形状选中后拖手柄改尺寸<br>
+                    ⑤ 顶部按钮导出布局 JSON 供 AI 分析
+                </div>
+            </aside>
+
+            <!-- ===== Right: Grid Canvas ===== -->
+            <div class="board-wrap">
+                <div class="board-status">
+                    <span class="status-chip" id="chipCount">📦 画板图元：0 个</span>
+                    <span class="status-chip status-chip--ok" id="chipCollision">
+                        <span class="status-chip__dot"></span>
+                        <span id="chipCollisionText">无干涉</span>
+                    </span>
+                    <button class="export-btn" id="exportBtn" type="button">🧠 导出布局数据 (JSON)</button>
+                </div>
+
+                <div class="grid-canvas" id="gridCanvas">
+                    <img class="floorplan-img" id="floorplanImg" alt="户型图底图" hidden>
+                    <div class="canvas-hint" id="canvasHint">
+                        上传户型图 → 调整并锁定底图 → 标定比例尺 → 拖入图元开始布局<br>
+                        未标定时按默认比例 1px = 10mm（大格 100px ≈ 1m）
+                    </div>
+                    <div class="fp-toolbar" id="fpToolbar">
+                        <button class="fp-btn" id="fpZoomIn" type="button" title="放大底图">＋</button>
+                        <button class="fp-btn" id="fpZoomOut" type="button" title="缩小底图">－</button>
+                        <button class="fp-btn" id="fpRotL" type="button" title="左转 90°">⟲</button>
+                        <button class="fp-btn" id="fpRotR" type="button" title="右转 90°">⟳</button>
+                        <button class="fp-btn fp-btn--lock" id="fpLockBtn" type="button">🔒 锁定底图</button>
+                    </div>
+                    <div class="calib-banner" id="calibBanner" hidden></div>
+                    <div class="toast" id="toast"></div>
+                    <div class="scale-badge" id="scaleBadge"></div>
+                </div>
+
+                <div class="board-footer">
+                    <span>⚙️ 纯原生 DOM + CSS 绝对定位 + JS 事件驱动 · 零依赖</span>
+                    <span>📶 信号梯度：🟢 强 → 🟡 中 → 🔴 弱 · 软装可重叠 / 硬装家电干涉报警</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Property editor modal ===== -->
+    <div class="modal-mask" id="editMask" hidden>
+        <div class="modal">
+            <h3 class="modal__title">✏️ 编辑图元属性</h3>
+            <div class="modal-field">
+                <label for="editName">名称</label>
+                <input class="modal-input" id="editName" type="text" maxlength="20" placeholder="如：主卧大床">
+            </div>
+            <div class="modal-field">
+                <label for="editColor">背景颜色</label>
+                <input class="modal-color" id="editColor" type="color" value="#38bdf8">
+            </div>
+            <div class="modal-field">
+                <label>旋转角度</label>
+                <div class="rot-row">
+                    <button class="m-btn m-btn--ghost" id="editRotBtn" type="button">↻ 旋转 90°</button>
+                    <span class="rot-val" id="editRotVal">0°</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="m-btn m-btn--danger" id="editDeleteBtn" type="button">🗑 删除</button>
+                <button class="m-btn m-btn--ghost" id="editCancelBtn" type="button">取消</button>
+                <button class="m-btn m-btn--primary" id="editSaveBtn" type="button">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 0) Global scale system (mm-driven)
+        //    All pixel sizes are derived from PIXEL_RATIO at render time.
+        // ============================================================
+        window.PIXEL_RATIO = 10;   // 1px = 10mm by default (100px grid = 1m)
+        let calibrated = false;
+
+        const SPECS = {};
+        document.querySelectorAll('.lib-item').forEach(li => {
+            SPECS[li.dataset.type] = {
+                type: li.dataset.type,
+                name: li.dataset.name,
+                cat: li.dataset.cat,                              // hard | soft | appliance
+                realW: parseFloat(li.dataset.realWidth) || 0,     // mm
+                realH: parseFloat(li.dataset.realHeight) || 0,    // mm
+                signal: parseFloat(li.dataset.signalRadius) || 0, // mm
+                color: li.dataset.color,
+                shape: li.dataset.shape || 'rect'
+            };
+        });
+
+        const CAT_LABELS = { hard: '硬装与定制', soft: '软装与家具', appliance: '家电与弱电', custom: '自定义形状' };
+        const MIN_RENDER = 36; // px floor — keeps marker items (AP puck) grabbable
+        const mmToPx = (mm) => mm / window.PIXEL_RATIO;
+
+        // ============================================================
+        // 1) State
+        // ============================================================
+        let placedItems = [];   // { id, name, cat, realW, realH, signal, color, shape, custom, rot, el, ringEl }
+        let nextItemId = 1;
+        let customCount = 0;
+        let dragCtx = null;     // move context
+        let resizeCtx = null;   // handle-resize context
+        let selectedItem = null;
+        let topZ = 10;          // layer counter — click-to-front
+        let editingItem = null;
+        let pendingRot = 0;
+
+        // Floor plan transform state
+        const fp = { loaded: false, locked: false, scale: 1, rot: 0 };
+
+        // ============================================================
+        // 2) DOM refs
+        // ============================================================
+        const canvas = document.getElementById('gridCanvas');
+        const canvasHint = document.getElementById('canvasHint');
+        const chipCount = document.getElementById('chipCount');
+        const chipCollision = document.getElementById('chipCollision');
+        const chipCollisionText = document.getElementById('chipCollisionText');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const floorplanInput = document.getElementById('floorplanInput');
+        const floorplanImg = document.getElementById('floorplanImg');
+        const recalibBtn = document.getElementById('recalibBtn');
+        const calibBanner = document.getElementById('calibBanner');
+        const scaleBadge = document.getElementById('scaleBadge');
+        const toastEl = document.getElementById('toast');
+        const fpToolbar = document.getElementById('fpToolbar');
+        const fpZoomIn = document.getElementById('fpZoomIn');
+        const fpZoomOut = document.getElementById('fpZoomOut');
+        const fpRotL = document.getElementById('fpRotL');
+        const fpRotR = document.getElementById('fpRotR');
+        const fpLockBtn = document.getElementById('fpLockBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const editMask = document.getElementById('editMask');
+        const editName = document.getElementById('editName');
+        const editColor = document.getElementById('editColor');
+        const editRotBtn = document.getElementById('editRotBtn');
+        const editRotVal = document.getElementById('editRotVal');
+
+        // ============================================================
+        // 3) Helpers
+        // ============================================================
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function hexToRgba(hex, a) {
+            const n = parseInt(hex.slice(1), 16);
+            return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+        }
+
+        let toastTimer = null;
+        function showToast(msg) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+        }
+
+        // Interaction gate: with a floor plan present, everything downstream
+        // (calibration / drag / spawn) stays blocked until the image is locked.
+        function boardReady() { return !fp.loaded || fp.locked; }
+        function guardInteraction() {
+            if (calib.active) return false;
+            if (!boardReady()) { showToast('⚠️ 请先点击右上角 🔒 锁定底图'); return false; }
+            return true;
+        }
+
+        // Render size from physical mm (marker items get a usability floor)
+        function renderW(item) { return item.signal > 0 ? Math.max(MIN_RENDER, mmToPx(item.realW)) : Math.max(6, mmToPx(item.realW)); }
+        function renderH(item) { return item.signal > 0 ? Math.max(MIN_RENDER, mmToPx(item.realH)) : Math.max(6, mmToPx(item.realH)); }
+
+        function applyItemColor(item) {
+            item.el.style.background = hexToRgba(item.color, 0.85);
+            item.el.style.borderColor = item.color;
+        }
+
+        function updateSizeLabel(item) {
+            const sizeEl = item.el.querySelector('.placed__size');
+            if (sizeEl) sizeEl.textContent = `${Math.round(item.realW)}×${Math.round(item.realH)} mm`;
+        }
+
+        // ============================================================
+        // 4) Accordion
+        // ============================================================
+        document.querySelectorAll('.acc__head').forEach(head => {
+            head.addEventListener('click', () => head.parentElement.classList.toggle('open'));
+        });
+
+        // ============================================================
+        // 5) Library → Canvas: HTML5 drag & drop
+        // ============================================================
+        document.querySelectorAll('.lib-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', item.dataset.type);
+                e.dataTransfer.effectAllowed = 'copy';
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            canvas.classList.add('drag-over');
+        });
+        canvas.addEventListener('dragleave', () => canvas.classList.remove('drag-over'));
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            canvas.classList.remove('drag-over');
+            if (!guardInteraction()) return;
+            const spec = SPECS[e.dataTransfer.getData('text/plain')];
+            if (!spec) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const probe = { realW: spec.realW, realH: spec.realH, signal: spec.signal };
+            const w = renderW(probe), h = renderH(probe);
+            const x = clamp(e.clientX - rect.left - w / 2, 0, rect.width - w);
+            const y = clamp(e.clientY - rect.top - h / 2, 0, rect.height - h);
+            createItem({
+                name: spec.name, cat: spec.cat, realW: spec.realW, realH: spec.realH,
+                signal: spec.signal, color: spec.color, shape: spec.shape, custom: false
+            }, x, y);
+        });
+
+        // Custom shape generator — spawned at canvas center, 1000×1000mm default
+        document.getElementById('genRectBtn').addEventListener('click', () => spawnCustom('rect'));
+        document.getElementById('genCircleBtn').addEventListener('click', () => spawnCustom('circle'));
+
+        function spawnCustom(shape) {
+            if (!guardInteraction()) return;
+            customCount++;
+            const opts = {
+                name: (shape === 'circle' ? '自定义圆形 ' : '自定义矩形 ') + customCount,
+                cat: 'custom', realW: 1000, realH: 1000, signal: 0,
+                color: shape === 'circle' ? '#c084fc' : '#38bdf8',
+                shape, custom: true
+            };
+            const w = renderW(opts), h = renderH(opts);
+            const item = createItem(opts,
+                clamp(canvas.clientWidth / 2 - w / 2 + (customCount % 5) * 14, 0, canvas.clientWidth - w),
+                clamp(canvas.clientHeight / 2 - h / 2 + (customCount % 5) * 14, 0, canvas.clientHeight - h));
+            selectItem(item);
+        }
+
+        // ============================================================
+        // 6) Item factory
+        // ============================================================
+        function createItem(opts, x, y) {
+            const id = nextItemId++;
+            const item = {
+                id, name: opts.name, cat: opts.cat,
+                realW: opts.realW, realH: opts.realH, signal: opts.signal || 0,
+                color: opts.color, shape: opts.shape, custom: !!opts.custom,
+                rot: 0, el: null, ringEl: null
+            };
+            const w = renderW(item), h = renderH(item);
+
+            const el = document.createElement('div');
+            el.className = 'placed'
+                + (item.shape === 'circle' ? ' shape--circle' : '')
+                + (item.shape === 'door' ? ' shape--door' : '');
+            el.dataset.itemId = id;
+            el.style.width = w + 'px';
+            el.style.height = h + 'px';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.zIndex = ++topZ;
+            el.innerHTML = `
+                <span class="placed__alarm">干涉报警！</span>
+                <span class="placed__label">${item.name}</span>
+                <span class="placed__size"></span>
+            `;
+            item.el = el;
+            applyItemColor(item);
+            canvas.appendChild(el);
+            updateSizeLabel(item);
+
+            // Resize handles — custom shapes only
+            if (item.custom) {
+                ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(dir => {
+                    const hd = document.createElement('span');
+                    hd.className = 'rz rz--' + dir;
+                    hd.addEventListener('mousedown', (e) => {
+                        if (e.button !== 0 || !guardInteraction()) return;
+                        e.preventDefault();
+                        e.stopPropagation(); // don't start a move-drag
+                        resizeCtx = {
+                            item, dir,
+                            startX: e.clientX, startY: e.clientY,
+                            startW: el.offsetWidth, startH: el.offsetHeight,
+                            startL: el.offsetLeft, startT: el.offsetTop
+                        };
+                    });
+                    el.appendChild(hd);
+                });
+            }
+
+            // Signal ring from physical radius ÷ PIXEL_RATIO
+            if (item.signal > 0) {
+                const ring = document.createElement('div');
+                ring.className = 'signal-ring';
+                const rpx = mmToPx(item.signal);
+                ring.style.width = rpx * 2 + 'px';
+                ring.style.height = rpx * 2 + 'px';
+                canvas.appendChild(ring);
+                item.ringEl = ring;
+                syncRing(item);
+            }
+
+            bindItemEvents(item);
+            placedItems.push(item);
+            refreshBoard();
+            return item;
+        }
+        // ============================================================
+        // 7) Selection, layers & movement
+        // ============================================================
+        function selectItem(item) {
+            if (selectedItem && selectedItem !== item) selectedItem.el.classList.remove('selected');
+            selectedItem = item;
+            item.el.classList.add('selected');
+            item.el.style.zIndex = ++topZ; // click-to-front layer promotion
+        }
+
+        function deselect() {
+            if (selectedItem) selectedItem.el.classList.remove('selected');
+            selectedItem = null;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.target === canvas) deselect();
+        });
+
+        function bindItemEvents(item) {
+            item.el.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || e.target.classList.contains('rz')) return;
+                if (calib.active || !boardReady()) return;
+                e.preventDefault();
+                selectItem(item);
+                const rect = canvas.getBoundingClientRect();
+                dragCtx = {
+                    item,
+                    offsetX: e.clientX - rect.left - item.el.offsetLeft,
+                    offsetY: e.clientY - rect.top - item.el.offsetTop
+                };
+            });
+
+            item.el.addEventListener('dblclick', () => {
+                if (calib.active || !boardReady()) return;
+                openEditor(item);
+            });
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            // -- Handle resize takes precedence over move --
+            if (resizeCtx) {
+                const { item, dir, startX, startY, startW, startH, startL, startT } = resizeCtx;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const MIN = 24;
+                let w = startW, h = startH, l = startL, t = startT;
+
+                if (dir.includes('e')) w = Math.max(MIN, startW + dx);
+                if (dir.includes('s')) h = Math.max(MIN, startH + dy);
+                if (dir.includes('w')) { w = Math.max(MIN, startW - dx); l = startL + (startW - w); }
+                if (dir.includes('n')) { h = Math.max(MIN, startH - dy); t = startT + (startH - h); }
+
+                item.el.style.width = w + 'px';
+                item.el.style.height = h + 'px';
+                item.el.style.left = l + 'px';
+                item.el.style.top = t + 'px';
+                // Sync physical size back into the data model
+                item.realW = w * window.PIXEL_RATIO;
+                item.realH = h * window.PIXEL_RATIO;
+                updateSizeLabel(item);
+                runCollisionChecks();
+                return;
+            }
+
+            if (!dragCtx) return;
+            const { item, offsetX, offsetY } = dragCtx;
+            const rect = canvas.getBoundingClientRect();
+            const w = item.el.offsetWidth;
+            const h = item.el.offsetHeight;
+
+            let x = e.clientX - rect.left - offsetX;
+            let y = e.clientY - rect.top - offsetY;
+
+            // Loose clamp: edges may be crossed (triggers boundary alarm)
+            // but at least 20px stays visible for grabbing back.
+            const MIN_VISIBLE = 20;
+            x = clamp(x, -w + MIN_VISIBLE, rect.width - MIN_VISIBLE);
+            y = clamp(y, -h + MIN_VISIBLE, rect.height - MIN_VISIBLE);
+
+            item.el.style.left = x + 'px';
+            item.el.style.top = y + 'px';
+
+            if (item.ringEl) syncRing(item);
+            runCollisionChecks();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (resizeCtx) { resizeCtx = null; runCollisionChecks(); }
+            if (dragCtx) { dragCtx = null; runCollisionChecks(); }
+        });
+
+        // ============================================================
+        // 8) Collision engine — soft items may overlap; hard/appliance may not
+        // ============================================================
+        function isSolid(item) { return item.cat === 'hard' || item.cat === 'appliance'; }
+
+        // AABB of the (optionally 90°-rotated) element
+        function getBox(item) {
+            const l = item.el.offsetLeft, t = item.el.offsetTop;
+            const w = item.el.offsetWidth, h = item.el.offsetHeight;
+            if (item.rot % 180 !== 0) {
+                const cx = l + w / 2, cy = t + h / 2;
+                return { left: cx - h / 2, top: cy - w / 2, right: cx + h / 2, bottom: cy + w / 2 };
+            }
+            return { left: l, top: t, right: l + w, bottom: t + h };
+        }
+
+        function boxesOverlap(a, b) {
+            return a.left < b.right && a.right > b.left &&
+                   a.top < b.bottom && a.bottom > b.top;
+        }
+
+        function runCollisionChecks() {
+            const solids = placedItems.filter(isSolid);
+            const collidingIds = new Set();
+
+            // Pairwise AABB between solid items only
+            for (let i = 0; i < solids.length; i++) {
+                for (let j = i + 1; j < solids.length; j++) {
+                    if (boxesOverlap(getBox(solids[i]), getBox(solids[j]))) {
+                        collidingIds.add(solids[i].id);
+                        collidingIds.add(solids[j].id);
+                    }
+                }
+            }
+
+            // Out-of-bounds counts as interference for solid items
+            const cw = canvas.clientWidth, ch = canvas.clientHeight;
+            solids.forEach(p => {
+                const b = getBox(p);
+                if (b.left < 0 || b.top < 0 || b.right > cw || b.bottom > ch) collidingIds.add(p.id);
+            });
+
+            placedItems.forEach(p => p.el.classList.toggle('colliding', collidingIds.has(p.id)));
+
+            if (collidingIds.size > 0) {
+                chipCollision.classList.add('status-chip--alarm');
+                chipCollision.classList.remove('status-chip--ok');
+                chipCollisionText.textContent = `检测到 ${collidingIds.size} 处干涉/越界！`;
+            } else {
+                chipCollision.classList.remove('status-chip--alarm');
+                chipCollision.classList.add('status-chip--ok');
+                chipCollisionText.textContent = '无干涉';
+            }
+        }
+
+        // ============================================================
+        // 9) Wi-Fi ring follows its AP's center
+        // ============================================================
+        function syncRing(item) {
+            const cx = item.el.offsetLeft + item.el.offsetWidth / 2;
+            const cy = item.el.offsetTop + item.el.offsetHeight / 2;
+            const r = item.ringEl.offsetWidth / 2;
+            item.ringEl.style.left = (cx - r) + 'px';
+            item.ringEl.style.top = (cy - r) + 'px';
+        }
+
+        function refreshBoard() {
+            chipCount.textContent = `📦 画板图元：${placedItems.length} 个`;
+            canvasHint.style.display = (placedItems.length || fp.loaded) ? 'none' : 'block';
+            runCollisionChecks();
+        }
+        // ============================================================
+        // 10) Floor plan upload + free transform + lock gate
+        // ============================================================
+        uploadBtn.addEventListener('click', () => floorplanInput.click());
+
+        floorplanInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            floorplanInput.value = '';
+            if (!file) return;
+            if (!/^image\/(png|jpeg)$/.test(file.type)) {
+                alert('仅支持 PNG / JPG 格式的户型图');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                floorplanImg.src = ev.target.result;
+                floorplanImg.hidden = false;
+                fp.loaded = true; fp.locked = false; fp.scale = 1; fp.rot = 0;
+                applyFpTransform();
+                setLockUI(false);
+                fpToolbar.classList.add('visible');
+                recalibBtn.hidden = true;
+                cancelCalibration();
+                showAdjustBanner();
+                refreshBoard();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function applyFpTransform() {
+            floorplanImg.style.transform = `scale(${fp.scale}) rotate(${fp.rot}deg)`;
+        }
+
+        function showAdjustBanner() {
+            calibBanner.hidden = false;
+            calibBanner.textContent = '🖼️ 第 1 步：用右上角工具调整底图缩放/旋转，满意后点击 🔒 锁定底图';
+        }
+
+        fpZoomIn.addEventListener('click', () => { fp.scale = Math.min(5, +(fp.scale + 0.1).toFixed(2)); applyFpTransform(); });
+        fpZoomOut.addEventListener('click', () => { fp.scale = Math.max(0.2, +(fp.scale - 0.1).toFixed(2)); applyFpTransform(); });
+        fpRotL.addEventListener('click', () => { fp.rot -= 90; applyFpTransform(); });
+        fpRotR.addEventListener('click', () => { fp.rot += 90; applyFpTransform(); });
+
+        function setLockUI(locked) {
+            [fpZoomIn, fpZoomOut, fpRotL, fpRotR].forEach(b => b.disabled = locked);
+            fpLockBtn.classList.toggle('locked', locked);
+            fpLockBtn.textContent = locked ? '🔓 已锁定 · 点击解锁' : '🔒 锁定底图';
+        }
+
+        fpLockBtn.addEventListener('click', () => {
+            if (!fp.locked) {
+                // Lock → unblocks calibration & component drag
+                fp.locked = true;
+                setLockUI(true);
+                recalibBtn.hidden = false;
+                startCalibration(); // calibration is mandatory right after locking
+            } else {
+                // Unlock → back to adjust mode, downstream interactions blocked
+                fp.locked = false;
+                setLockUI(false);
+                cancelCalibration();
+                showAdjustBanner();
+                showToast('底图已解锁：调整后请重新锁定并标定比例尺');
+            }
+        });
+
+        // ============================================================
+        // 11) Two-point scale calibration
+        // ============================================================
+        const calib = { active: false, pointA: null, dotA: null, dotB: null, line: null };
+
+        recalibBtn.addEventListener('click', startCalibration);
+
+        function startCalibration() {
+            if (fp.loaded && !fp.locked) { showToast('⚠️ 请先锁定底图再标定'); return; }
+            cancelCalibration();
+            calib.active = true;
+            canvas.classList.add('calibrating');
+            calibBanner.hidden = false;
+            calibBanner.textContent = '📏 标定 · 第 1 步：点击图纸上一段已知长度的起点（Esc 取消）';
+        }
+
+        function cancelCalibration() {
+            calib.active = false;
+            calib.pointA = null;
+            ['dotA', 'dotB', 'line'].forEach(k => {
+                if (calib[k]) { calib[k].remove(); calib[k] = null; }
+            });
+            canvas.classList.remove('calibrating');
+            calibBanner.hidden = true;
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (!calib.active) return;
+            // 只响应画板空白区域的点击：工具栏按钮（如“锁定底图”）的点击会冒泡到此处，
+            // 若不过滤会被误记为标点 A
+            if (e.target !== canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            if (!calib.pointA) {
+                calib.pointA = { x, y };
+                calib.dotA = makeCalibDot(x, y);
+                calib.line = makeCalibLine();
+                calibBanner.textContent = '📏 标定 · 第 2 步：点击这段长度的终点';
+            } else {
+                const distPx = Math.hypot(x - calib.pointA.x, y - calib.pointA.y);
+                if (distPx < 5) return; // too short to be a meaningful reference
+                calib.dotB = makeCalibDot(x, y);
+                drawCalibLine(calib.line, calib.pointA, { x, y });
+                finishCalibration(distPx);
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!calib.active || !calib.pointA || !calib.line) return;
+            const rect = canvas.getBoundingClientRect();
+            drawCalibLine(calib.line, calib.pointA, {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (calib.active) cancelCalibration();
+                else if (!editMask.hidden) closeEditor();
+                else deselect();
+            }
+        });
+
+        function finishCalibration(distPx) {
+            const input = prompt('请输入这段线段的实际长度（单位：毫米）', '3000');
+            const mm = parseFloat(input);
+            if (!(mm > 0)) {
+                alert('输入无效，本次标定已取消，沿用原比例');
+                cancelCalibration();
+                return;
+            }
+            // Core algorithm: 1px = (real length ÷ pixel distance) mm
+            window.PIXEL_RATIO = mm / distPx;
+            calibrated = true;
+            cancelCalibration();
+            updateScaleBadge();
+            rescaleAll();
+        }
+
+        function makeCalibDot(x, y) {
+            const d = document.createElement('div');
+            d.className = 'calib-dot';
+            d.style.left = x + 'px';
+            d.style.top = y + 'px';
+            canvas.appendChild(d);
+            return d;
+        }
+
+        function makeCalibLine() {
+            const l = document.createElement('div');
+            l.className = 'calib-line';
+            canvas.appendChild(l);
+            return l;
+        }
+
+        function drawCalibLine(lineEl, a, b) {
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            const angle = Math.atan2(b.y - a.y, b.x - a.x);
+            lineEl.style.left = a.x + 'px';
+            lineEl.style.top = a.y + 'px';
+            lineEl.style.width = dist + 'px';
+            lineEl.style.transform = `rotate(${angle}rad)`;
+        }
+
+        function updateScaleBadge() {
+            scaleBadge.textContent = calibrated
+                ? `📏 当前比例: 1px = ${window.PIXEL_RATIO.toFixed(1)}mm`
+                : '📏 默认比例: 1px = 10mm（未标定）';
+            scaleBadge.classList.toggle('calibrated', calibrated);
+        }
+
+        // Re-derive every item's pixel size from its physical mm spec,
+        // keeping each element's center point anchored.
+        function rescaleAll() {
+            placedItems.forEach(item => {
+                const cx = item.el.offsetLeft + item.el.offsetWidth / 2;
+                const cy = item.el.offsetTop + item.el.offsetHeight / 2;
+                const w = renderW(item), h = renderH(item);
+                item.el.style.width = w + 'px';
+                item.el.style.height = h + 'px';
+                item.el.style.left = (cx - w / 2) + 'px';
+                item.el.style.top = (cy - h / 2) + 'px';
+                updateSizeLabel(item);
+
+                if (item.ringEl) {
+                    const rpx = mmToPx(item.signal);
+                    item.ringEl.style.width = rpx * 2 + 'px';
+                    item.ringEl.style.height = rpx * 2 + 'px';
+                    syncRing(item);
+                }
+            });
+            runCollisionChecks();
+        }
+
+        // ============================================================
+        // 12) Property editor (dblclick)
+        // ============================================================
+        function openEditor(item) {
+            editingItem = item;
+            pendingRot = item.rot;
+            editName.value = item.name;
+            editColor.value = item.color;
+            editRotVal.textContent = ((pendingRot % 360) + 360) % 360 + '°';
+            editMask.hidden = false;
+            editName.focus();
+        }
+
+        function closeEditor() {
+            editMask.hidden = true;
+            editingItem = null;
+        }
+
+        editRotBtn.addEventListener('click', () => {
+            pendingRot = (pendingRot + 90) % 360;
+            editRotVal.textContent = pendingRot + '°';
+        });
+
+        document.getElementById('editSaveBtn').addEventListener('click', () => {
+            if (!editingItem) return;
+            const item = editingItem;
+            const name = editName.value.trim();
+            if (name) item.name = name;
+            item.color = editColor.value;
+            item.rot = pendingRot;
+            applyItemColor(item);
+            item.el.querySelector('.placed__label').textContent = item.name;
+            item.el.style.transform = item.rot ? `rotate(${item.rot}deg)` : '';
+            closeEditor();
+            runCollisionChecks();
+        });
+
+        document.getElementById('editDeleteBtn').addEventListener('click', () => {
+            if (!editingItem) return;
+            const item = editingItem;
+            item.el.remove();
+            if (item.ringEl) item.ringEl.remove();
+            placedItems = placedItems.filter(p => p.id !== item.id);
+            if (selectedItem === item) selectedItem = null;
+            closeEditor();
+            refreshBoard();
+        });
+
+        document.getElementById('editCancelBtn').addEventListener('click', closeEditor);
+        editMask.addEventListener('click', (e) => { if (e.target === editMask) closeEditor(); });
+
+        // ============================================================
+        // 13) Export structured layout data (for AI scoring)
+        // ============================================================
+        exportBtn.addEventListener('click', () => {
+            if (!placedItems.length) {
+                alert('画板为空：请先拖入图元再导出布局数据');
+                return;
+            }
+            const layout = placedItems.map(p => ({
+                id: 'item-' + p.id,
+                name: p.name,
+                category: p.cat,
+                categoryName: CAT_LABELS[p.cat],
+                x: Math.round(p.el.offsetLeft),                                  // px, canvas-relative
+                y: Math.round(p.el.offsetTop),
+                realWidth: Math.round(p.el.offsetWidth * window.PIXEL_RATIO),    // mm
+                realHeight: Math.round(p.el.offsetHeight * window.PIXEL_RATIO), // mm
+                rotation: p.rot                                                  // deg
+            }));
+            console.log('【AI 智装管家 · 布局数据】pixelRatio =', +window.PIXEL_RATIO.toFixed(3),
+                'mm/px · calibrated =', calibrated);
+            console.log(JSON.stringify(layout, null, 2));
+            alert('布局数据已生成，可对接 AI 分析接口');
+        });
+
+        // ============================================================
+        // Init
+        // ============================================================
+        updateScaleBadge();
+        refreshBoard();
+    </script>
+</body>
+</html>

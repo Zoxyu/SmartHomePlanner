@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 智装管家 · 全屋平面布局编辑器</title>
     <style>
         :root {
@@ -29,6 +29,7 @@
             color: var(--text-light);
             min-height: 100vh;
             padding: 28px 20px;
+            overscroll-behavior: none; /* 页面级防下拉刷新/回弹，触控拖拽更稳 */
         }
         .container { max-width: 1400px; margin: 0 auto; }
 
@@ -244,6 +245,68 @@
             border-top: 2px dashed var(--accent-strong);
             transform-origin: 0 0; z-index: 64; pointer-events: none;
         }
+
+        /* 移动端标定“偏移准星”：红色发光十字，位于手指上方，避免胖手指遮挡 */
+        .calib-crosshair {
+            position: absolute; width: 44px; height: 44px;
+            margin: -22px 0 0 -22px;
+            border: 2px solid rgba(239, 68, 68, 0.85);
+            border-radius: 50%;
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.8), inset 0 0 8px rgba(239, 68, 68, 0.35);
+            z-index: 90; pointer-events: none;
+        }
+        .calib-crosshair::before, .calib-crosshair::after {
+            content: ''; position: absolute; background: #ef4444;
+            box-shadow: 0 0 6px rgba(239, 68, 68, 0.9);
+        }
+        .calib-crosshair::before { left: 50%; top: -10px; bottom: -10px; width: 2px; margin-left: -1px; }
+        .calib-crosshair::after { top: 50%; left: -10px; right: -10px; height: 2px; margin-top: -1px; }
+
+        /* 手指触点 → 准星的半透明垂直连线，明确“控制源↔落点”的对应关系 */
+        .calib-finger-link {
+            position: absolute; width: 2px; margin-left: -1px;
+            background: linear-gradient(to bottom, rgba(239, 68, 68, 0.75), rgba(239, 68, 68, 0.12));
+            z-index: 89; pointer-events: none;
+        }
+
+        /* 测距卷尺：临时图层，琥珀色带双箭头实线 + 悬浮距离标签 */
+        .grid-canvas.measuring { cursor: crosshair; }
+        .grid-canvas.measuring .placed { pointer-events: none; }
+        .ruler-line {
+            position: absolute; height: 0;
+            border-top: 2px solid #f59e0b;
+            transform-origin: 0 0; z-index: 66; pointer-events: none;
+            filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.45));
+        }
+        .ruler-line::before, .ruler-line::after {
+            content: ''; position: absolute; top: -5px;
+            border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+        }
+        .ruler-line::before { left: 0; border-right: 8px solid #f59e0b; }
+        .ruler-line::after { right: 0; border-left: 8px solid #f59e0b; }
+        .ruler-dot {
+            position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+            border-radius: 50%; background: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
+            z-index: 66; pointer-events: none;
+        }
+        .ruler-label {
+            position: absolute; transform: translate(-50%, -140%);
+            background: rgba(15, 23, 42, 0.92); color: #fbbf24;
+            font-size: 0.72rem; font-weight: 800; padding: 3px 10px;
+            border-radius: 999px; border: 1px solid rgba(245, 158, 11, 0.45);
+            z-index: 67; pointer-events: none; white-space: nowrap;
+        }
+
+        /* 画板工具按钮态 */
+        .upload-btn.tool-btn--active {
+            border-color: rgba(245, 158, 11, 0.6);
+            background: rgba(245, 158, 11, 0.14); color: var(--warn);
+        }
+        .upload-btn.snap-btn.on {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: rgba(34, 197, 94, 0.12); color: var(--success);
+        }
         .scale-badge {
             position: absolute; right: 12px; bottom: 10px; z-index: 78;
             background: rgba(15, 23, 42, 0.82); color: var(--text-dim);
@@ -269,6 +332,7 @@
             display: flex; flex-direction: column;
             align-items: center; justify-content: center; gap: 1px;
             border-radius: 6px; cursor: move; user-select: none;
+            touch-action: none; /* 图元上的触控手势完全交由 JS 接管，禁止浏览器滚动/缩放劫持 */
             font-size: 0.68rem; font-weight: 800; color: #fff;
             border: 2px solid transparent;
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
@@ -306,6 +370,7 @@
             position: absolute; width: 10px; height: 10px;
             background: #fff; border: 2px solid var(--accent-strong);
             border-radius: 3px; z-index: 3; display: none;
+            touch-action: none; /* 手柄拖拽期间禁止浏览器接管手势 */
         }
         .placed.selected .rz { display: block; }
         .rz--nw { left: -6px; top: -6px; cursor: nwse-resize; }
@@ -421,6 +486,12 @@
                         <button class="gen-btn" id="genRectBtn" type="button">▭ 添加自定义矩形</button>
                         <button class="gen-btn" id="genCircleBtn" type="button">◯ 添加自定义圆形</button>
                     </div>
+                </div>
+
+                <div class="lib-group">
+                    <div class="lib-group__label">画板工具</div>
+                    <button class="upload-btn upload-btn--ghost" id="rulerBtn" type="button">📏 测距工具</button>
+                    <button class="upload-btn upload-btn--ghost snap-btn on" id="snapBtn" type="button">🧲 网格吸附：开</button>
                 </div>
 
                 <div class="acc open">
@@ -623,6 +694,11 @@
         let topZ = 10;          // layer counter — click-to-front
         let editingItem = null;
         let pendingRot = 0;
+        let lastTap = null;     // 触屏双击检测：{ item, time }
+
+        // 网格智能吸附：拖拽时 left/top 按 SNAP_STEP 取整，家具/隔断严丝合缝
+        let isSnapEnabled = true;
+        const SNAP_STEP = 10; // px
 
         // Floor plan transform state
         const fp = { loaded: false, locked: false, scale: 1, rot: 0 };
@@ -654,6 +730,8 @@
         const editColor = document.getElementById('editColor');
         const editRotBtn = document.getElementById('editRotBtn');
         const editRotVal = document.getElementById('editRotVal');
+        const rulerBtn = document.getElementById('rulerBtn');
+        const snapBtn = document.getElementById('snapBtn');
 
         // ============================================================
         // 3) Helpers
@@ -678,6 +756,7 @@
         function boardReady() { return !fp.loaded || fp.locked; }
         function guardInteraction() {
             if (calib.active) return false;
+            if (ruler.active) { showToast('⚠️ 测距模式中：Esc 或再次点击测距按钮退出'); return false; }
             if (!boardReady()) { showToast('⚠️ 请先点击右上角 🔒 锁定底图'); return false; }
             return true;
         }
@@ -807,6 +886,19 @@
                             startL: el.offsetLeft, startT: el.offsetTop
                         };
                     });
+                    // 触屏手柄缩放：与 mousedown 等价的单指通路
+                    hd.addEventListener('touchstart', (e) => {
+                        if (!guardInteraction() || e.touches.length !== 1) return;
+                        const t = e.touches[0];
+                        e.preventDefault();
+                        e.stopPropagation(); // don't start a move-drag
+                        resizeCtx = {
+                            item, dir,
+                            startX: t.clientX, startY: t.clientY,
+                            startW: el.offsetWidth, startH: el.offsetHeight,
+                            startL: el.offsetLeft, startT: el.offsetTop
+                        };
+                    }, { passive: false });
                     el.appendChild(hd);
                 });
             }
@@ -850,7 +942,7 @@
         function bindItemEvents(item) {
             item.el.addEventListener('mousedown', (e) => {
                 if (e.button !== 0 || e.target.classList.contains('rz')) return;
-                if (calib.active || !boardReady()) return;
+                if (calib.active || ruler.active || !boardReady()) return;
                 e.preventDefault();
                 selectItem(item);
                 const rect = canvas.getBoundingClientRect();
@@ -861,18 +953,48 @@
                 };
             });
 
+            // 触屏拖拽：与 mousedown 等价的单指通路
+            item.el.addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('rz')) return;
+                if (calib.active || ruler.active || !boardReady()) return;
+                if (e.touches.length !== 1) return;
+                const t = e.touches[0];
+                e.preventDefault(); // 阻止页面滚动/下拉刷新，并抑制合成鼠标事件
+                selectItem(item);
+                const rect = canvas.getBoundingClientRect();
+                dragCtx = {
+                    item, moved: false,
+                    offsetX: t.clientX - rect.left - item.el.offsetLeft,
+                    offsetY: t.clientY - rect.top - item.el.offsetTop
+                };
+            }, { passive: false });
+
+            // 触屏双击检测：touchstart preventDefault 后浏览器不再合成 dblclick，
+            // 需手动补齐属性编辑入口（350ms 内两次无位移 tap）
+            item.el.addEventListener('touchend', () => {
+                if (!dragCtx || dragCtx.item !== item || dragCtx.moved) return;
+                const now = Date.now();
+                if (lastTap && lastTap.item === item && now - lastTap.time < 350) {
+                    lastTap = null;
+                    if (!calib.active && !ruler.active && boardReady()) openEditor(item);
+                } else {
+                    lastTap = { item, time: now };
+                }
+            });
+
             item.el.addEventListener('dblclick', () => {
-                if (calib.active || !boardReady()) return;
+                if (calib.active || ruler.active || !boardReady()) return;
                 openEditor(item);
             });
         }
 
-        document.addEventListener('mousemove', (e) => {
+        // 鼠标 / 触控共用的移动管线：只依赖 clientX/Y，与事件来源解耦
+        function handlePointerMove(clientX, clientY) {
             // -- Handle resize takes precedence over move --
             if (resizeCtx) {
                 const { item, dir, startX, startY, startW, startH, startL, startT } = resizeCtx;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
+                const dx = clientX - startX;
+                const dy = clientY - startY;
                 const MIN = 24;
                 let w = startW, h = startH, l = startL, t = startT;
 
@@ -899,8 +1021,8 @@
             const w = item.el.offsetWidth;
             const h = item.el.offsetHeight;
 
-            let x = e.clientX - rect.left - offsetX;
-            let y = e.clientY - rect.top - offsetY;
+            let x = clientX - rect.left - offsetX;
+            let y = clientY - rect.top - offsetY;
 
             // Loose clamp: edges may be crossed (triggers boundary alarm)
             // but at least 20px stays visible for grabbing back.
@@ -908,17 +1030,38 @@
             x = clamp(x, -w + MIN_VISIBLE, rect.width - MIN_VISIBLE);
             y = clamp(y, -h + MIN_VISIBLE, rect.height - MIN_VISIBLE);
 
+            // 网格吸附：10px 步进取整后重新钳制，防止吸附把坐标顶出安全边界
+            if (isSnapEnabled) {
+                x = clamp(Math.round(x / SNAP_STEP) * SNAP_STEP, -w + MIN_VISIBLE, rect.width - MIN_VISIBLE);
+                y = clamp(Math.round(y / SNAP_STEP) * SNAP_STEP, -h + MIN_VISIBLE, rect.height - MIN_VISIBLE);
+            }
+
             item.el.style.left = x + 'px';
             item.el.style.top = y + 'px';
 
+            dragCtx.moved = true; // 触屏双击判定：发生过位移则不算 tap
             if (item.ringEl) syncRing(item);
             runCollisionChecks();
-        });
+        }
 
-        document.addEventListener('mouseup', () => {
+        function endPointerDrag() {
             if (resizeCtx) { resizeCtx = null; runCollisionChecks(); }
             if (dragCtx) { dragCtx = null; runCollisionChecks(); }
-        });
+        }
+
+        document.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+        document.addEventListener('mouseup', endPointerDrag);
+
+        // 触控管线：document 级 touchmove 默认 passive（Chrome 56+），
+        // 必须显式 passive:false 才能让 preventDefault 生效，拦截页面滚动与下拉刷新
+        document.addEventListener('touchmove', (e) => {
+            if (!dragCtx && !resizeCtx) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            if (t) handlePointerMove(t.clientX, t.clientY);
+        }, { passive: false });
+        document.addEventListener('touchend', endPointerDrag);
+        document.addEventListener('touchcancel', endPointerDrag);
 
         // ============================================================
         // 8) Collision engine — soft items may overlap; hard/appliance may not
@@ -1014,6 +1157,7 @@
                 fpToolbar.classList.add('visible');
                 recalibBtn.hidden = true;
                 cancelCalibration();
+                exitRuler();
                 showAdjustBanner();
                 refreshBoard();
             };
@@ -1052,6 +1196,7 @@
                 fp.locked = false;
                 setLockUI(false);
                 cancelCalibration();
+                exitRuler(); // 解锁后测距结果就不可信了，一并清除
                 showAdjustBanner();
                 showToast('底图已解锁：调整后请重新锁定并标定比例尺');
             }
@@ -1066,6 +1211,7 @@
 
         function startCalibration() {
             if (fp.loaded && !fp.locked) { showToast('⚠️ 请先锁定底图再标定'); return; }
+            exitRuler(); // 与测距模式互斥
             cancelCalibration();
             calib.active = true;
             canvas.classList.add('calibrating');
@@ -1079,19 +1225,14 @@
             ['dotA', 'dotB', 'line'].forEach(k => {
                 if (calib[k]) { calib[k].remove(); calib[k] = null; }
             });
+            if (typeof destroyAim === 'function') destroyAim(); // 退出标定时清理残留准星
             canvas.classList.remove('calibrating');
             calibBanner.hidden = true;
         }
 
-        canvas.addEventListener('click', (e) => {
-            if (!calib.active) return;
-            // 只响应画板空白区域的点击：工具栏按钮（如“锁定底图”）的点击会冒泡到此处，
-            // 若不过滤会被误记为标点 A
-            if (e.target !== canvas) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
+        // 标点逻辑抽离：核心函数接收画板坐标（准星直接复用），
+        // 鼠标 click 包装层负责 client → 画板坐标换算
+        function registerCalibPointAt(x, y) {
             if (!calib.pointA) {
                 calib.pointA = { x, y };
                 calib.dotA = makeCalibDot(x, y);
@@ -1104,6 +1245,19 @@
                 drawCalibLine(calib.line, calib.pointA, { x, y });
                 finishCalibration(distPx);
             }
+        }
+
+        function registerCalibPoint(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            registerCalibPointAt(clientX - rect.left, clientY - rect.top);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (!calib.active) return;
+            // 只响应画板空白区域的点击：工具栏按钮（如“锁定底图”）的点击会冒泡到此处，
+            // 若不过滤会被误记为标点 A
+            if (e.target !== canvas) return;
+            registerCalibPoint(e.clientX, e.clientY);
         });
 
         canvas.addEventListener('mousemove', (e) => {
@@ -1115,9 +1269,202 @@
             });
         });
 
+        // ============================================================
+        // 11.5) 触控手势：双指捏合缩放底图 + 标定“偏移准星”
+        // ============================================================
+        const pinch = { active: false, startDist: 0, startScale: 1 };
+
+        // —— 移动端标定：拖拽瞄准、松手确认 ——
+        // 准星始终悬浮在手指上方 AIM_OFFSET 像素处，解决胖手指遮挡落点的问题
+        const AIM_OFFSET = 80;
+        let aim = null; // { crossEl, linkEl, x, y } — x/y 为准星当前画板坐标
+
+        function updateAim(t) {
+            const rect = canvas.getBoundingClientRect();
+            const fx = clamp(t.clientX - rect.left, 0, rect.width);   // 手指触点
+            const fy = clamp(t.clientY - rect.top, 0, rect.height);
+            aim.x = fx;                                               // 准星：X 同手指
+            aim.y = clamp(fy - AIM_OFFSET, 0, rect.height);           // Y 上移 80px（画板内钳制）
+            aim.crossEl.style.left = aim.x + 'px';
+            aim.crossEl.style.top = aim.y + 'px';
+            // 触点 → 准星的垂直连线
+            aim.linkEl.style.left = aim.x + 'px';
+            aim.linkEl.style.top = aim.y + 'px';
+            aim.linkEl.style.height = Math.max(0, fy - aim.y) + 'px';
+            // 点 A 已定时，预览线实时追随准星而非手指（标定虚线 / 测距实线分别路由）
+            if (calib.active && calib.pointA && calib.line) {
+                drawCalibLine(calib.line, calib.pointA, { x: aim.x, y: aim.y });
+            } else if (ruler.active && ruler.pointA && !ruler.dotB && ruler.line) {
+                drawRulerTo(aim.x, aim.y);
+            }
+        }
+
+        function destroyAim() {
+            if (!aim) return;
+            aim.crossEl.remove();
+            aim.linkEl.remove();
+            aim = null;
+        }
+
+        function touchDist(e) {
+            const a = e.touches[0], b = e.touches[1];
+            return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        }
+
+        canvas.addEventListener('touchstart', (e) => {
+            // 双指捏合：仅在底图未锁定时允许（与缩放按钮的禁用语义一致）
+            if (e.touches.length === 2) {
+                destroyAim(); // 第二指落下则放弃本次瞄准，防误打点
+                if (fp.loaded && !fp.locked) {
+                    e.preventDefault();
+                    pinch.active = true;
+                    pinch.startDist = touchDist(e);
+                    pinch.startScale = fp.scale;
+                }
+                return;
+            }
+            // 单指标定/测距：按下即生成偏移准星，进入拖拽瞄准态
+            if ((calib.active || ruler.active) && e.target === canvas) {
+                e.preventDefault(); // 阻止滚动/下拉刷新，且不合成 click，与鼠标通路互斥
+                const cross = document.createElement('div');
+                cross.className = 'calib-crosshair';
+                const link = document.createElement('div');
+                link.className = 'calib-finger-link';
+                canvas.appendChild(link);
+                canvas.appendChild(cross);
+                aim = { crossEl: cross, linkEl: link, x: 0, y: 0 };
+                updateAim(e.touches[0]);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (pinch.active && e.touches.length === 2) {
+                e.preventDefault(); // 拦截浏览器页面级缩放
+                const ratio = touchDist(e) / pinch.startDist;
+                fp.scale = clamp(+(pinch.startScale * ratio).toFixed(2), 0.2, 5);
+                applyFpTransform();
+            } else if (calib.active || ruler.active) {
+                e.preventDefault(); // 标定/测距中禁止滚动页面
+                if (aim && e.touches[0]) updateAim(e.touches[0]); // 实时瞄准
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) pinch.active = false;
+            // 松手确认：以准星坐标（非手指坐标）作为落点，按模式分发
+            if ((calib.active || ruler.active) && aim) {
+                const x = aim.x, y = aim.y;
+                destroyAim();
+                if (calib.active) registerCalibPointAt(x, y);
+                else registerRulerPointAt(x, y);
+            }
+        });
+
+        canvas.addEventListener('touchcancel', () => {
+            pinch.active = false;
+            destroyAim(); // 系统手势打断时丢弃本次瞄准，不落点
+        });
+
+        // ============================================================
+        // 11.7) 动态测距卷尺 — 临时图层，只读 PIXEL_RATIO，不改比例
+        // ============================================================
+        const ruler = { active: false, pointA: null, dotA: null, dotB: null, line: null, label: null };
+
+        rulerBtn.addEventListener('click', () => {
+            if (ruler.active) { exitRuler(); return; } // 再次点击 = 清除并退出
+            if (fp.loaded && !fp.locked) { showToast('⚠️ 请先锁定底图再测距'); return; }
+            cancelCalibration(); // 与标定模式互斥
+            ruler.active = true;
+            canvas.classList.add('measuring');
+            rulerBtn.classList.add('tool-btn--active');
+            rulerBtn.textContent = '📏 退出测距 (Esc)';
+            calibBanner.hidden = false;
+            calibBanner.textContent = '📏 测距 · 点击起点';
+        });
+
+        function exitRuler() {
+            ruler.active = false;
+            clearRulerDrawing();
+            destroyAim();
+            canvas.classList.remove('measuring');
+            rulerBtn.classList.remove('tool-btn--active');
+            rulerBtn.textContent = '📏 测距工具';
+            if (!calib.active) calibBanner.hidden = true;
+        }
+
+        function clearRulerDrawing() {
+            ruler.pointA = null;
+            ['dotA', 'dotB', 'line', 'label'].forEach(k => {
+                if (ruler[k]) { ruler[k].remove(); ruler[k] = null; }
+            });
+        }
+
+        function registerRulerPointAt(x, y) {
+            if (!ruler.pointA || ruler.dotB) {
+                // 起点（或开启新一段测量：先清掉上一段临时图层）
+                clearRulerDrawing();
+                ruler.pointA = { x, y };
+                ruler.dotA = makeRulerDot(x, y);
+                ruler.line = document.createElement('div');
+                ruler.line.className = 'ruler-line';
+                canvas.appendChild(ruler.line);
+                ruler.label = document.createElement('div');
+                ruler.label.className = 'ruler-label';
+                canvas.appendChild(ruler.label);
+                drawRulerTo(x, y);
+                calibBanner.textContent = '📏 测距 · 点击终点完成测量';
+            } else {
+                if (Math.hypot(x - ruler.pointA.x, y - ruler.pointA.y) < 5) return;
+                ruler.dotB = makeRulerDot(x, y);
+                drawRulerTo(x, y);
+                calibBanner.textContent = '📏 测距完成 · 继续点击可测下一段（Esc 退出并清除）';
+            }
+        }
+
+        // 复用标定的旋转线段几何算法，叠加物理距离悬浮标签（中点锁定）
+        function drawRulerTo(x, y) {
+            drawCalibLine(ruler.line, ruler.pointA, { x, y });
+            const distPx = Math.hypot(x - ruler.pointA.x, y - ruler.pointA.y);
+            ruler.label.style.left = (ruler.pointA.x + x) / 2 + 'px';
+            ruler.label.style.top = (ruler.pointA.y + y) / 2 + 'px';
+            ruler.label.textContent = Math.round(distPx * window.PIXEL_RATIO) + 'mm';
+        }
+
+        function makeRulerDot(x, y) {
+            const d = document.createElement('div');
+            d.className = 'ruler-dot';
+            d.style.left = x + 'px';
+            d.style.top = y + 'px';
+            canvas.appendChild(d);
+            return d;
+        }
+
+        // PC 端：点击打点 + 移动实时预览（与标定同构，各自独立监听）
+        canvas.addEventListener('click', (e) => {
+            if (!ruler.active || e.target !== canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            registerRulerPointAt(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!ruler.active || !ruler.pointA || ruler.dotB) return;
+            const rect = canvas.getBoundingClientRect();
+            drawRulerTo(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        // ============================================================
+        // 11.8) 网格智能吸附开关
+        // ============================================================
+        snapBtn.addEventListener('click', () => {
+            isSnapEnabled = !isSnapEnabled;
+            snapBtn.classList.toggle('on', isSnapEnabled);
+            snapBtn.textContent = isSnapEnabled ? '🧲 网格吸附：开' : '🧲 网格吸附：关';
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (calib.active) cancelCalibration();
+                else if (ruler.active) exitRuler();
                 else if (!editMask.hidden) closeEditor();
                 else deselect();
             }

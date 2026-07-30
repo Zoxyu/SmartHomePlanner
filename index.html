@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智装管家 · 全屋装修决策中枢</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
+    <style>
+        :root {
+            --bg-deep: #0f172a;
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --accent: #38bdf8;
+            --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            display: flex; background: var(--bg-deep); color: var(--text-light);
+            overflow: hidden; -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+            width: 252px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            padding: 24px 16px 18px;
+            background: linear-gradient(180deg, #0f172a 0%, #16233d 100%);
+            border-right: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; cursor: pointer; }
+        .logo__mark {
+            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+            background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(129,140,248,0.22));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .logo__text { min-width: 0; }
+        .logo__title { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+        .logo__badge {
+            display: inline-block; font-size: 0.56rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+            margin-top: 4px;
+        }
+
+        .nav { margin-top: 28px; display: flex; flex-direction: column; gap: 6px; }
+        .nav__label {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.14em; color: #64748b; padding: 0 12px; margin-bottom: 6px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 12px;
+            color: var(--text-dim); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; user-select: none; border: 1px solid transparent;
+            transition: var(--transition); text-align: left; width: 100%;
+            background: none; font-family: inherit;
+        }
+        .nav-item:hover { color: var(--text-light); background: rgba(148, 163, 184, 0.08); }
+        .nav-item.active {
+            color: var(--accent); background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.12);
+        }
+        .nav-item__icon {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+            background: rgba(148, 163, 184, 0.1); transition: var(--transition);
+        }
+        .nav-item.active .nav-item__icon { background: rgba(56, 189, 248, 0.18); }
+        .nav-item__meta { min-width: 0; }
+        .nav-item__name { line-height: 1.2; }
+        .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: #64748b; margin-top: 3px; white-space: nowrap; }
+        .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
+
+        .sidebar__footer {
+            margin-top: auto; padding: 14px 12px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 0.66rem; color: #64748b; line-height: 1.8;
+        }
+
+        /* ---------- Content ---------- */
+        .content { flex: 1; position: relative; background: #f4f7fb; }
+        #app-frame {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            border: none; background: #f4f7fb;
+        }
+
+        /* ---------- Mobile: sidebar → top bar ---------- */
+        @media (max-width: 860px) {
+            body { flex-direction: column; }
+            .sidebar {
+                width: 100%; flex-direction: row; align-items: center;
+                padding: 10px 12px; gap: 10px;
+                border-right: none; border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            }
+            .logo { padding: 0; flex-shrink: 0; }
+            .logo__badge, .logo__title, .nav__label, .nav-item__desc, .sidebar__footer { display: none; }
+            .nav { flex-direction: row; margin: 0 0 0 auto; gap: 4px; overflow-x: auto; }
+            .nav-item { padding: 8px 10px; font-size: 0.76rem; gap: 6px; flex-shrink: 0; }
+            .nav-item__icon { width: 26px; height: 26px; font-size: 0.85rem; border-radius: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== Left: dark sidebar ===== -->
+    <aside class="sidebar">
+        <div class="logo" id="logoHome" title="返回工作台首页">
+            <span class="logo__mark">🏠</span>
+            <span class="logo__text">
+                <span class="logo__title">AI 智装管家</span><br>
+                <span class="logo__badge">SmartHome Suite</span>
+            </span>
+        </div>
+
+        <nav class="nav">
+            <div class="nav__label">导航</div>
+            <button class="nav-item" type="button" data-route="welcome">
+                <span class="nav-item__icon">🏠</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">首页 / 欢迎页</div>
+                    <div class="nav-item__desc">工作台总览 · 模块入口</div>
+                </span>
+            </button>
+            <div class="nav__label" style="margin-top:14px;">核心模块</div>
+            <button class="nav-item" type="button" data-route="calculator">
+                <span class="nav-item__icon">🧮</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">算料管家</div>
+                    <div class="nav-item__desc">墙漆地砖 · 傻瓜式防坑算料</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="network">
+                <span class="nav-item__icon">🔌</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">弱电预演</div>
+                    <div class="nav-item__desc">网络拓扑 · 强电空开推演</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="sandbox">
+                <span class="nav-item__icon">🧊</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">2D 空间沙盒</div>
+                    <div class="nav-item__desc">户型标定 · 布局干涉预演</div>
+                </span>
+            </button>
+        </nav>
+
+        <div class="sidebar__footer">
+            ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
+            📐 SmartHome Planner · Phase 5
+        </div>
+    </aside>
+
+    <!-- ===== Right: content ===== -->
+    <main class="content">
+        <iframe id="app-frame" src="welcome.html" title="模块内容区"></iframe>
+    </main>
+
+    <script>
+        // ============================================================
+        // 路由映射表：每个模块对应 iframe 源、页面标题与 Emoji 图标
+        // ============================================================
+        const ROUTES = {
+            welcome:    { src: 'welcome.html',          title: 'AI 智装管家 · 全屋装修决策中枢', icon: '🏠' },
+            calculator: { src: 'smart_calculator.html', title: '算料管家 - AI智装',              icon: '🧮' },
+            network:    { src: 'network_planner.html',  title: '弱电预演 - AI智装',              icon: '🔌' },
+            sandbox:    { src: '2d_sandbox.html',       title: '空间沙盒 - AI智装',              icon: '🧊' }
+        };
+
+        const frame = document.getElementById('app-frame');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        // 动态 Favicon：用 SVG Data URI 把 Emoji 渲染成标签页图标
+        function setFavicon(emoji) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
+
+        // 核心路由切换：改 iframe.src + 高亮当前按钮 + 同步标题与图标
+        function navigate(key) {
+            const route = ROUTES[key];
+            if (!route) return;
+            if (frame.getAttribute('src') !== route.src) frame.src = route.src;
+            navItems.forEach(n => n.classList.toggle('active', n.dataset.route === key));
+            document.title = route.title;
+            setFavicon(route.icon);
+        }
+
+        navItems.forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
+
+        // 点击 Logo 返回欢迎页（清除模块高亮）
+        document.getElementById('logoHome').addEventListener('click', () => navigate('welcome'));
+
+        // 接收欢迎页引导卡片的跳转请求
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.navTo && ROUTES[e.data.navTo]) navigate(e.data.navTo);
+        });
+
+        // 首屏：欢迎页（iframe 已内联 src，这里补齐标题与图标状态）
+        navigate('welcome');
+    </script>
+</body>
+</html>

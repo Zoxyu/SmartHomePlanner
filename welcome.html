@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用 AI 智装管家</title>
+    <style>
+        :root {
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --text-silver: #cbd5e1;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { min-height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #070b16;
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 48px 24px; -webkit-font-smoothing: antialiased;
+            position: relative; overflow-x: hidden;
+        }
+
+        /* ========== 1) 动态弥散流光背景 (Aura Mesh Gradient) ========== */
+        .aura {
+            position: fixed; inset: 0; overflow: hidden;
+            z-index: 0; pointer-events: none;
+        }
+        .aura__blob {
+            position: absolute; border-radius: 50%;
+            filter: blur(120px) !important;
+            will-change: transform;
+        }
+        .aura__blob--1 {
+            width: 620px; height: 620px; top: -140px; left: -120px;
+            background: #ec4899; opacity: 0.30;   /* 赛博粉 */
+            animation: drift1 10s ease-in-out infinite;
+        }
+        .aura__blob--2 {
+            width: 560px; height: 560px; top: 20%; right: -160px;
+            background: #06b6d4; opacity: 0.28;   /* 亮青 */
+            animation: drift2 8s ease-in-out infinite;
+        }
+        .aura__blob--3 {
+            width: 600px; height: 600px; bottom: -180px; left: 20%;
+            background: #8b5cf6; opacity: 0.26;   /* 深邃紫 */
+            animation: drift3 12s ease-in-out infinite;
+        }
+        .aura__blob--4 {
+            width: 480px; height: 480px; top: 28%; left: 34%;
+            background: #3b82f6; opacity: 0.24;   /* 亮蓝 */
+            animation: drift4 14s ease-in-out infinite;
+        }
+        @keyframes drift1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(190px, 150px) scale(1.35); }
+        }
+        @keyframes drift2 {
+            0%, 100% { transform: translate(0, 0) scale(1.1); }
+            50% { transform: translate(-200px, 130px) scale(0.8); }
+        }
+        @keyframes drift3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(170px, -180px) scale(1.35); }
+        }
+        @keyframes drift4 {
+            0%, 100% { transform: translate(0, 0) scale(0.85); }
+            50% { transform: translate(-180px, -120px) scale(1.25); }
+        }
+
+        /* ========== Layout ========== */
+        .welcome { position: relative; z-index: 1; max-width: 980px; width: 100%; text-align: center; }
+
+        /* ========== 2) 毛玻璃水晶焦点 (Glassmorphism hero) ========== */
+        .hero-focal {
+            position: relative;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px) saturate(140%);
+            -webkit-backdrop-filter: blur(16px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 26px;
+            padding: 48px 40px 44px;
+            margin-bottom: 40px;
+            box-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.06) inset,
+                0 30px 70px rgba(2, 6, 23, 0.55),
+                0 0 40px rgba(56, 189, 248, 0.06);
+        }
+        /* 顶部一道极细高光，强化水晶悬浮感 */
+        .hero-focal::before {
+            content: ""; position: absolute; inset: 0; border-radius: 26px;
+            padding: 1px; pointer-events: none;
+            background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0) 40%);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor; mask-composite: exclude;
+        }
+
+        .hero-focal__badge {
+            display: inline-block; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent);
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px; border-radius: 999px; margin-bottom: 26px;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+        }
+        .hero-focal__title {
+            font-size: clamp(1.7rem, 4.8vw, 2.8rem); font-weight: 800;
+            letter-spacing: -0.02em; line-height: 1.32; margin-bottom: 18px;
+        }
+        .hero-focal__title .hl {
+            background: linear-gradient(120deg, #38bdf8 0%, #818cf8 48%, #22d3ee 100%);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 22px rgba(56, 189, 248, 0.4));
+        }
+        .hero-focal__sub {
+            font-size: 1.02rem; color: var(--text-silver); line-height: 1.9;
+            max-width: 640px; margin: 0 auto;
+        }
+
+        /* ========== 3) 功能卡片 ========== */
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+
+        .card {
+            position: relative; text-align: left; cursor: pointer; user-select: none;
+            background: rgba(23, 32, 50, 0.55);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 18px; padding: 24px 22px;
+            transition: var(--transition);
+        }
+        /* 悬停：上浮 + 柔和主题色边框流光 */
+        .card:hover { transform: translateY(-6px); }
+        .card--calc:hover {
+            border-color: rgba(56, 189, 248, 0.55);
+            box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(56, 189, 248, 0.28);
+        }
+        .card--net:hover {
+            border-color: rgba(20, 184, 166, 0.55);
+            box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(20, 184, 166, 0.28);
+        }
+        .card--box:hover {
+            border-color: rgba(168, 85, 247, 0.55);
+            box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(168, 85, 247, 0.28);
+        }
+
+        .card__icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; margin-bottom: 16px;
+            background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+        .card--net .card__icon { background: rgba(20, 184, 166, 0.12); border-color: rgba(20, 184, 166, 0.3); }
+        .card--box .card__icon { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.3); }
+        .card__name { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
+        .card__desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
+        .card__stat {
+            display: flex; align-items: baseline; gap: 6px;
+            padding-top: 14px; border-top: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        .card__stat-num { font-size: 1.5rem; font-weight: 900; color: var(--accent); letter-spacing: -0.02em; }
+        .card--net .card__stat-num { color: #2dd4bf; }
+        .card--box .card__stat-num { color: #c084fc; }
+        .card__stat-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; }
+        .card__cta { font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-top: 14px; }
+        .card--net .card__cta { color: #2dd4bf; }
+        .card--box .card__cta { color: #c084fc; }
+
+        .welcome__foot { margin-top: 40px; font-size: 0.72rem; color: #64748b; letter-spacing: 0.04em; }
+    </style>
+</head>
+<body>
+    <!-- 动态弥散流光背景层 -->
+    <div class="aura" aria-hidden="true">
+        <div class="aura__blob aura__blob--1"></div>
+        <div class="aura__blob aura__blob--2"></div>
+        <div class="aura__blob aura__blob--3"></div>
+        <div class="aura__blob aura__blob--4"></div>
+    </div>
+
+    <main class="welcome">
+        <!-- 毛玻璃水晶焦点 -->
+        <div class="hero-focal">
+            <span class="hero-focal__badge">SmartHome Planner Suite · Phase 5</span>
+            <h1 class="hero-focal__title">
+                欢迎使用 <span class="hl">AI 智装管家</span><br>您的全屋装修决策中枢
+            </h1>
+            <p class="hero-focal__sub">
+                从墙漆地砖的精算防坑，到全屋弱电拓扑推演，再到 2D 空间干涉预演——
+                一站式把装修里最容易踩坑的三件事，交给数据说话。选择下方模块，即刻开始。
+            </p>
+        </div>
+
+        <div class="cards">
+            <div class="card card--calc" data-route="calculator">
+                <div class="card__icon">🧮</div>
+                <div class="card__name">算料管家</div>
+                <div class="card__desc">逐间录入尺寸，自动汇总墙漆桶数与地砖片数，智能扣除门窗面积。</div>
+                <div class="card__stat">
+                    <span class="card__stat-num">10</span>
+                    <span class="card__stat-label">房间并行核算上限</span>
+                </div>
+                <div class="card__cta">进入模块 →</div>
+            </div>
+
+            <div class="card card--net" data-route="network">
+                <div class="card__icon">🔌</div>
+                <div class="card__name">弱电预演</div>
+                <div class="card__desc">点选智能设备，一键推演网络拓扑、PoE 交换机口数与强电空开排布。</div>
+                <div class="card__stat">
+                    <span class="card__stat-num">3</span>
+                    <span class="card__stat-label">维度实时联动推演</span>
+                </div>
+                <div class="card__cta">进入模块 →</div>
+            </div>
+
+            <div class="card card--box" data-route="sandbox">
+                <div class="card__icon">🧊</div>
+                <div class="card__name">2D 空间沙盒</div>
+                <div class="card__desc">上传户型图两点标定比例尺，按真实毫米拖拽家具，实时碰撞与信号预演。</div>
+                <div class="card__stat">
+                    <span class="card__stat-num">1:1</span>
+                    <span class="card__stat-label">物理尺寸精准还原</span>
+                </div>
+                <div class="card__cta">进入模块 →</div>
+            </div>
+        </div>
+
+        <p class="welcome__foot">⚙️ 纯原生 HTML / CSS / JS · 零第三方依赖 · 数据仅供装修决策参考</p>
+    </main>
+
+    <script>
+        // 独立加载时动态生成 🏠 Favicon（嵌入 index.html 时标签页图标由外层控制）
+        (function setHomeFavicon() {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏠</text></svg>`;
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+            link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        })();
+
+        // 引导卡片：通知父级中控台切换到对应模块（同源 postMessage）
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', () => {
+                const route = card.dataset.route;
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ navTo: route }, '*');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

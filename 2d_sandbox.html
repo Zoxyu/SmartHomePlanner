@@ -33,6 +33,24 @@
         }
         .container { max-width: 1400px; margin: 0 auto; }
 
+        /* 打印专属页眉：屏幕浏览时隐藏，仅图纸横向打印时显示 */
+        .print-only-header { display: none; }
+
+        /* 全局悬浮防伪水印（屏幕与打印双端生效） */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            /* 利用 SVG Data URI 生成 -45度 浅灰色水印 */
+            background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg transform='translate(200,200) rotate(-45)' opacity='0.08'%3E%3Ctext x='0' y='0' font-family='sans-serif' font-size='22' font-weight='800' fill='%2364748b' text-anchor='middle' alignment-baseline='middle'%3EAI 智装管家 · 专属推演方案%3C/text%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-position: center center;
+            z-index: 9999; /* 强制置于所有 UI 元素之上 */
+            pointer-events: none; /* 核心：绝不阻挡任何鼠标点击和触摸事件 */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
         /* ---------- Header ---------- */
         .brand { text-align: center; margin-bottom: 24px; }
         .brand__eyebrow {
@@ -453,14 +471,149 @@
         .m-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); color: var(--danger); }
         .m-btn--danger:hover { background: var(--danger); color: #fff; }
 
+        /* ---------- Size report modal ---------- */
+        .modal--report {
+            width: 760px; max-width: 92vw; max-height: 86vh;
+            display: flex; flex-direction: column;
+        }
+        .report-head {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .report-meta { display: flex; gap: 14px; font-size: 0.7rem; color: var(--text-dim); font-weight: 600; }
+        .report-body { overflow-y: auto; flex: 1; padding-right: 4px; }
+        .report-section { margin-bottom: 20px; }
+        .report-section:last-child { margin-bottom: 4px; }
+        .report-section__title {
+            font-size: 0.85rem; font-weight: 800; color: var(--accent);
+            margin-bottom: 10px; padding-bottom: 7px;
+            border-bottom: 1px dotted rgba(148, 163, 184, 0.35);
+        }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .report-table th, .report-table td {
+            text-align: left; padding: 9px 10px; vertical-align: top;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16); line-height: 1.5;
+        }
+        .report-table th { color: var(--text-dim); font-weight: 700; white-space: nowrap; }
+        .report-table td { color: var(--text-light); }
+        .report-table td:first-child, .report-table th:first-child { width: 34px; color: var(--text-dim); }
+        .report-table .rep-name { font-weight: 700; white-space: nowrap; }
+        .report-empty { font-size: 0.85rem; color: var(--text-dim); text-align: center; padding: 24px 0; }
+
         /* ---------- Footer hint ---------- */
         .board-footer {
             margin-top: 10px; font-size: 0.72rem; color: var(--text-dim);
             display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
         }
+
+        /* ---------- Print / PDF export：双轨导出（图纸横向 / 报告纵向） ---------- */
+        @media print {
+            /* 命名页：报告纵向 A4（默认），图纸横向 A4 */
+            @page { size: A4 portrait; margin: 12mm; }
+            @page canvasPage { size: A4 landscape; margin: 8mm; }
+
+            body {
+                background-color: #FAFAFA !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: #3d3d3d !important;
+                padding: 0 !important;
+            }
+            *, *::before, *::after {
+                animation: none !important; transition: none !important;
+                box-shadow: none !important; text-shadow: none !important;
+            }
+
+            /* ===== 图纸模式：横向全屏画板，隐藏报告与左侧菜单 ===== */
+            body.print-mode-canvas { page: canvasPage; min-height: auto !important; }
+            body.print-mode-canvas .library,
+            body.print-mode-canvas .board-status,
+            body.print-mode-canvas .board-footer,
+            body.print-mode-canvas .brand,
+            body.print-mode-canvas .fp-toolbar,
+            body.print-mode-canvas .calib-banner,
+            body.print-mode-canvas .toast,
+            body.print-mode-canvas .canvas-hint,
+            body.print-mode-canvas .modal-mask { display: none !important; }
+            body.print-mode-canvas .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            body.print-mode-canvas .sandbox {
+                display: block !important;
+            }
+            body.print-mode-canvas .board-wrap {
+                background: transparent !important; border: none !important;
+                padding: 0 !important; margin: 6mm auto 0 auto !important;
+            }
+            /* 图纸专属页眉：横向打印时显示，黑色实线托底提升正式感 */
+            body.print-mode-canvas .print-only-header {
+                display: flex !important;
+                justify-content: space-between; align-items: flex-end;
+                padding-bottom: 4px; margin-bottom: 4px;
+                border-bottom: 2px solid #111111;
+                color: #222222; font-weight: 800;
+            }
+            body.print-mode-canvas .print-only-header__title { font-size: 1rem; letter-spacing: 0.02em; }
+            body.print-mode-canvas .print-only-header__date { font-size: 0.78rem; font-weight: 600; color: #444444; }
+
+            /* 画板背景色透明，让底层穿透水印完美透射；
+               打印时由 JS 对整块画板施加等比 transform:scale（连同内部图元一起缩放），
+               已 100% 保证单页容纳，故不再使用 break-inside 以免触发临界换页 */
+            body.print-mode-canvas .grid-canvas {
+                background-color: transparent !important;
+                border: 1px solid #c8c8c8 !important;
+                margin: 0 !important;
+                transform-origin: top left;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+
+            /* ===== 报告模式：纵向文字报告，隐藏沙盒主体 ===== */
+            body.print-mode-report .container,
+            body.print-mode-report .board-footer,
+            body.print-mode-report #editMask { display: none !important; }
+            /* 仅保留报告 Modal，转为常规文档流 */
+            body.print-mode-report .report-mask {
+                position: static !important; display: block !important;
+                background: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            }
+            body.print-mode-report .modal--report {
+                width: 100% !important; max-width: 100% !important; max-height: none !important;
+                background: transparent !important; border: none !important; padding: 0 !important;
+                overflow: visible !important;
+            }
+            body.print-mode-report .report-body { overflow: visible !important; }
+            body.print-mode-report .report-actions { display: none !important; }
+            body.print-mode-report .modal__title,
+            body.print-mode-report .report-section__title { color: #333333 !important; }
+            body.print-mode-report .report-section__title { border-bottom-color: #b8b8b8 !important; }
+            body.print-mode-report .report-section { break-inside: avoid; }
+            body.print-mode-report .report-meta { color: #4A4A4A !important; }
+            body.print-mode-report .report-table th { color: #555555 !important; }
+            body.print-mode-report .report-table td { color: #3d3d3d !important; }
+            body.print-mode-report .report-table td .rep-name { color: #23408e !important; }
+            body.print-mode-report .report-table th,
+            body.print-mode-report .report-table td { border-bottom-color: #d0d0d0 !important; }
+
+            /* ===== 默认（直接 Ctrl+P 无模式）：沙盒整页可读，隐藏报告 Modal ===== */
+            body:not(.print-mode-canvas):not(.print-mode-report) .report-mask { display: none !important; }
+            body:not(.print-mode-canvas):not(.print-mode-report) .library,
+            body:not(.print-mode-canvas):not(.print-mode-report) .board-wrap,
+            body:not(.print-mode-canvas):not(.print-mode-report) .lib-item,
+            body:not(.print-mode-canvas):not(.print-mode-report) .acc,
+            body:not(.print-mode-canvas):not(.print-mode-report) .lib-tip {
+                background: transparent !important; border-color: #d8d8d8 !important; color: #3d3d3d !important;
+            }
+            body:not(.print-mode-canvas):not(.print-mode-report) .brand__title,
+            body:not(.print-mode-canvas):not(.print-mode-report) .library__title,
+            body:not(.print-mode-canvas):not(.print-mode-report) .lib-item__name,
+            body:not(.print-mode-canvas):not(.print-mode-report) .acc__head { color: #333333 !important; }
+        }
     </style>
 </head>
 <body>
+    <!-- 打印专属页眉（仅图纸横向打印可见，日期由 JS 填充） -->
+    <div class="print-only-header">
+        <span class="print-only-header__title">AI 智装管家 · 全屋平面推演图纸</span>
+        <span class="print-only-header__date" id="printHeaderDate">—</span>
+    </div>
     <div class="container">
         <header class="brand">
             <span class="brand__eyebrow">Phase 4 · Layout Editor</span>
@@ -601,6 +754,8 @@
                         <span id="chipCollisionText">无干涉</span>
                     </span>
                     <button class="export-btn" id="exportBtn" type="button">🧠 导出布局数据 (JSON)</button>
+                    <button class="export-btn" id="printCanvasBtn" type="button">🖨️ 导出图纸</button>
+                    <button class="export-btn" id="reportBtn" type="button">📝 生成尺寸方案报告</button>
                 </div>
 
                 <div class="grid-canvas" id="gridCanvas">
@@ -652,6 +807,24 @@
                 <button class="m-btn m-btn--danger" id="editDeleteBtn" type="button">🗑 删除</button>
                 <button class="m-btn m-btn--ghost" id="editCancelBtn" type="button">取消</button>
                 <button class="m-btn m-btn--primary" id="editSaveBtn" type="button">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Size report modal ===== -->
+    <div class="modal-mask report-mask" id="reportMask" hidden>
+        <div class="modal modal--report">
+            <div class="report-head">
+                <h3 class="modal__title">📝 尺寸方案报告</h3>
+                <div class="report-meta">
+                    <span id="reportDate">—</span>
+                    <span>编号：<span id="reportSerial">AI-2026-0000</span></span>
+                </div>
+            </div>
+            <div class="report-body" id="reportBody"></div>
+            <div class="modal-actions report-actions">
+                <button class="m-btn m-btn--ghost" id="reportCloseBtn" type="button">关闭</button>
+                <button class="m-btn m-btn--primary" id="reportPrintBtn" type="button">🖨️ 打印/导出文字报告</button>
             </div>
         </div>
     </div>
@@ -813,7 +986,7 @@
             const y = clamp(e.clientY - rect.top - h / 2, 0, rect.height - h);
             createItem({
                 name: spec.name, cat: spec.cat, realW: spec.realW, realH: spec.realH,
-                signal: spec.signal, color: spec.color, shape: spec.shape, custom: false
+                signal: spec.signal, color: spec.color, shape: spec.shape, custom: false, type: spec.type
             }, x, y);
         });
 
@@ -828,7 +1001,7 @@
                 name: (shape === 'circle' ? '自定义圆形 ' : '自定义矩形 ') + customCount,
                 cat: 'custom', realW: 1000, realH: 1000, signal: 0,
                 color: shape === 'circle' ? '#c084fc' : '#38bdf8',
-                shape, custom: true
+                shape, custom: true, type: 'custom-' + shape
             };
             const w = renderW(opts), h = renderH(opts);
             const item = createItem(opts,
@@ -846,6 +1019,7 @@
                 id, name: opts.name, cat: opts.cat,
                 realW: opts.realW, realH: opts.realH, signal: opts.signal || 0,
                 color: opts.color, shape: opts.shape, custom: !!opts.custom,
+                type: opts.type || '',
                 rot: 0, el: null, ringEl: null
             };
             const w = renderW(item), h = renderH(item);
@@ -1603,6 +1777,7 @@
             const layout = placedItems.map(p => ({
                 id: 'item-' + p.id,
                 name: p.name,
+                type: p.type,
                 category: p.cat,
                 categoryName: CAT_LABELS[p.cat],
                 x: Math.round(p.el.offsetLeft),                                  // px, canvas-relative
@@ -1615,6 +1790,148 @@
                 'mm/px · calibrated =', calibrated);
             console.log(JSON.stringify(layout, null, 2));
             alert('布局数据已生成，可对接 AI 分析接口');
+        });
+
+        // ============================================================
+        // 14) 双轨导出：图纸（横向）/ 尺寸方案报告（纵向）
+        // ============================================================
+        const printCanvasBtn = document.getElementById('printCanvasBtn');
+        const reportBtn = document.getElementById('reportBtn');
+        const reportMask = document.getElementById('reportMask');
+        const reportBody = document.getElementById('reportBody');
+        const reportDate = document.getElementById('reportDate');
+        const reportSerial = document.getElementById('reportSerial');
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => (
+                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+            ));
+        }
+
+        // 语义化尺寸解析器：根据 cat / type 将 realW×realH 翻译为行业描述
+        function describeSize(item) {
+            const w = Math.round(item.realW);
+            const h = Math.round(item.realH);
+            const sig = Math.round(item.signal || 0);
+            if (item.type === 'door') {
+                return `门洞/开启回转半径：${w} mm`;
+            }
+            if (item.type === 'router') {
+                return `物理尺寸 ${w}×${h} mm / 信号有效覆盖半径 ${sig} mm`;
+            }
+            if (item.cat === 'appliance') {
+                return `占地 宽 ${w} mm × 深 ${h} mm （注：家电需结合机身高度，并在四周预留散热与插座空间）`;
+            }
+            if (item.cat === 'soft') {
+                return `尺寸 长 ${w} mm × 宽/深 ${h} mm`;
+            }
+            // cat === 'hard' 或 custom
+            return `投影尺寸 长 ${w} mm × 深 ${h} mm`;
+        }
+
+        // 按大类分组生成报告表格
+        function buildReport() {
+            const order = ['hard', 'soft', 'appliance', 'custom'];
+            const groups = {};
+            placedItems.forEach(p => { (groups[p.cat] = groups[p.cat] || []).push(p); });
+
+            let html = '';
+            order.forEach(cat => {
+                const list = groups[cat];
+                if (!list || !list.length) return;
+                html += `<div class="report-section">`
+                    + `<div class="report-section__title">${CAT_LABELS[cat]}（共 ${list.length} 项）</div>`
+                    + `<table class="report-table"><thead><tr>`
+                    + `<th>#</th><th>名称</th><th>尺寸方案</th><th>旋转</th></tr></thead><tbody>`;
+                list.forEach((p, i) => {
+                    html += `<tr><td>${i + 1}</td>`
+                        + `<td><span class="rep-name">${escapeHtml(p.name)}</span></td>`
+                        + `<td>${describeSize(p)}</td>`
+                        + `<td>${p.rot || 0}°</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+            });
+            reportBody.innerHTML = html || '<div class="report-empty">画板为空，暂无可报告的图元</div>';
+        }
+
+        function openReport() {
+            if (!placedItems.length) {
+                alert('画板为空：请先拖入图元再生成尺寸方案报告');
+                return;
+            }
+            buildReport();
+            const now = new Date();
+            reportDate.textContent = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            reportSerial.textContent = `AI-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+            reportMask.hidden = false;
+        }
+        function closeReport() { reportMask.hidden = true; }
+
+        reportBtn.addEventListener('click', openReport);
+        document.getElementById('reportCloseBtn').addEventListener('click', closeReport);
+        reportMask.addEventListener('click', (e) => { if (e.target === reportMask) closeReport(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !reportMask.hidden) closeReport(); });
+
+        // 打印模式隔离：切换 body class 驱动 @media print 分支，打印结束后自动复位
+        // 等比适配打印：对整块画板施加 transform:scale，连同内部绝对定位图元一起缩放，
+        // 保证整张图纸完整落在横向 A4 单页内，且不裁切任何图元
+        const boardWrap = document.querySelector('.board-wrap');
+        const PX_PER_MM = 96 / 25.4;
+
+        function fitCanvasForPrint() {
+            const cw = canvas.offsetWidth;
+            const ch = canvas.offsetHeight;
+            if (!cw || !ch) return;
+            // 横向 A4（8mm 边距）可打印区，纵向再预留页眉与顶部留白
+            const availW = (297 - 16) * PX_PER_MM;
+            const availH = (210 - 16) * PX_PER_MM - 120;
+            const s = Math.min(availW / cw, availH / ch, 1);
+            // 锁定画板为当前屏幕像素尺寸，保证图元坐标与屏显一致后再整体缩放
+            canvas.style.width = cw + 'px';
+            canvas.style.height = ch + 'px';
+            canvas.style.transformOrigin = 'top left';
+            canvas.style.transform = `scale(${s})`;
+            // 外层占位收缩到缩放后的实际尺寸，避免撑出多余高度触发分页
+            boardWrap.style.width = (cw * s) + 'px';
+            boardWrap.style.height = (ch * s) + 'px';
+            boardWrap.style.overflow = 'hidden';
+        }
+
+        function resetCanvasAfterPrint() {
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.transform = '';
+            canvas.style.transformOrigin = '';
+            boardWrap.style.width = '';
+            boardWrap.style.height = '';
+            boardWrap.style.overflow = '';
+        }
+
+        printCanvasBtn.addEventListener('click', () => {
+            if (!placedItems.length && !fp.loaded) {
+                alert('画板为空：请先上传底图或拖入图元再导出图纸');
+                return;
+            }
+            deselect();
+            const now = new Date();
+            document.getElementById('printHeaderDate').textContent =
+                `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            document.body.className = 'print-mode-canvas';
+            window.print();
+        });
+
+        document.getElementById('reportPrintBtn').addEventListener('click', () => {
+            document.body.className = 'print-mode-report';
+            window.print();
+        });
+
+        // 打印前：图纸模式下施加等比缩放；打印后：还原并清除模式 class
+        window.addEventListener('beforeprint', () => {
+            if (document.body.classList.contains('print-mode-canvas')) fitCanvasForPrint();
+        });
+        window.addEventListener('afterprint', () => {
+            resetCanvasAfterPrint();
+            document.body.classList.remove('print-mode-canvas', 'print-mode-report');
         });
 
         // ============================================================

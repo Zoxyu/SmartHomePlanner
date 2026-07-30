@@ -31,6 +31,21 @@
         }
         .container { max-width: 1200px; margin: 0 auto; }
 
+        /* 全局悬浮防伪水印（屏幕与打印双端生效） */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            /* 利用 SVG Data URI 生成 -45度 浅灰色水印 */
+            background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg transform='translate(200,200) rotate(-45)' opacity='0.08'%3E%3Ctext x='0' y='0' font-family='sans-serif' font-size='22' font-weight='800' fill='%2364748b' text-anchor='middle' alignment-baseline='middle'%3EAI 智装管家 · 专属推演方案%3C/text%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-position: center center;
+            z-index: 9999; /* 强制置于所有 UI 元素之上 */
+            pointer-events: none; /* 核心：绝不阻挡任何鼠标点击和触摸事件 */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
         /* ---------- Header ---------- */
         .brand { text-align: center; margin-bottom: 36px; }
         .brand__eyebrow {
@@ -244,10 +259,146 @@
         @keyframes panelFade { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
         .item-pop { animation: itemPop 0.3s ease; }
         @keyframes itemPop { 0% { opacity: 0; transform: translateX(-8px); } 100% { opacity: 1; transform: translateX(0); } }
+
+        /* ---------- Print button ---------- */
+        .btn-print {
+            width: 100%; margin-top: 4px;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            background: rgba(59, 130, 246, 0.06);
+            color: var(--accent-strong);
+            font-size: 0.88rem; font-weight: 700; padding: 13px 16px;
+            border-radius: 14px; cursor: pointer;
+            transition: var(--transition); font-family: inherit;
+        }
+        .btn-print:hover { background: rgba(59, 130, 246, 0.12); border-color: var(--accent); }
+
+        /* 打印专用页眉/页脚：屏幕上不可见，仅在 @media print 中激活 */
+        .print-header, .print-footer { display: none; }
+
+        /* ---------- Print / PDF export：商业咨询报告级排版 (A4 portrait) ---------- */
+        @media print {
+            @page { size: A4 portrait; margin: 12mm 11mm; }
+
+            /* 全局：关闭动效与投影，版面只留墨迹与留白 */
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+
+            /* 强制色彩渲染 + 温润灰白底 + 50px 工程网格（建筑图纸质感）；
+               斜向品牌水印已改由全局 body::after 顶层伪元素承担 */
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background-color: #FAFAFA !important;
+                background-image:
+                    linear-gradient(rgba(85, 85, 85, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(85, 85, 85, 0.05) 1px, transparent 1px) !important;
+                background-size: 50px 50px !important;
+                color: #3d3d3d !important;   /* 禁用纯黑，正文深碳灰 */
+                padding: 0 0 20mm !important; /* 为固定页脚预留呼吸空间 */
+                min-height: auto !important;
+                line-height: 1.65 !important;
+            }
+            html { font-size: 12.5px; }
+            .container { max-width: 100% !important; }
+
+            /* 隐藏屏显交互元素；屏显大标题由合同级页眉替代 */
+            .config-column, .btn-print, .brand { display: none !important; }
+
+            /* ---- 合同级页眉：左标题 / 右日期与编号，可可灰粗实线托底 ---- */
+            .print-header {
+                display: flex !important;
+                justify-content: space-between; align-items: flex-end;
+                padding-bottom: 10px; margin-bottom: 22px;
+                border-bottom: 2px solid #555555;
+            }
+            .print-header__title {
+                font-size: 1.08rem; font-weight: 800;
+                color: #333333; letter-spacing: 0.02em;
+            }
+            .print-header__meta {
+                display: flex; gap: 16px;
+                font-size: 0.72rem; color: #4A4A4A; font-weight: 600;
+            }
+
+            /* ---- 版权页脚：固定页底，字小色淡 ---- */
+            .print-footer {
+                display: block !important;
+                position: fixed; left: 0; right: 0; bottom: 0;
+                padding-top: 6px; border-top: 1px solid #d8d8d8;
+                font-size: 0.62rem; color: #909090;
+                text-align: center; letter-spacing: 0.04em;
+                background: transparent; /* 不遮挡底层水印 */
+            }
+
+            /* 单栏铺排，取消 sticky 与双栏 */
+            .planner { display: block !important; }
+            .results { position: static !important; display: block !important; }
+
+            /* ---- 去 UI 化：2px 微圆角、细边框、点阵分割线、杂志留白 ---- */
+            /* 卡片透明化：不遮挡 body 的水印/网格层，水印透达全版面 */
+            .result-card, .result-item, .rail-gauge {
+                background: transparent !important;
+                border: 1px solid #e3e3e3 !important;
+                border-radius: 2px !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                break-inside: avoid;
+            }
+            .result-card { padding: 18px 20px !important; margin: 0 0 18px !important; }
+            .result-card + .result-card { margin-top: 0 !important; }
+            .result-card__header {
+                border-bottom: 1px dotted #b8b8b8;   /* 模块分割：优雅点阵线 */
+                padding-bottom: 9px; margin-bottom: 14px !important;
+            }
+            .result-card__title { color: #333333 !important; letter-spacing: 0.02em; }
+            .result-item { font-size: 0.82rem !important; line-height: 1.65 !important; padding: 9px 13px !important; }
+            .result-item__text { color: #4A4A4A !important; }
+            .result-item__text strong { color: #23408e !important; } /* 强调数据：沉稳深蓝 */
+
+            /* 统计徽章：去色块、描边化 */
+            .stat-chip {
+                background: none !important;
+                border: 1px solid #c9c9c9; border-radius: 2px !important;
+                color: #23408e !important;
+            }
+
+            /* 安全警示：克制的暗红 + 左侧警示缘，强制喷墨 */
+            .result-item--warn {
+                background: #fbf5f4 !important;
+                border-color: #d9b8b4 !important;
+                border-left: 3px solid #9f2f2a !important;
+            }
+            .result-item--warn .result-item__text,
+            .result-item--warn .result-item__text strong { color: #9f2f2a !important; }
+
+            /* 导轨占用进度条：保留语义色但收敛饱和度 */
+            .rail-gauge { margin-top: 14px !important; padding: 14px 16px !important; }
+            .rail-track { background: #ececec !important; }
+            .rail-bar { transition: none !important; }
+            .rail-gauge__pct { color: #23408e !important; }
+            .rail-gauge__pct.over { color: #9f2f2a !important; }
+            .rail-gauge__msg { color: #2f6b46 !important; }
+            .rail-gauge__msg.over { color: #9f2f2a !important; }
+            .rail-gauge__msg.idle { color: #767676 !important; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 合同级打印页眉（仅打印可见，日期与编号由 JS 动态填充） -->
+        <div class="print-header">
+            <div class="print-header__title">AI 智装管家 · 全屋推演报告</div>
+            <div class="print-header__meta">
+                <span>模块：智能弱电与网络规划</span>
+                <span id="printDate">—</span>
+                <span>编号：<span id="printSerial">AI-2026-0000</span></span>
+            </div>
+        </div>
+
         <header class="brand">
             <span class="brand__eyebrow">AI 智装管家 · 智能弱电与网络规划引擎</span>
             <h1 class="brand__title">全屋弱电规划 · 一键推演</h1>
@@ -451,9 +602,13 @@
                     </div>
                     <div class="result-list" id="wirList"><div class="result-empty">请配置左侧选项</div></div>
                 </div>
+                <button class="btn-print" id="printBtn" type="button">🖨️ 打印 / 导出 PDF</button>
             </aside>
         </div>
     </div>
+
+    <!-- 版权页脚（仅打印可见，固定于页底） -->
+    <div class="print-footer">© 2026 AI 智装管家 SmartHome Planner · 本清单由 AI 自动推演，具体施工请以现场勘测为准 · 数据仅供采购决策参考</div>
 
     <script>
         // ========== State ==========
@@ -738,6 +893,18 @@
 
         [railTotalInput, railUsedInput].forEach(inp => inp.addEventListener('input', checkRailSpace));
         checkRailSpace();
+
+        // ========== Print / PDF export ==========
+        document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+        // 页眉动态信息：当前日期 + 报告编号（AI-年份-随机四位）
+        (function initPrintMeta() {
+            const now = new Date();
+            document.getElementById('printDate').textContent =
+                `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            document.getElementById('printSerial').textContent =
+                `AI-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        })();
     </script>
 </body>
 </html>

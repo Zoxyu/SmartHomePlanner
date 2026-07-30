@@ -6,13 +6,9 @@
     <title>AI 智装管家 · 全屋平面布局编辑器</title>
     <style>
         :root {
-            --bg-deep: #0f172a;
-            --bg-panel: #1e293b;
             --bg-canvas: #f8fafc;
             --grid-line: rgba(100, 116, 139, 0.18);
             --grid-line-bold: rgba(100, 116, 139, 0.32);
-            --text-light: #e2e8f0;
-            --text-dim: #94a3b8;
             --accent: #38bdf8;
             --accent-strong: #0ea5e9;
             --success: #22c55e;
@@ -21,11 +17,28 @@
             --radius: 16px;
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
+        /* ===== 昼夜主题（默认夜间） ===== */
+        :root, html[data-theme="dark"] {
+            --bg-deep: #0f172a;
+            --bg-panel: rgba(30, 41, 59, 0.6);
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --inner-bg: rgba(30, 41, 59, 0.6);
+            --border-sub: rgba(148, 163, 184, 0.15);
+        }
+        html[data-theme="light"] {
+            --bg-deep: #edf1f8;
+            --bg-panel: rgba(255, 255, 255, 0.62);
+            --text-light: #1e293b;
+            --text-dim: #475569;
+            --inner-bg: rgba(255, 255, 255, 0.8);
+            --border-sub: rgba(148, 163, 184, 0.2);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 16px; -webkit-font-smoothing: antialiased; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: radial-gradient(circle at 15% 15%, #1e293b 0%, #0f172a 60%);
+            background: transparent !important;
             color: var(--text-light);
             min-height: 100vh;
             padding: 28px 20px;
@@ -69,6 +82,8 @@
         /* ---------- Library panel ---------- */
         .library {
             background: var(--bg-panel);
+            backdrop-filter: blur(18px) saturate(140%);
+            -webkit-backdrop-filter: blur(18px) saturate(140%);
             border: 1px solid rgba(148, 163, 184, 0.12);
             border-radius: var(--radius); padding: 18px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
@@ -108,8 +123,8 @@
 
         /* Accordion */
         .acc {
-            border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 12px;
-            margin-bottom: 10px; overflow: hidden; background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-sub); border-radius: 12px;
+            margin-bottom: 10px; overflow: hidden; background: var(--inner-bg);
         }
         .acc__head {
             display: flex; align-items: center; gap: 8px; padding: 11px 14px;
@@ -127,8 +142,8 @@
         .lib-item {
             display: flex; align-items: center; gap: 10px;
             padding: 9px 10px; margin-bottom: 6px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: var(--inner-bg);
+            border: 1px solid var(--border-sub);
             border-radius: 10px; cursor: grab; user-select: none;
             transition: var(--transition);
         }
@@ -151,6 +166,8 @@
         /* ---------- Board ---------- */
         .board-wrap {
             background: var(--bg-panel);
+            backdrop-filter: blur(18px) saturate(140%);
+            -webkit-backdrop-filter: blur(18px) saturate(140%);
             border: 1px solid rgba(148, 163, 184, 0.12);
             border-radius: var(--radius); padding: 16px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
@@ -181,6 +198,14 @@
         }
         .export-btn:hover { background: rgba(56, 189, 248, 0.3); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); }
 
+        /* 危险操作变体：清空画板 + 清除本地缓存 */
+        .export-btn--danger {
+            border-color: rgba(239, 68, 68, 0.45);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.1) 100%);
+            color: #f87171;
+        }
+        .export-btn--danger:hover { background: rgba(239, 68, 68, 0.28); box-shadow: 0 4px 18px rgba(239, 68, 68, 0.25); }
+
         .grid-canvas {
             position: relative;
             height: 660px;
@@ -193,7 +218,7 @@
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-            border: 1px solid rgba(148, 163, 184, 0.25);
+            border: 1px solid var(--border-sub);
             cursor: default;
         }
         .grid-canvas.drag-over { box-shadow: inset 0 0 0 3px rgba(56, 189, 248, 0.5); }
@@ -217,15 +242,15 @@
         .fp-toolbar {
             position: absolute; top: 12px; right: 12px; z-index: 75;
             display: none; gap: 6px; align-items: center;
-            background: rgba(15, 23, 42, 0.9); padding: 6px;
-            border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.25);
+            background: var(--inner-bg); padding: 6px;
+            border-radius: 12px; border: 1px solid var(--border-sub);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
         .fp-toolbar.visible { display: flex; }
         .fp-btn {
             width: 34px; height: 34px; border-radius: 8px;
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            background: rgba(30, 41, 59, 0.9); color: var(--text-light);
+            border: 1px solid var(--border-sub);
+            background: var(--inner-bg); color: var(--text-light);
             cursor: pointer; font-size: 0.95rem; font-family: inherit;
             display: flex; align-items: center; justify-content: center;
             transition: var(--transition);
@@ -246,7 +271,7 @@
         /* Calibration overlay */
         .calib-banner {
             position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-            z-index: 70; background: rgba(15, 23, 42, 0.9); color: var(--accent);
+            z-index: 70; background: var(--inner-bg); color: var(--accent);
             font-size: 0.78rem; font-weight: 700; padding: 8px 18px;
             border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.4);
             pointer-events: none; white-space: nowrap; max-width: 92%;
@@ -310,7 +335,7 @@
         }
         .ruler-label {
             position: absolute; transform: translate(-50%, -140%);
-            background: rgba(15, 23, 42, 0.92); color: #fbbf24;
+            background: var(--inner-bg); color: #fbbf24;
             font-size: 0.72rem; font-weight: 800; padding: 3px 10px;
             border-radius: 999px; border: 1px solid rgba(245, 158, 11, 0.45);
             z-index: 67; pointer-events: none; white-space: nowrap;
@@ -327,10 +352,10 @@
         }
         .scale-badge {
             position: absolute; right: 12px; bottom: 10px; z-index: 78;
-            background: rgba(15, 23, 42, 0.82); color: var(--text-dim);
+            background: var(--inner-bg); color: var(--text-dim);
             font-size: 0.72rem; font-weight: 700; padding: 6px 12px;
             border-radius: 999px; pointer-events: none;
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--border-sub);
         }
         .scale-badge.calibrated { color: var(--success); border-color: rgba(34, 197, 94, 0.35); }
 
@@ -432,8 +457,8 @@
            必须显式补回，否则弹窗无法关闭且页面加载即弹出 */
         .modal-mask[hidden] { display: none; }
         .modal {
-            width: 320px; background: var(--bg-panel);
-            border: 1px solid rgba(148, 163, 184, 0.25);
+            width: 320px; background: var(--inner-bg);
+            border: 1px solid var(--border-sub);
             border-radius: 16px; padding: 22px;
             box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
         }
@@ -445,15 +470,15 @@
             text-transform: uppercase; letter-spacing: 0.08em;
         }
         .modal-input {
-            width: 100%; border: 1px solid rgba(148, 163, 184, 0.3);
+            width: 100%; border: 1px solid var(--border-sub);
             border-radius: 10px; padding: 10px 12px; font-size: 0.88rem;
-            background: rgba(15, 23, 42, 0.6); color: var(--text-light);
+            background: var(--inner-bg); color: var(--text-light);
             outline: none; font-family: inherit; transition: var(--transition);
         }
         .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
         .modal-color {
-            width: 100%; height: 40px; border: 1px solid rgba(148, 163, 184, 0.3);
-            border-radius: 10px; background: rgba(15, 23, 42, 0.6);
+            width: 100%; height: 40px; border: 1px solid var(--border-sub);
+            border-radius: 10px; background: var(--inner-bg);
             cursor: pointer; padding: 4px;
         }
         .rot-row { display: flex; align-items: center; gap: 10px; }
@@ -616,7 +641,7 @@
     </div>
     <div class="container">
         <header class="brand">
-            <span class="brand__eyebrow">Phase 4 · Layout Editor</span>
+            <span class="brand__eyebrow">核心模块 · 空间推演</span>
             <h1 class="brand__title">全屋平面布局编辑器</h1>
             <p class="brand__subtitle">底图自由变换 · 两点比例尺标定 · 物理尺寸图元 · 布局数据 JSON 序列化</p>
         </header>
@@ -756,6 +781,7 @@
                     <button class="export-btn" id="exportBtn" type="button">🧠 导出布局数据 (JSON)</button>
                     <button class="export-btn" id="printCanvasBtn" type="button">🖨️ 导出图纸</button>
                     <button class="export-btn" id="reportBtn" type="button">📝 生成尺寸方案报告</button>
+                    <button class="export-btn export-btn--danger" id="clearBoardBtn" type="button" title="清除本地缓存并重置画板">🗑️ 清空画板</button>
                 </div>
 
                 <div class="grid-canvas" id="gridCanvas">
@@ -830,6 +856,19 @@
     </div>
 
     <script>
+        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            function applyTheme(theme) { document.documentElement.dataset.theme = theme; }
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'light' || saved === 'dark') applyTheme(saved);
+            } catch (e) {}
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+            });
+        })();
+
         // ============================================================
         // 0) Global scale system (mm-driven)
         //    All pixel sizes are derived from PIXEL_RATIO at render time.
@@ -1092,6 +1131,7 @@
             bindItemEvents(item);
             placedItems.push(item);
             refreshBoard();
+            saveBoardState(); // 新增图元后静默持久化（恢复重建期间由 restoring 门控拦截）
             return item;
         }
         // ============================================================
@@ -1219,8 +1259,10 @@
         }
 
         function endPointerDrag() {
+            const hadInteraction = !!(resizeCtx || dragCtx);
             if (resizeCtx) { resizeCtx = null; runCollisionChecks(); }
             if (dragCtx) { dragCtx = null; runCollisionChecks(); }
+            if (hadInteraction) saveBoardState(); // 拖拽/缩放结束后静默持久化
         }
 
         document.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
@@ -1334,6 +1376,7 @@
                 exitRuler();
                 showAdjustBanner();
                 refreshBoard();
+                saveBoardState(); // 上传底图后立即持久化，防止调整阶段意外刷新丢失
             };
             reader.readAsDataURL(file);
         });
@@ -1374,6 +1417,7 @@
                 showAdjustBanner();
                 showToast('底图已解锁：调整后请重新锁定并标定比例尺');
             }
+            saveBoardState(); // 锁定/解锁状态变更后静默持久化
         });
 
         // ============================================================
@@ -1658,6 +1702,7 @@
             cancelCalibration();
             updateScaleBadge();
             rescaleAll();
+            saveBoardState(); // 标定完成后静默持久化新比例
         }
 
         function makeCalibDot(x, y) {
@@ -1750,6 +1795,7 @@
             item.el.style.transform = item.rot ? `rotate(${item.rot}deg)` : '';
             closeEditor();
             runCollisionChecks();
+            saveBoardState(); // 属性修改后静默持久化
         });
 
         document.getElementById('editDeleteBtn').addEventListener('click', () => {
@@ -1761,6 +1807,7 @@
             if (selectedItem === item) selectedItem = null;
             closeEditor();
             refreshBoard();
+            saveBoardState(); // 删除图元后静默持久化
         });
 
         document.getElementById('editCancelBtn').addEventListener('click', closeEditor);
@@ -1933,6 +1980,108 @@
             resetCanvasAfterPrint();
             document.body.classList.remove('print-mode-canvas', 'print-mode-report');
         });
+
+        // ============================================================
+        // 15) localStorage 自动保存与深度状态重建（零依赖）
+        // ============================================================
+        const BOARD_STORAGE_KEY = 'shp_sandbox_state_v1';
+        let restoring = false; // 恢复重建期间门控：拦截 createItem 等链路上的自动保存
+
+        // 精简序列化：只保留重建 DOM 所需的数据字段，剔除 el / ringEl 引用
+        function serializeItems() {
+            return placedItems.map(p => ({
+                id: p.id, name: p.name, cat: p.cat,
+                realW: p.realW, realH: p.realH, signal: p.signal,
+                color: p.color, shape: p.shape, custom: p.custom, type: p.type,
+                rot: p.rot,
+                x: p.el.offsetLeft, y: p.el.offsetTop
+            }));
+        }
+
+        function saveBoardState() {
+            if (restoring) return;
+            const base = {
+                pixelRatio: window.PIXEL_RATIO,
+                calibrated,
+                items: serializeItems(),
+                fp: null
+            };
+            try {
+                const full = Object.assign({}, base, {
+                    fp: fp.loaded ? { loaded: true, locked: fp.locked, scale: fp.scale, rot: fp.rot, src: floorplanImg.src } : null
+                });
+                localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(full));
+            } catch (err) {
+                // QuotaExceededError：底图 Base64 超出 5MB 限额，退级为仅保存图元布局
+                try {
+                    localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(base));
+                    showToast('底图过大无法保存，仅保存图元布局');
+                } catch (err2) {
+                    console.warn('画板状态保存失败', err2);
+                }
+            }
+        }
+
+        // 核心重建：读缓存 → 恢复比例/底图 → 重走 createItem 工厂把每个图元
+        // （含信号圈/缩放手柄）画回原坐标，拖拽与双击事件全部重新绑定
+        function restoreBoardState() {
+            let data = null;
+            try { data = JSON.parse(localStorage.getItem(BOARD_STORAGE_KEY)); } catch (err) { return; }
+            if (!data) return;
+            restoring = true;
+
+            // 1）比例系统先行：后续 renderW/renderH 全部依赖 PIXEL_RATIO
+            if (typeof data.pixelRatio === 'number' && data.pixelRatio > 0) window.PIXEL_RATIO = data.pixelRatio;
+            calibrated = !!data.calibrated;
+            updateScaleBadge();
+
+            // 2）底图：恢复 src + transform + 锁定态 UI
+            if (data.fp && data.fp.src) {
+                floorplanImg.src = data.fp.src;
+                floorplanImg.hidden = false;
+                fp.loaded = true;
+                fp.locked = !!data.fp.locked;
+                fp.scale = data.fp.scale || 1;
+                fp.rot = data.fp.rot || 0;
+                applyFpTransform();
+                fpToolbar.classList.add('visible');
+                setLockUI(fp.locked);
+                recalibBtn.hidden = !fp.locked;
+                if (!fp.locked) showAdjustBanner();
+            }
+
+            // 3）图元：清空现有画板后逐个重建，保留原 id 与旋转角
+            placedItems.forEach(p => { p.el.remove(); if (p.ringEl) p.ringEl.remove(); });
+            placedItems = [];
+            let maxId = 0;
+            (Array.isArray(data.items) ? data.items : []).forEach(it => {
+                nextItemId = it.id || (maxId + 1); // createItem 内部 nextItemId++ 即复用原 id
+                const item = createItem({
+                    name: it.name, cat: it.cat, realW: it.realW, realH: it.realH,
+                    signal: it.signal, color: it.color, shape: it.shape,
+                    custom: it.custom, type: it.type
+                }, it.x, it.y);
+                if (it.rot) {
+                    item.rot = it.rot;
+                    item.el.style.transform = `rotate(${item.rot}deg)`;
+                }
+                if (it.custom) customCount++;
+                maxId = Math.max(maxId, item.id);
+            });
+            nextItemId = maxId + 1;
+
+            refreshBoard();
+            restoring = false;
+        }
+
+        // 清空画板：删缓存 + 整页重置，回到全新初始态
+        document.getElementById('clearBoardBtn').addEventListener('click', () => {
+            if (!confirm('确定要清空画板并删除本地缓存吗？此操作不可撤销。')) return;
+            localStorage.removeItem(BOARD_STORAGE_KEY);
+            location.reload();
+        });
+
+        document.addEventListener('DOMContentLoaded', restoreBoardState);
 
         // ============================================================
         // Init

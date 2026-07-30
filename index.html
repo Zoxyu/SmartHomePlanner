@@ -7,27 +7,60 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
     <style>
         :root {
-            --bg-deep: #0f172a;
-            --text-light: #e2e8f0;
-            --text-dim: #94a3b8;
             --accent: #38bdf8;
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* ===== 昼夜主题变量（默认夜间） ===== */
+        :root, body[data-theme="dark"] {
+            --bg-base: #0f172a;
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(22, 35, 61, 0.72) 100%);
+            --sidebar-border: rgba(148, 163, 184, 0.14);
+            --toggle-bg: rgba(148, 163, 184, 0.08);
+            --toggle-border: rgba(148, 163, 184, 0.2);
+        }
+        body[data-theme="light"] {
+            --bg-base: #edf1f8;
+            --text-light: #1e293b;
+            --text-dim: #475569;
+            --sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(241, 245, 252, 0.68) 100%);
+            --sidebar-border: rgba(15, 23, 42, 0.1);
+            --toggle-bg: rgba(15, 23, 42, 0.05);
+            --toggle-border: rgba(15, 23, 42, 0.14);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            display: flex; background: var(--bg-deep); color: var(--text-light);
+            display: flex; background: var(--bg-base); color: var(--text-light);
             overflow: hidden; -webkit-font-smoothing: antialiased;
         }
+
+        /* ---------- 全局动态弥散流光背景（氛围底层，随主题呼吸） ---------- */
+        .aura {
+            position: fixed; inset: 0; overflow: hidden;
+            z-index: 0; pointer-events: none;
+        }
+        .aura__blob { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; }
+        .aura__blob--1 { width: 620px; height: 620px; top: -140px; left: -120px; background: #ec4899; opacity: 0.38; animation: drift1 10s ease-in-out infinite; }
+        .aura__blob--2 { width: 560px; height: 560px; top: 20%; right: -160px; background: #06b6d4; opacity: 0.34; animation: drift2 8s ease-in-out infinite; }
+        .aura__blob--3 { width: 600px; height: 600px; bottom: -180px; left: 20%; background: #8b5cf6; opacity: 0.30; animation: drift3 12s ease-in-out infinite; }
+        .aura__blob--4 { width: 480px; height: 480px; top: 28%; left: 34%; background: #3b82f6; opacity: 0.26; animation: drift4 14s ease-in-out infinite; }
+        @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(190px, 150px) scale(1.35); } }
+        @keyframes drift2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-200px, 130px) scale(0.8); } }
+        @keyframes drift3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(170px, -180px) scale(1.35); } }
+        @keyframes drift4 { 0%, 100% { transform: translate(0, 0) scale(0.85); } 50% { transform: translate(-180px, -120px) scale(1.25); } }
 
         /* ---------- Sidebar ---------- */
         .sidebar {
             width: 252px; flex-shrink: 0;
             display: flex; flex-direction: column;
             padding: 24px 16px 18px;
-            background: linear-gradient(180deg, #0f172a 0%, #16233d 100%);
-            border-right: 1px solid rgba(148, 163, 184, 0.12);
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--sidebar-border);
+            position: relative; z-index: 1;
         }
         .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; cursor: pointer; }
         .logo__mark {
@@ -73,17 +106,27 @@
         .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: #64748b; margin-top: 3px; white-space: nowrap; }
         .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
 
+        .sidebar__bottom { margin-top: auto; }
+        .theme-toggle {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 11px 14px; margin-bottom: 14px; border-radius: 12px;
+            background: var(--toggle-bg); border: 1px solid var(--toggle-border);
+            color: var(--text-light); font-family: inherit; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: var(--transition);
+        }
+        .theme-toggle:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.4); }
+        .theme-toggle__icon { font-size: 1.05rem; line-height: 1; }
         .sidebar__footer {
-            margin-top: auto; padding: 14px 12px 0;
+            padding: 14px 12px 0;
             border-top: 1px solid rgba(148, 163, 184, 0.1);
             font-size: 0.66rem; color: #64748b; line-height: 1.8;
         }
 
         /* ---------- Content ---------- */
-        .content { flex: 1; position: relative; background: #f4f7fb; }
+        .content { flex: 1; position: relative; z-index: 1; background: transparent; }
         #app-frame {
             position: absolute; inset: 0; width: 100%; height: 100%;
-            border: none; background: #f4f7fb;
+            border: none; background: transparent;
         }
 
         /* ---------- Mobile: sidebar → top bar ---------- */
@@ -99,17 +142,28 @@
             .nav { flex-direction: row; margin: 0 0 0 auto; gap: 4px; overflow-x: auto; }
             .nav-item { padding: 8px 10px; font-size: 0.76rem; gap: 6px; flex-shrink: 0; }
             .nav-item__icon { width: 26px; height: 26px; font-size: 0.85rem; border-radius: 8px; }
+            .sidebar__bottom { margin-top: 0; }
+            .theme-toggle { width: auto; padding: 8px 10px; margin-bottom: 0; }
+            .theme-toggle__label { display: none; }
         }
     </style>
 </head>
 <body>
+    <!-- ===== 全局动态弥散光晕（下沉底层，经透明 iframe 供全模块共享） ===== -->
+    <div class="aura" aria-hidden="true">
+        <div class="aura__blob aura__blob--1"></div>
+        <div class="aura__blob aura__blob--2"></div>
+        <div class="aura__blob aura__blob--3"></div>
+        <div class="aura__blob aura__blob--4"></div>
+    </div>
+
     <!-- ===== Left: dark sidebar ===== -->
     <aside class="sidebar">
         <div class="logo" id="logoHome" title="返回工作台首页">
             <span class="logo__mark">🏠</span>
             <span class="logo__text">
                 <span class="logo__title">AI 智装管家</span><br>
-                <span class="logo__badge">SmartHome Suite</span>
+                <span class="logo__badge">全屋装修决策中枢</span>
             </span>
         </div>
 
@@ -138,9 +192,15 @@
             </button>
         </nav>
 
-        <div class="sidebar__footer">
-            ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
-            📐 SmartHome Planner · Phase 5
+        <div class="sidebar__bottom">
+            <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色主题">
+                <span class="theme-toggle__icon" id="themeIcon">🌙</span>
+                <span class="theme-toggle__label" id="themeLabel">深色主题</span>
+            </button>
+            <div class="sidebar__footer">
+                ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
+                📐 SmartHome Planner · v1.0
+            </div>
         </div>
     </aside>
 
@@ -161,6 +221,45 @@
 
         const frame = document.getElementById('app-frame');
         const navItems = document.querySelectorAll('.nav-item');
+
+        // ============================================================
+        // 全局昼夜主题：切换 + 持久化 + 跨 iframe 广播
+        // ============================================================
+        const THEME_KEY = 'shp_theme';
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeLabel = document.getElementById('themeLabel');
+
+        function getTheme() {
+            return document.body.dataset.theme === 'light' ? 'light' : 'dark';
+        }
+
+        // 通过 postMessage 把主题推送给 iframe，子页面监听后同步自身 data-theme
+        function broadcastTheme(theme) {
+            try { if (frame.contentWindow) frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
+        }
+
+        function applyTheme(theme) {
+            document.body.dataset.theme = theme;
+            themeIcon.textContent = theme === 'light' ? '🌞' : '🌙';
+            themeLabel.textContent = theme === 'light' ? '浅色主题' : '深色主题';
+            try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+            broadcastTheme(theme);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+        });
+
+        // iframe 载入新模块后重新广播当前主题，确保新页面同步
+        frame.addEventListener('load', () => broadcastTheme(getTheme()));
+
+        // 首屏：从本地缓存恢复主题（默认夜间）
+        (function initTheme() {
+            let saved = 'dark';
+            try { saved = localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch (e) {}
+            applyTheme(saved);
+        })();
 
         // 动态 Favicon：用 SVG Data URI 把 Emoji 渲染成标签页图标
         function setFavicon(emoji) {

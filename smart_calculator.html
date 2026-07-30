@@ -6,19 +6,34 @@
     <title>AI 智装管家 · 傻瓜式防坑算料器</title>
     <style>
         :root {
-            --bg: #f4f7fb;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
             --accent: #3b82f6;
             --accent-strong: #2563eb;
             --success: #10b981;
             --warn: #f59e0b;
             --danger: #ef4444;
-            --card-bg: rgba(255, 255, 255, 0.78);
-            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
-            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
             --radius: 20px;
             --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* ===== 昼夜主题（默认日间，沿用原浅色设计） ===== */
+        :root, html[data-theme="light"] {
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --card-border: rgba(255, 255, 255, 0.65);
+            --inner-bg: rgba(255, 255, 255, 0.8);
+            --border-sub: rgba(148, 163, 184, 0.2);
+            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
+            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
+        }
+        html[data-theme="dark"] {
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(30, 41, 59, 0.55);
+            --card-border: rgba(148, 163, 184, 0.16);
+            --inner-bg: rgba(30, 41, 59, 0.6);
+            --border-sub: rgba(148, 163, 184, 0.15);
+            --shadow: 0 8px 32px rgba(2, 6, 23, 0.4);
+            --shadow-hover: 0 18px 48px rgba(2, 6, 23, 0.5);
         }
 
         * {
@@ -34,7 +49,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
+            background: transparent !important;
             color: var(--text-main);
             min-height: 100vh;
             padding: 40px 20px;
@@ -108,7 +123,7 @@
         /* ---------- Cards ---------- */
         .card {
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--card-border);
             backdrop-filter: blur(18px) saturate(150%);
             -webkit-backdrop-filter: blur(18px) saturate(150%);
             border-radius: var(--radius);
@@ -372,7 +387,7 @@
             padding: 13px 15px;
             font-size: 0.95rem;
             outline: none;
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--inner-bg);
             transition: var(--transition);
             font-family: inherit;
             color: var(--text-main);
@@ -493,8 +508,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 14px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: var(--inner-bg);
+            border: 1px solid var(--border-sub);
             border-radius: 14px;
             font-size: 0.9rem;
         }
@@ -741,11 +756,34 @@
     <div class="print-footer">© 2026 AI 智装管家 SmartHome Planner · 本清单由 AI 自动推演，具体施工请以现场勘测为准 · 数据仅供采购决策参考</div>
 
     <script>
+        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            function applyTheme(theme) { document.documentElement.dataset.theme = theme; }
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'light' || saved === 'dark') applyTheme(saved);
+            } catch (e) {}
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+            });
+        })();
+
         // ---------- State ----------
         let rooms = [];
         let activeRoomId = null;
         let nextId = 1;
         const MAX_ROOMS = 10;
+
+        // ---------- localStorage 持久化（零依赖） ----------
+        const CALC_STORAGE_KEY = 'shp_calculator_state_v1';
+        const saveCalcState = () => {
+            try {
+                localStorage.setItem(CALC_STORAGE_KEY, JSON.stringify({ rooms, activeRoomId, nextId }));
+            } catch (err) {
+                console.warn('算料数据保存失败', err);
+            }
+        };
 
         // ---------- DOM refs ----------
         const roomsListEl = document.getElementById('roomsList');
@@ -1068,6 +1106,16 @@
             if (!input.matches('[data-field]')) return;
             syncStateFromInput(input);
             updateResults();
+            saveCalcState(); // 输入即存：长宽高/门窗等数值实时落盘
+        });
+
+        // select 在部分旧内核上只发 change 不发 input，委托兼容两类事件
+        roomsListEl.addEventListener('change', (e) => {
+            const input = e.target;
+            if (!input.matches('[data-field]')) return;
+            syncStateFromInput(input);
+            updateResults();
+            saveCalcState();
         });
 
         roomsListEl.addEventListener('click', (e) => {
@@ -1100,6 +1148,7 @@
                     span.textContent = newName;
                     input.replaceWith(span);
                     updateResults();
+                    saveCalcState(); // 重命名后落盘
                 };
 
                 input.addEventListener('keydown', (ev) => {
@@ -1133,6 +1182,7 @@
                 }
                 updateAddBtnState();
                 updateResults();
+                saveCalcState(); // 删除房间后落盘
                 return;
             }
 
@@ -1140,6 +1190,7 @@
             if (id !== activeRoomId) {
                 activeRoomId = id;
                 triggerPanelFade();
+                saveCalcState(); // 记住激活房间，下次进来直接定位
             }
             updateResults();
         });
@@ -1153,6 +1204,7 @@
             triggerPanelFade();
             updateAddBtnState();
             updateResults();
+            saveCalcState(); // 新增房间后落盘
             // Smooth scroll to the newly added card
             const newCard = roomsListEl.querySelector(`[data-room-id="${newRoom.id}"]`);
             if (newCard) {
@@ -1168,7 +1220,8 @@
 
         // ---------- Reset all ----------
         document.getElementById('resetAllBtn').addEventListener('click', () => {
-            if (!confirm('确定要清空所有房间数据吗？此操作不可撤销。')) return;
+            if (!confirm('确定要清空所有房间数据并删除本地缓存吗？此操作不可撤销。')) return;
+            localStorage.removeItem(CALC_STORAGE_KEY); // 手动清理缓存入口
             rooms = [createRoom('客厅')];
             nextId = rooms[0].id + 1;
             activeRoomId = rooms[0].id;
@@ -1193,24 +1246,34 @@
 
         // ---------- Init ----------
         const init = () => {
-            rooms = [
-                createRoom('客厅'),
-                createRoom('主卧')
-            ];
-            // customize defaults
-            rooms[0].length = 5;
-            rooms[0].width = 4;
-            rooms[1].length = 4;
-            rooms[1].width = 3.5;
+            // 优先从 localStorage 恢复上次的房间数据
+            let saved = null;
+            try { saved = JSON.parse(localStorage.getItem(CALC_STORAGE_KEY)); } catch (err) { saved = null; }
 
-            activeRoomId = rooms[0].id;
+            if (saved && Array.isArray(saved.rooms) && saved.rooms.length) {
+                rooms = saved.rooms.slice(0, MAX_ROOMS);
+                nextId = saved.nextId || (Math.max(...rooms.map(r => r.id)) + 1);
+                activeRoomId = rooms.some(r => r.id === saved.activeRoomId) ? saved.activeRoomId : rooms[0].id;
+            } else {
+                rooms = [
+                    createRoom('客厅'),
+                    createRoom('主卧')
+                ];
+                // customize defaults
+                rooms[0].length = 5;
+                rooms[0].width = 4;
+                rooms[1].length = 4;
+                rooms[1].width = 3.5;
+
+                activeRoomId = rooms[0].id;
+            }
 
             rooms.forEach(room => renderRoomCard(room));
             updateAddBtnState();
-            updateResults();
+            updateResults(); // 回填后静默触发一次计算，进页即见上次结果
         };
 
-        init();
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

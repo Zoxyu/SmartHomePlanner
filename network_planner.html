@@ -6,25 +6,40 @@
     <title>AI 智装管家 · 智能弱电与网络规划引擎</title>
     <style>
         :root {
-            --bg: #f4f7fb;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
             --accent: #3b82f6;
             --accent-strong: #2563eb;
             --success: #10b981;
             --warn: #f59e0b;
             --danger: #ef4444;
-            --card-bg: rgba(255, 255, 255, 0.78);
-            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
-            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
             --radius: 20px;
             --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* ===== 昼夜主题（默认日间，沿用原浅色设计） ===== */
+        :root, html[data-theme="light"] {
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --card-border: rgba(255, 255, 255, 0.65);
+            --inner-bg: rgba(255, 255, 255, 0.8);
+            --border-sub: rgba(148, 163, 184, 0.2);
+            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
+            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
+        }
+        html[data-theme="dark"] {
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --card-bg: rgba(30, 41, 59, 0.55);
+            --card-border: rgba(148, 163, 184, 0.16);
+            --inner-bg: rgba(30, 41, 59, 0.6);
+            --border-sub: rgba(148, 163, 184, 0.15);
+            --shadow: 0 8px 32px rgba(2, 6, 23, 0.4);
+            --shadow-hover: 0 18px 48px rgba(2, 6, 23, 0.5);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 16px; -webkit-font-smoothing: antialiased; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
+            background: transparent !important;
             color: var(--text-main);
             min-height: 100vh;
             padding: 40px 20px;
@@ -81,7 +96,7 @@
         /* ---------- Accordion ---------- */
         .config-column { display: flex; flex-direction: column; gap: 16px; }
         .accordion {
-            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.65);
+            background: var(--card-bg); border: 1px solid var(--card-border);
             backdrop-filter: blur(18px) saturate(150%); border-radius: var(--radius);
             box-shadow: var(--shadow); overflow: hidden; transition: var(--transition);
         }
@@ -116,7 +131,7 @@
         .radio-group { display: flex; flex-direction: column; gap: 10px; }
         .radio-option {
             display: flex; align-items: center; gap: 12px;
-            padding: 14px 16px; border: 2px solid rgba(156, 163, 175, 0.2);
+            padding: 14px 16px; border: 2px solid var(--border-sub);
             border-radius: 14px; cursor: pointer; transition: var(--transition);
         }
         .radio-option:hover { border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.03); }
@@ -133,7 +148,7 @@
         .device-list { display: flex; flex-direction: column; gap: 10px; }
         .device-row {
             display: flex; align-items: center; gap: 12px;
-            padding: 12px 16px; border: 2px solid rgba(156, 163, 175, 0.15);
+            padding: 12px 16px; border: 2px solid var(--border-sub);
             border-radius: 14px; transition: var(--transition);
         }
         .device-row.active { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04); }
@@ -144,8 +159,8 @@
         .qty-control { display: none; align-items: center; gap: 6px; }
         .qty-control.visible { display: flex; }
         .qty-btn {
-            width: 28px; height: 28px; border: 1px solid rgba(156, 163, 175, 0.3);
-            border-radius: 8px; background: rgba(255, 255, 255, 0.8); color: var(--text-main);
+            width: 28px; height: 28px; border: 1px solid var(--border-sub);
+            border-radius: 8px; background: var(--inner-bg); color: var(--text-main);
             font-size: 1rem; cursor: pointer; display: flex; align-items: center;
             justify-content: center; transition: var(--transition); font-family: inherit;
         }
@@ -153,7 +168,7 @@
         .qty-input {
             width: 48px; text-align: center; border: 1px solid rgba(156, 163, 175, 0.3);
             border-radius: 8px; padding: 5px; font-size: 0.9rem; font-weight: 700;
-            outline: none; background: rgba(255, 255, 255, 0.9); font-family: inherit;
+            outline: none; background: var(--inner-bg); font-family: inherit;
         }
         .qty-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
@@ -161,7 +176,7 @@
         .toggle-group { display: flex; gap: 10px; }
         .toggle-option {
             flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 14px; border: 2px solid rgba(156, 163, 175, 0.2);
+            padding: 14px; border: 2px solid var(--border-sub);
             border-radius: 14px; cursor: pointer; font-size: 0.9rem; font-weight: 700;
             transition: var(--transition);
         }
@@ -177,7 +192,7 @@
         .rail-input {
             width: 100%; border: 1px solid rgba(156, 163, 175, 0.35);
             border-radius: 14px; padding: 13px 48px 13px 15px; font-size: 0.95rem;
-            outline: none; background: rgba(255, 255, 255, 0.9);
+            outline: none; background: var(--inner-bg);
             transition: var(--transition); font-family: inherit; color: var(--text-main);
         }
         .rail-input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
@@ -210,8 +225,8 @@
         .result-list { display: flex; flex-direction: column; gap: 8px; }
         .result-item {
             display: flex; align-items: flex-start; gap: 10px;
-            padding: 10px 14px; background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
+            padding: 10px 14px; background: var(--inner-bg);
+            border: 1px solid var(--border-sub); border-radius: 12px; font-size: 0.85rem; line-height: 1.5;
         }
         .result-item__icon { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
         .result-item__text { flex: 1; }
@@ -223,8 +238,8 @@
         /* ---------- Rail gauge ---------- */
         .rail-gauge {
             margin-top: 14px; padding: 16px;
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 14px;
+            background: var(--inner-bg);
+            border: 1px solid var(--border-sub); border-radius: 14px;
         }
         .rail-gauge__header {
             display: flex; align-items: center; justify-content: space-between;
@@ -271,6 +286,18 @@
             transition: var(--transition); font-family: inherit;
         }
         .btn-print:hover { background: rgba(59, 130, 246, 0.12); border-color: var(--accent); }
+
+        /* 危险操作：清除本地缓存并重置配置 */
+        .btn-reset {
+            width: 100%; margin-top: 10px;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.06);
+            color: var(--danger);
+            font-size: 0.88rem; font-weight: 700; padding: 13px 16px;
+            border-radius: 14px; cursor: pointer;
+            transition: var(--transition); font-family: inherit;
+        }
+        .btn-reset:hover { background: rgba(239, 68, 68, 0.12); border-color: var(--danger); }
 
         /* 打印专用页眉/页脚：屏幕上不可见，仅在 @media print 中激活 */
         .print-header, .print-footer { display: none; }
@@ -603,6 +630,7 @@
                     <div class="result-list" id="wirList"><div class="result-empty">请配置左侧选项</div></div>
                 </div>
                 <button class="btn-print" id="printBtn" type="button">🖨️ 打印 / 导出 PDF</button>
+                <button class="btn-reset" id="clearCacheBtn" type="button">🗑️ 清除缓存并重置配置</button>
             </aside>
         </div>
     </div>
@@ -611,6 +639,19 @@
     <div class="print-footer">© 2026 AI 智装管家 SmartHome Planner · 本清单由 AI 自动推演，具体施工请以现场勘测为准 · 数据仅供采购决策参考</div>
 
     <script>
+        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            function applyTheme(theme) { document.documentElement.dataset.theme = theme; }
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'light' || saved === 'dark') applyTheme(saved);
+            } catch (e) {}
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+            });
+        })();
+
         // ========== State ==========
         const config = {
             netMode: 'mesh',
@@ -697,6 +738,7 @@
                     config[target].qty = v; inp.value = v;
                 }
                 recalc();
+                saveNetState(); // 按钮增减不触发 input 事件，需单独落盘
             });
         });
 
@@ -893,6 +935,83 @@
 
         [railTotalInput, railUsedInput].forEach(inp => inp.addEventListener('input', checkRailSpace));
         checkRailSpace();
+
+        // ========== localStorage 持久化（零依赖） ==========
+        const NET_STORAGE_KEY = 'shp_network_state_v1';
+
+        function saveNetState() {
+            try {
+                localStorage.setItem(NET_STORAGE_KEY, JSON.stringify({
+                    config,
+                    railTotal: railTotalInput.value,
+                    railUsed: railUsedInput.value
+                }));
+            } catch (err) {
+                console.warn('弱电配置保存失败', err);
+            }
+        }
+
+        // 事件委托：所有 input/select 的 input + change 事件统一落盘
+        // （具体的 config 同步与 recalc 由各控件自身监听器先行完成）
+        ['input', 'change'].forEach(evt => {
+            document.addEventListener(evt, (e) => {
+                if (e.target.matches('input, select')) saveNetState();
+            });
+        });
+
+        // 回填表单 + 同步 config + 静默触发一次预演，进页即见上次结果
+        function restoreNetState() {
+            let data = null;
+            try { data = JSON.parse(localStorage.getItem(NET_STORAGE_KEY)); } catch (err) { return; }
+            if (!data || !data.config) return;
+            const c = data.config;
+
+            // 网络模式
+            config.netMode = c.netMode === 'acap' ? 'acap' : 'mesh';
+            $(`input[name="netMode"][value="${config.netMode}"]`).checked = true;
+            $('#optMesh').classList.toggle('selected', config.netMode === 'mesh');
+            $('#optAcAp').classList.toggle('selected', config.netMode === 'acap');
+            roomWrap.classList.toggle('visible', config.netMode === 'acap');
+            netBadge.textContent = config.netMode === 'mesh' ? 'Mesh 组网' : 'AC+AP 组网';
+
+            config.roomCount = Math.max(1, Math.min(20, parseInt(c.roomCount, 10) || 3));
+            roomInput.value = config.roomCount;
+
+            // 设备勾选与数量
+            deviceKeys.forEach(key => {
+                if (!c[key]) return;
+                config[key].on = !!c[key].on;
+                config[key].qty = Math.max(1, parseInt(c[key].qty, 10) || config[key].qty);
+                const chk = $(`#chk${cap(key)}`);
+                const qtyEl = $(`#qty${cap(key)}`);
+                chk.checked = config[key].on;
+                qtyEl.classList.toggle('visible', config[key].on);
+                qtyEl.querySelector('input').value = config[key].qty;
+                $(`[data-device="${key}"]`).classList.toggle('active', config[key].on);
+            });
+
+            // 机柜预设
+            config.cabinet = c.cabinet === 'no' ? 'no' : 'yes';
+            $(`input[name="cabinet"][value="${config.cabinet}"]`).checked = true;
+            $('#togCabYes').classList.toggle('selected', config.cabinet === 'yes');
+            $('#togCabNo').classList.toggle('selected', config.cabinet === 'no');
+
+            // 导轨空间校验输入
+            if (data.railTotal != null) railTotalInput.value = data.railTotal;
+            if (data.railUsed != null) railUsedInput.value = data.railUsed;
+
+            recalc();
+            checkRailSpace();
+        }
+
+        document.addEventListener('DOMContentLoaded', restoreNetState);
+
+        // 手动清理缓存：删除后整页重置回默认配置
+        $('#clearCacheBtn').addEventListener('click', () => {
+            if (!confirm('确定要清除本地缓存并重置所有配置吗？此操作不可撤销。')) return;
+            localStorage.removeItem(NET_STORAGE_KEY);
+            location.reload();
+        });
 
         // ========== Print / PDF export ==========
         document.getElementById('printBtn').addEventListener('click', () => window.print());

@@ -8,16 +8,40 @@
         :root {
             --accent: #38bdf8;
             --accent-strong: #0ea5e9;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* ===== 昼夜主题变量（默认夜间） ===== */
+        :root, html[data-theme="dark"] {
+            --bg-base: #0f172a;
             --text-light: #e2e8f0;
             --text-dim: #94a3b8;
             --text-silver: #cbd5e1;
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --hero-bg: rgba(15, 23, 42, 0.4);
+            --hero-border: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(23, 32, 50, 0.55);
+            --card-border: rgba(148, 163, 184, 0.14);
+            --hero-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 70px rgba(2, 6, 23, 0.55), 0 0 40px rgba(56, 189, 248, 0.06);
+            --card-shadow: 0 12px 32px rgba(2, 6, 23, 0.4);
+            --fab-shadow: 0 8px 24px rgba(2, 6, 23, 0.4);
+        }
+        html[data-theme="light"] {
+            --bg-base: #f8fafc;
+            --text-light: #1e293b;
+            --text-dim: #475569;
+            --text-silver: #334155;
+            --hero-bg: rgba(255, 255, 255, 0.72);
+            --hero-border: rgba(15, 23, 42, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.78);
+            --card-border: rgba(15, 23, 42, 0.08);
+            --hero-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 20px 40px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(15, 23, 42, 0.05);
+            --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+            --fab-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { min-height: 100%; }
+        html { min-height: 100%; background: var(--bg-base); }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: #070b16;
+            background: transparent !important;
             color: var(--text-light);
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -25,70 +49,33 @@
             position: relative; overflow-x: hidden;
         }
 
-        /* ========== 1) 动态弥散流光背景 (Aura Mesh Gradient) ========== */
-        .aura {
-            position: fixed; inset: 0; overflow: hidden;
-            z-index: 0; pointer-events: none;
-        }
-        .aura__blob {
-            position: absolute; border-radius: 50%;
-            filter: blur(120px) !important;
-            will-change: transform;
-        }
-        .aura__blob--1 {
-            width: 620px; height: 620px; top: -140px; left: -120px;
-            background: #ec4899; opacity: 0.30;   /* 赛博粉 */
-            animation: drift1 10s ease-in-out infinite;
-        }
-        .aura__blob--2 {
-            width: 560px; height: 560px; top: 20%; right: -160px;
-            background: #06b6d4; opacity: 0.28;   /* 亮青 */
-            animation: drift2 8s ease-in-out infinite;
-        }
-        .aura__blob--3 {
-            width: 600px; height: 600px; bottom: -180px; left: 20%;
-            background: #8b5cf6; opacity: 0.26;   /* 深邃紫 */
-            animation: drift3 12s ease-in-out infinite;
-        }
-        .aura__blob--4 {
-            width: 480px; height: 480px; top: 28%; left: 34%;
-            background: #3b82f6; opacity: 0.24;   /* 亮蓝 */
-            animation: drift4 14s ease-in-out infinite;
-        }
-        @keyframes drift1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(190px, 150px) scale(1.35); }
-        }
-        @keyframes drift2 {
-            0%, 100% { transform: translate(0, 0) scale(1.1); }
-            50% { transform: translate(-200px, 130px) scale(0.8); }
-        }
-        @keyframes drift3 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(170px, -180px) scale(1.35); }
-        }
-        @keyframes drift4 {
-            0%, 100% { transform: translate(0, 0) scale(0.85); }
-            50% { transform: translate(-180px, -120px) scale(1.25); }
-        }
-
         /* ========== Layout ========== */
         .welcome { position: relative; z-index: 1; max-width: 980px; width: 100%; text-align: center; }
+
+        /* ========== 主题切换悬浮按钮（右上角，与工作台 shp_theme 互通） ========== */
+        .theme-fab {
+            position: fixed; top: 24px; right: 24px; z-index: 10;
+            width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; cursor: pointer;
+            background: var(--hero-bg); border: 1px solid var(--hero-border);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--fab-shadow);
+            transition: var(--transition);
+        }
+        .theme-fab:hover { transform: scale(1.1) rotate(15deg); }
 
         /* ========== 2) 毛玻璃水晶焦点 (Glassmorphism hero) ========== */
         .hero-focal {
             position: relative;
-            background: rgba(15, 23, 42, 0.4);
+            background: var(--hero-bg);
             backdrop-filter: blur(16px) saturate(140%);
             -webkit-backdrop-filter: blur(16px) saturate(140%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--hero-border);
             border-radius: 26px;
             padding: 48px 40px 44px;
             margin-bottom: 40px;
-            box-shadow:
-                0 1px 0 rgba(255, 255, 255, 0.06) inset,
-                0 30px 70px rgba(2, 6, 23, 0.55),
-                0 0 40px rgba(56, 189, 248, 0.06);
+            box-shadow: var(--hero-shadow);
         }
         /* 顶部一道极细高光，强化水晶悬浮感 */
         .hero-focal::before {
@@ -145,10 +132,11 @@
 
         .card {
             position: relative; text-align: left; cursor: pointer; user-select: none;
-            background: rgba(23, 32, 50, 0.55);
+            background: var(--card-bg);
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(148, 163, 184, 0.14);
+            border: 1px solid var(--card-border);
             border-radius: 18px; padding: 24px 22px;
+            box-shadow: var(--card-shadow);
             transition: var(--transition);
         }
         /* 悬停：上浮 + 柔和主题色边框流光 */
@@ -192,13 +180,8 @@
     </style>
 </head>
 <body>
-    <!-- 动态弥散流光背景层 -->
-    <div class="aura" aria-hidden="true">
-        <div class="aura__blob aura__blob--1"></div>
-        <div class="aura__blob aura__blob--2"></div>
-        <div class="aura__blob aura__blob--3"></div>
-        <div class="aura__blob aura__blob--4"></div>
-    </div>
+    <!-- 主题切换悬浮按钮（与工作台共用 shp_theme 缓存） -->
+    <button class="theme-fab" id="themeFab" type="button" title="切换浅色/深色主题">🌙</button>
 
     <main class="welcome">
         <!-- 毛玻璃水晶焦点 -->
@@ -253,6 +236,34 @@
     </main>
 
     <script>
+        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            const fab = document.getElementById('themeFab');
+            function applyTheme(theme) {
+                document.documentElement.dataset.theme = theme;
+                if (fab) fab.textContent = theme === 'light' ? '🌞' : '🌙';
+            }
+            // 首屏：从本地缓存恢复主题（默认深色）
+            let current = 'dark';
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'light' || saved === 'dark') current = saved;
+            } catch (e) {}
+            applyTheme(current);
+            // 悬浮按钮：切换 html data-theme 并写回 localStorage，与 index.html 互通
+            if (fab) {
+                fab.addEventListener('click', () => {
+                    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+                    applyTheme(next);
+                    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+                });
+            }
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+            });
+        })();
+
         // 独立加载时动态生成 🏠 Favicon（嵌入 index.html 时标签页图标由外层控制）
         (function setHomeFavicon() {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏠</text></svg>`;

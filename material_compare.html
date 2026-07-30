@@ -3,397 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智装管家 · 选材推荐</title>
+    <title>AI 智装管家 · 选材防坑对比库</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%96%EF%B8%8F%3C/text%3E%3C/svg%3E">
     <style>
-        /* ---------- Reset & base ---------- */
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
         :root {
-            --bg: #f4f7fb;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --accent: #3b82f6;
-            --accent-strong: #2563eb;
-            --warn: #f59e0b;
-            --warn-light: #fff7ed;
-            --success: #10b981;
-            --card-bg: rgba(255, 255, 255, 0.78);
-            --shadow: 0 8px 32px rgba(17, 24, 39, 0.08);
-            --shadow-hover: 0 18px 48px rgba(17, 24, 39, 0.14);
-            --radius: 24px;
-            --transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --accent: #38bdf8;
+            /* A 方：雾霾蓝（莫兰迪低饱和）/ B 方：茱萸粉（莫兰迪低饱和），柔和对冲不刺眼 */
+            --a-1: #8aa7c7; --a-2: #6f8bab;
+            --b-1: #c9a3a0; --b-2: #b08a8e;
+            --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
-
-        html {
-            font-size: 16px;
-            -webkit-font-smoothing: antialiased;
+        /* ===== 昼夜主题（默认夜间） ===== */
+        :root, html[data-theme="dark"] {
+            --bg-deep: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.4);
+            --border: rgba(148, 163, 184, 0.14);
+            --text-light: #cbd5e1;
+            --text-dim: #94a3b8;
+            --text-faint: #64748b;
+            --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(22, 35, 61, 0.72) 100%);
         }
-
+        html[data-theme="light"] {
+            --bg-deep: #edf1f8;
+            --bg-card: rgba(255, 255, 255, 0.5);
+            --border: rgba(15, 23, 42, 0.1);
+            --text-light: #334155;
+            --text-dim: #475569;
+            --text-faint: #64748b;
+            --sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(241, 245, 252, 0.68) 100%);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        html { background: var(--bg-deep); }
         body {
-            min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: radial-gradient(circle at 10% 20%, #eef2ff 0%, #f4f7fb 40%, #e0e7ff 100%);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 48px 20px 64px;
+            display: flex; background: transparent !important; color: var(--text-light);
+            overflow: hidden; -webkit-font-smoothing: antialiased;
         }
 
-        /* ---------- Header ---------- */
-        .brand {
-            text-align: center;
-            margin-bottom: 48px;
+        /* 项目统一水印 */
+        body::after {
+            content: ""; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg transform='translate(200,200) rotate(-45)' opacity='0.05'%3E%3Ctext x='0' y='0' font-family='sans-serif' font-size='22' font-weight='800' fill='%2364748b' text-anchor='middle' alignment-baseline='middle'%3EAI 智装管家 · 专属推演方案%3C/text%3E%3C/g%3E%3C/svg%3E");
+            z-index: 9999; pointer-events: none;
         }
 
-        .brand__eyebrow {
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--accent-strong);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 6px 12px;
-            border-radius: 999px;
-            margin-bottom: 16px;
+        /* ================= 左侧：分类导航栏 ================= */
+        .sidebar {
+            width: 288px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            padding: 24px 16px 18px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; }
+        .logo__mark {
+            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
+            background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(129,140,248,0.22));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .logo__title { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+        .logo__badge {
+            display: inline-block; font-size: 0.56rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-top: 4px;
         }
 
-        .brand__title {
-            font-size: clamp(2rem, 5vw, 3rem);
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 12px;
-            letter-spacing: -0.02em;
+        .nav { margin-top: 28px; display: flex; flex-direction: column; gap: 6px; }
+        #catNav { display: flex; flex-direction: column; gap: 6px; }
+        .nav__label {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.14em; color: var(--text-faint); padding: 0 12px; margin-bottom: 6px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 12px;
+            color: var(--text-dim); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; user-select: none; border: 1px solid transparent;
+            transition: var(--transition); text-align: left; width: 100%;
+            background: none; font-family: inherit;
+        }
+        .nav-item:hover { color: var(--text-light); background: rgba(148, 163, 184, 0.08); }
+        .nav-item.active {
+            color: var(--accent); background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.12);
+        }
+        .nav-item__icon {
+            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            background: rgba(148, 163, 184, 0.1); transition: var(--transition);
+        }
+        .nav-item.active .nav-item__icon { background: rgba(56, 189, 248, 0.18); }
+        .nav-item__meta { min-width: 0; }
+        .nav-item__name { line-height: 1.2; }
+        .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: var(--text-faint); margin-top: 3px; white-space: nowrap; }
+        .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
+
+        .sidebar__tip {
+            margin-top: 22px; padding: 14px 14px; border-radius: 12px;
+            background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.25);
+            font-size: 0.7rem; line-height: 1.8; color: var(--text-dim);
+        }
+        .sidebar__footer {
+            margin-top: auto; padding: 14px 12px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 0.66rem; color: var(--text-faint); line-height: 1.8;
         }
 
-        .brand__subtitle {
-            font-size: 1rem;
-            color: var(--text-muted);
-            max-width: 520px;
-            margin: 0 auto;
-            line-height: 1.6;
+        /* ================= 右侧：主内容 PK 台 ================= */
+        .main {
+            flex: 1; overflow-y: auto; padding: 38px 46px 64px;
+            background: transparent;
+        }
+        .brand { max-width: 980px; margin-bottom: 30px; }
+        .brand__eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+        .brand__title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.01em; margin-top: 8px; }
+        .brand__subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 8px; line-height: 1.7; }
+
+        /* PK 面板整体：分类切换时的淡出/位移过渡 */
+        .pk-panel { max-width: 980px; transition: opacity 0.26s ease, transform 0.26s ease; }
+        .pk-panel.is-switching { opacity: 0; transform: translateY(16px); }
+
+        /* ---------- 顶部：1V1 对决头部 ---------- */
+        .vs-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 18px; margin-bottom: 26px; }
+        .mat-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px 24px; backdrop-filter: blur(24px);
+        }
+        .mat-card--a { border-top: 3px solid var(--a-1); }
+        .mat-card--b { border-top: 3px solid var(--b-2); text-align: right; }
+        .mat-card__side { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.16em; }
+        .mat-card--a .mat-card__side { color: var(--a-1); }
+        .mat-card--b .mat-card__side { color: var(--b-2); }
+        .mat-card__name { font-size: 1.28rem; font-weight: 800; margin-top: 9px; letter-spacing: -0.01em; }
+        .mat-card__tag { font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; }
+        .mat-card__score { margin-top: 15px; display: flex; align-items: baseline; gap: 8px; }
+        .mat-card--b .mat-card__score { justify-content: flex-end; }
+        .mat-card__score b { font-size: 1.95rem; font-weight: 800; line-height: 1; }
+        .mat-card--a .mat-card__score b { color: var(--a-1); }
+        .mat-card--b .mat-card__score b { color: var(--b-2); }
+        .mat-card__score span { font-size: 0.66rem; color: var(--text-faint); }
+
+        .vs-badge {
+            align-self: center; width: 66px; height: 66px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.2rem; font-style: italic; color: #0f172a;
+            background: linear-gradient(135deg, var(--a-1), var(--b-2));
+            box-shadow: 0 0 30px rgba(138, 167, 199, 0.3), 0 0 30px rgba(201, 163, 160, 0.25);
         }
 
-        /* ---------- Cards grid ---------- */
-        .compare {
-            width: 100%;
-            max-width: 1120px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            align-items: center;
+        /* ---------- 中部：雷达条图表（纯 CSS 横向对比柱） ---------- */
+        .bars {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 26px 30px 18px; backdrop-filter: blur(24px);
         }
-
-        /* ---------- Card ---------- */
-        .card {
-            position: relative;
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            padding: 32px 28px 28px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(18px) saturate(150%);
-            -webkit-backdrop-filter: blur(18px) saturate(150%);
-            display: flex;
-            flex-direction: column;
-            transition: var(--transition);
-            will-change: transform, box-shadow;
-            overflow: hidden;
+        .bars__title {
+            font-size: 0.78rem; font-weight: 800; color: var(--text-dim);
+            letter-spacing: 0.1em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
         }
-
-        .card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: var(--radius);
-            pointer-events: none;
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+        .dim { padding: 17px 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.13); }
+        .dim:last-child { border-bottom: none; }
+        .dim__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 11px; flex-wrap: wrap; }
+        .dim__label { font-size: 0.94rem; font-weight: 700; }
+        .dim__note { font-size: 0.68rem; color: var(--text-faint); }
+        .dim__winner {
+            margin-left: auto; font-size: 0.64rem; font-weight: 800;
+            padding: 3px 11px; border-radius: 999px; white-space: nowrap;
         }
+        .dim__winner--a { color: var(--a-1); background: rgba(138, 167, 199, 0.14); border: 1px solid rgba(138, 167, 199, 0.35); }
+        .dim__winner--b { color: var(--b-2); background: rgba(176, 138, 142, 0.14); border: 1px solid rgba(176, 138, 142, 0.35); }
 
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-hover);
+        .bar-row { display: grid; grid-template-columns: 26px 1fr 46px; align-items: center; gap: 12px; margin-top: 7px; }
+        .bar-row__side { font-size: 0.68rem; font-weight: 800; }
+        .bar-row--a .bar-row__side { color: var(--a-1); }
+        .bar-row--b .bar-row__side { color: var(--b-2); }
+        .bar-track { height: 14px; border-radius: 999px; background: rgba(148, 163, 184, 0.1); overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 999px; width: 0; transition: width 0.9s cubic-bezier(0.22, 0.9, 0.35, 1); }
+        .bar-fill--a { background: linear-gradient(90deg, var(--a-1), var(--a-2)); box-shadow: 0 0 12px rgba(138, 167, 199, 0.3); }
+        .bar-fill--b { background: linear-gradient(90deg, var(--b-1), var(--b-2)); box-shadow: 0 0 12px rgba(201, 163, 160, 0.3); }
+        .bar-row__score { font-size: 0.78rem; font-weight: 800; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+        /* ---------- 底部：硬核防坑总结（毛玻璃卡片） ---------- */
+        .verdict {
+            margin-top: 26px; position: relative; overflow: hidden;
+            border-radius: 18px; padding: 24px 30px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.07));
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            backdrop-filter: blur(24px);
         }
-
-        /* ---------- Side cards (basic / premium) ---------- */
-        .card--side {
-            opacity: 0.92;
+        .verdict::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background: radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.18), transparent 55%);
         }
+        .verdict__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; position: relative; }
+        .verdict__icon { font-size: 1.25rem; }
+        .verdict__title { font-size: 0.84rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); }
+        .verdict__text { position: relative; font-size: 0.93rem; line-height: 1.9; color: var(--text-light); }
+        .verdict__text strong { color: var(--accent); font-weight: 800; }
 
-        .card--side .card__title,
-        .card--side .card__price {
-            color: #374151;
-        }
-
-        .card--side .card__features li {
-            color: #4b5563;
-        }
-
-        /* ---------- Highlighted middle card ---------- */
-        .card--highlight {
-            z-index: 2;
-            transform: scale(1.05);
-            border: 1px solid rgba(59, 130, 246, 0.35);
-            overflow: visible;
-            box-shadow:
-                0 0 0 1px rgba(59, 130, 246, 0.15),
-                0 12px 40px rgba(37, 99, 235, 0.18),
-                0 24px 64px rgba(37, 99, 235, 0.12);
-        }
-
-        .card--highlight:hover {
-            transform: scale(1.07) translateY(-8px);
-            box-shadow:
-                0 0 0 1px rgba(59, 130, 246, 0.25),
-                0 18px 48px rgba(37, 99, 235, 0.22),
-                0 32px 72px rgba(37, 99, 235, 0.14);
-        }
-
-        .badge {
-            position: absolute;
-            top: -14px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 8px 18px;
-            border-radius: 999px;
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
-            white-space: nowrap;
-            letter-spacing: 0.02em;
-            z-index: 3;
-        }
-
-        /* ---------- Card inner ---------- */
-        .card__name {
-            font-size: 0.875rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .card__title {
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 12px;
-            letter-spacing: -0.01em;
-        }
-
-        .card__price {
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 24px;
-            letter-spacing: -0.02em;
-        }
-
-        .card__price span {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-left: 4px;
-        }
-
-        .card__features {
-            list-style: none;
-            flex: 1 1 auto;
-            margin-bottom: 28px;
-        }
-
-        .card__features li {
-            position: relative;
-            padding-left: 28px;
-            margin-bottom: 14px;
-            line-height: 1.55;
-            font-size: 0.95rem;
-        }
-
-        .card__features li::before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            font-size: 0.75rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-        }
-
-        /* Feature tone variations */
-        .card--basic .card__features li::before {
-            background: #d1d5db;
-            color: #6b7280;
-        }
-
-        .card--basic .card__features li {
-            color: #4b5563;
-        }
-
-        .card--highlight .card__features li::before {
-            background: var(--success);
-        }
-
-        .card--premium .card__features li::before {
-            background: #8b5cf6;
-        }
-
-        .feature--warn {
-            color: #b45309 !important;
-            background: var(--warn-light);
-            padding: 8px 10px;
-            border-radius: 10px;
-            margin-left: -10px;
-            width: calc(100% + 10px);
-        }
-
-        .feature--warn::before {
-            background: var(--warn) !important;
-            color: #fff !important;
-        }
-
-        /* ---------- CTA buttons ---------- */
-        .btn {
-            width: 100%;
-            border: none;
-            border-radius: 14px;
-            padding: 14px 20px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn--primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: #fff;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
-        }
-
-        .btn--primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45);
-            filter: brightness(1.05);
-        }
-
-        .btn--secondary {
-            background: #f3f4f6;
-            color: #374151;
-            box-shadow: inset 0 0 0 1px rgba(156, 163, 175, 0.35);
-        }
-
-        .btn--secondary:hover {
-            background: #e5e7eb;
-            transform: translateY(-2px);
-        }
-
-        /* ---------- Mobile responsive ---------- */
-        @media (max-width: 720px) {
-            body {
-                padding: 36px 16px 48px;
+        /* ================= 移动端：侧栏 → 顶部横栏 ================= */
+        @media (max-width: 860px) {
+            body { flex-direction: column; overflow: auto; }
+            .sidebar {
+                width: 100%; flex-direction: row; align-items: center; flex-wrap: wrap;
+                padding: 12px 14px; gap: 10px; border-right: none; border-bottom: 1px solid var(--border);
             }
-
-            .compare {
-                grid-template-columns: 1fr;
-                gap: 32px;
-                max-width: 420px;
-            }
-
-            .card--highlight {
-                transform: scale(1);
-                order: -1;
-            }
-
-            .card--highlight:hover {
-                transform: translateY(-8px);
-            }
-
-            .card--side {
-                opacity: 1;
-            }
-        }
-
-        @media (min-width: 721px) and (max-width: 980px) {
-            .compare {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .card--highlight {
-                grid-column: 1 / -1;
-                max-width: 480px;
-                justify-self: center;
-                transform: scale(1.02);
-            }
+            .logo__badge, .nav__label, .nav-item__desc, .sidebar__tip, .sidebar__footer { display: none; }
+            .nav { flex-direction: row; margin: 0; gap: 6px; overflow-x: auto; flex: 1; }
+            #catNav { flex-direction: row; gap: 6px; overflow-x: auto; }
+            .nav-item { padding: 8px 12px; font-size: 0.78rem; gap: 7px; flex-shrink: 0; }
+            .nav-item__icon { width: 26px; height: 26px; font-size: 0.9rem; border-radius: 8px; }
+            .main { padding: 24px 18px 48px; overflow: visible; }
+            .vs-header { grid-template-columns: 1fr; }
+            .vs-badge { justify-self: center; }
+            .mat-card--b { text-align: left; }
+            .mat-card--b .mat-card__score { justify-content: flex-start; }
+            .bars { padding: 20px 18px 12px; }
+            .dim__winner { margin-left: 0; }
         }
     </style>
 </head>
 <body>
+    <!-- ===== 左侧：分类导航 ===== -->
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo__mark">⚖️</span>
+            <span>
+                <span class="logo__title">选材防坑对比库</span><br>
+                <span class="logo__badge">选材防坑 · 参数对决</span>
+            </span>
+        </div>
 
-    <header class="brand">
-        <span class="brand__eyebrow">AI 智装管家 · 选材推荐</span>
-        <h1 class="brand__title">找到适合你的室内门方案</h1>
-        <p class="brand__subtitle">三档定位，一键对比。我们推荐综合表现最优的「高性价比款」，让好装修不踩坑。</p>
-    </header>
+        <nav class="nav">
+            <div class="nav__label">对比类目</div>
+            <div id="catNav"></div>
+        </nav>
 
-    <section class="compare" aria-label="室内门选型对比">
+        <div class="sidebar__tip">
+            💡 评分为同场景横向相对值（满分 100），<br>
+            柱条越长代表该维度表现越强，<br>
+            结论均基于真实施工与使用反馈提炼。
+        </div>
 
-        <!-- 基础款 -->
-        <article class="card card--side card--basic">
-            <h2 class="card__name">基础款</h2>
-            <h3 class="card__title">普通铝合金门</h3>
-            <div class="card__price">¥699<span>/ 樘</span></div>
-            <ul class="card__features">
-                <li class="feature--warn">边框较宽影响采光</li>
-                <li class="feature--warn">型材易变形</li>
-                <li class="feature--warn">滑轮存在噪音</li>
-            </ul>
-            <button class="btn btn--secondary" type="button">暂不考虑</button>
-        </article>
+        <div class="sidebar__footer">
+            ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
+            📐 SmartHome Planner · 选材防坑
+        </div>
+    </aside>
 
-        <!-- 高性价比款（主推） -->
-        <article class="card card--highlight">
-            <span class="badge">性价比首选</span>
-            <h2 class="card__name">高性价比款</h2>
-            <h3 class="card__title">钛镁合金门</h3>
-            <div class="card__price">¥1299<span>/ 樘</span></div>
-            <ul class="card__features">
-                <li>极简可可灰边框</li>
-                <li>高强抗形变冗余</li>
-                <li>极大提升空间通透感</li>
-            </ul>
-            <button class="btn btn--primary" type="button">加入清单</button>
-        </article>
+    <!-- ===== 右侧：PK 台 ===== -->
+    <main class="main">
+        <header class="brand">
+            <span class="brand__eyebrow">AI 智装管家 · 1V1 参数对决</span>
+            <h1 class="brand__title">选材不踩坑，硬核参数说话</h1>
+            <p class="brand__subtitle">抛开营销话术，把两种材料拉上 PK 台逐项对标。选中左侧类目，右侧即刻展开雷达条对决与防坑结论。</p>
+        </header>
 
-        <!-- 尊享款 -->
-        <article class="card card--side card--premium">
-            <h2 class="card__name">尊享款</h2>
-            <h3 class="card__title">高端钛镁合金门</h3>
-            <div class="card__price">¥2599<span>/ 樘</span></div>
-            <ul class="card__features">
-                <li>包含中端所有优势</li>
-                <li>升级隐藏式静音磁吸锁</li>
-                <li>顶级阻尼静音轨道</li>
-            </ul>
-            <button class="btn btn--secondary" type="button">了解详情</button>
-        </article>
+        <section class="pk-panel" id="pkPanel"></section>
+    </main>
 
-    </section>
+    <script>
+        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            function applyTheme(theme) { document.documentElement.dataset.theme = theme; }
+            try {
+                const saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'light' || saved === 'dark') applyTheme(saved);
+            } catch (e) {}
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+            });
+        })();
 
+        // ============================================================
+        // 初始演示数据：三组贴近真实装修场景的硬核对比
+        // ============================================================
+        const COMPARE_DATA = [
+            {
+                id: 'hardware',
+                icon: '🍴',
+                category: '五金 / 餐具',
+                desc: '316L 不锈钢 vs 纯钛',
+                materialA: { name: '316L 不锈钢', tag: '含钼奥氏体 · 医用 / 食品接触级' },
+                materialB: { name: '纯钛 TA1', tag: '航空级 · 零重金属析出' },
+                dimensions: [
+                    { label: '表面防刮花能力', note: '莫氏硬度与日常摩擦耐受', a: 90, b: 55, winner: 'a', winnerText: 'A 占优' },
+                    { label: '绝对抗腐蚀性', note: '钝化膜自修复 · 耐酸碱 / 海水', a: 80, b: 92, winner: 'b', winnerText: 'B 更佳' },
+                    { label: '生物亲和性', note: '长期接触人体 / 食材的安全性', a: 72, b: 96, winner: 'b', winnerText: 'B 更佳' },
+                    { label: '性价比', note: '材料成本与终端售价比', a: 95, b: 38, winner: 'a', winnerText: 'A 占优' }
+                ],
+                verdict: '316L 不锈钢在<strong>防刮花</strong>与<strong>性价比</strong>上具备显著优势，适合注重日常抗造与高频使用的家庭；纯钛则在<strong>轻量化</strong>与<strong>绝对无重金属析出</strong>上表现卓越，更适合对生物亲和性有极致要求的场景。'
+            },
+            {
+                id: 'flooring',
+                icon: '🪵',
+                category: '地面硬装',
+                desc: '木纹砖 vs 纯实木地板',
+                materialA: { name: '木纹砖', tag: '釉面瓷质砖 · 零甲醛释放' },
+                materialB: { name: '纯实木地板', tag: '天然原木 · 需定期保养' },
+                dimensions: [
+                    { label: '表面耐磨度', note: '莫氏硬度 6-7 vs 木材约 2-3', a: 95, b: 45, winner: 'a', winnerText: 'A 占优' },
+                    { label: '地暖导热率', note: '瓷砖 ≈1.5 vs 木材 ≈0.15 W/m·K', a: 92, b: 40, winner: 'a', winnerText: 'A 占优' },
+                    { label: '后期打理成本', note: '免打蜡精油 · 直接拖洗', a: 90, b: 35, winner: 'a', winnerText: 'A 占优' },
+                    { label: '脚感温润度', note: '木质天然温弹 · 冬季不冰脚', a: 42, b: 93, winner: 'b', winnerText: 'B 更佳' }
+                ],
+                verdict: '木纹砖在<strong>表面耐磨</strong>、<strong>地暖导热</strong>与<strong>日常打理</strong>上表现更优，且零甲醛释放，适合铺设地暖、追求低维护成本的家庭；纯实木地板<strong>脚感温润</strong>、纹理自然，更适合注重居住质感、愿意投入定期保养的卧室与客厅。'
+            },
+            {
+                id: 'finish',
+                icon: '🎨',
+                category: '定制饰面',
+                desc: '氟碳喷涂 vs 粉末喷涂',
+                materialA: { name: '可可灰氟碳喷涂', tag: 'PVDF 氟碳 · 两涂两烤' },
+                materialB: { name: '普通静电粉末喷涂', tag: '环氧 / 聚酯 · 一涂一烤' },
+                dimensions: [
+                    { label: '漆面膜厚度均匀性', note: '氟碳流平佳 · 粉末边角易堆积', a: 90, b: 62, winner: 'a', winnerText: 'A 占优' },
+                    { label: '抗紫外线褪色率', note: 'PVDF 约 20 年保色 vs 粉末 3-5 年', a: 93, b: 55, winner: 'a', winnerText: 'A 占优' },
+                    { label: '金属质感细腻度', note: '哑光细腻 · 防指纹表现', a: 88, b: 58, winner: 'a', winnerText: 'A 占优' }
+                ],
+                verdict: '可可灰氟碳喷涂在<strong>漆膜均匀度</strong>、<strong>抗紫外线保色</strong>与<strong>金属质感细腻度</strong>上更为出色，哑光防指纹效果适合极窄边框门洞、背景墙等注重光影质感的显眼位置；普通静电粉末喷涂<strong>性价比更高</strong>，适合预算有限、对长期保色要求不高的柜体内部或次要立面。'
+            }
+        ];
+
+        // ============================================================
+        // DOM 引用与状态
+        // ============================================================
+        const catNav = document.getElementById('catNav');
+        const pkPanel = document.getElementById('pkPanel');
+        let currentCat = 0;
+        let switching = false; // 防止过渡期间重复触发
+
+        // 综合评分 = 各维度得分的算术平均（四舍五入）
+        function overallScore(data, side) {
+            const sum = data.dimensions.reduce((acc, d) => acc + d[side], 0);
+            return Math.round(sum / data.dimensions.length);
+        }
+
+        // ============================================================
+        // 左侧分类导航渲染
+        // ============================================================
+        function buildNav() {
+            catNav.innerHTML = COMPARE_DATA.map((d, i) => `
+                <button class="nav-item${i === currentCat ? ' active' : ''}" type="button" data-idx="${i}">
+                    <span class="nav-item__icon">${d.icon}</span>
+                    <span class="nav-item__meta">
+                        <div class="nav-item__name">${d.category}</div>
+                        <div class="nav-item__desc">${d.desc}</div>
+                    </span>
+                </button>
+            `).join('');
+        }
+
+        function updateNavActive() {
+            catNav.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.idx, 10) === currentCat);
+            });
+        }
+
+        // ============================================================
+        // 右侧 PK 面板渲染
+        // ============================================================
+        function renderPanel(data) {
+            const scoreA = overallScore(data, 'a');
+            const scoreB = overallScore(data, 'b');
+
+            const dimHtml = data.dimensions.map(d => `
+                <div class="dim">
+                    <div class="dim__head">
+                        <span class="dim__label">${d.label}</span>
+                        <span class="dim__note">${d.note}</span>
+                        <span class="dim__winner dim__winner--${d.winner}">${d.winnerText}</span>
+                    </div>
+                    <div class="bar-row bar-row--a">
+                        <span class="bar-row__side">A</span>
+                        <div class="bar-track"><div class="bar-fill bar-fill--a" data-score="${d.a}"></div></div>
+                        <span class="bar-row__score">${d.a}</span>
+                    </div>
+                    <div class="bar-row bar-row--b">
+                        <span class="bar-row__side">B</span>
+                        <div class="bar-track"><div class="bar-fill bar-fill--b" data-score="${d.b}"></div></div>
+                        <span class="bar-row__score">${d.b}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            pkPanel.innerHTML = `
+                <div class="vs-header">
+                    <div class="mat-card mat-card--a">
+                        <div class="mat-card__side">A 方</div>
+                        <div class="mat-card__name">${data.materialA.name}</div>
+                        <div class="mat-card__tag">${data.materialA.tag}</div>
+                        <div class="mat-card__score"><b>${scoreA}</b><span>综合评分</span></div>
+                    </div>
+                    <div class="vs-badge">VS</div>
+                    <div class="mat-card mat-card--b">
+                        <div class="mat-card__side">B 方</div>
+                        <div class="mat-card__name">${data.materialB.name}</div>
+                        <div class="mat-card__tag">${data.materialB.tag}</div>
+                        <div class="mat-card__score"><b>${scoreB}</b><span>综合评分</span></div>
+                    </div>
+                </div>
+
+                <div class="bars">
+                    <div class="bars__title">📊 雷达条对决 · 逐项硬核对标</div>
+                    ${dimHtml}
+                </div>
+
+                <div class="verdict">
+                    <div class="verdict__head">
+                        <span class="verdict__icon">🛡️</span>
+                        <span class="verdict__title">硬核防坑总结</span>
+                    </div>
+                    <div class="verdict__text">${data.verdict}</div>
+                </div>
+            `;
+        }
+
+        // 柱条从 0 生长到目标宽度：先以 width:0 渲染，下一帧再赋值触发 CSS 过渡
+        function animateBars() {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    pkPanel.querySelectorAll('.bar-fill').forEach(fill => {
+                        fill.style.width = fill.dataset.score + '%';
+                    });
+                });
+            });
+        }
+
+        // ============================================================
+        // 分类切换：淡出 → 换数据 → 淡入 + 柱条重生长
+        // ============================================================
+        function switchCategory(idx) {
+            if (idx === currentCat || switching) return;
+            switching = true;
+            currentCat = idx;
+            updateNavActive();
+
+            pkPanel.classList.add('is-switching');
+            setTimeout(() => {
+                renderPanel(COMPARE_DATA[idx]);
+                pkPanel.classList.remove('is-switching');
+                animateBars();
+                switching = false;
+            }, 270); // 与 .pk-panel 过渡时长对齐
+        }
+
+        // 事件委托：左侧分类点击
+        catNav.addEventListener('click', (e) => {
+            const btn = e.target.closest('.nav-item');
+            if (!btn) return;
+            switchCategory(parseInt(btn.dataset.idx, 10));
+        });
+
+        // ============================================================
+        // 初始化
+        // ============================================================
+        buildNav();
+        renderPanel(COMPARE_DATA[currentCat]);
+        animateBars();
+    </script>
 </body>
 </html>

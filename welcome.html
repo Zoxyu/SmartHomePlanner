@@ -121,6 +121,24 @@
             max-width: 640px; margin: 0 auto;
         }
 
+        /* 主行动按钮 CTA：高级渐变 + 光晕阴影 */
+        .btn-start {
+            margin-top: 30px;
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: inherit; font-size: 1rem; font-weight: 800;
+            color: #06121f; cursor: pointer;
+            padding: 15px 34px; border: none; border-radius: 999px;
+            background: linear-gradient(120deg, #38bdf8 0%, #818cf8 50%, #22d3ee 100%);
+            background-size: 200% 100%; background-position: 0% 50%;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.35), 0 0 22px rgba(129, 140, 248, 0.3);
+            transition: var(--transition);
+        }
+        .btn-start:hover {
+            transform: translateY(-2px); background-position: 100% 50%;
+            box-shadow: 0 16px 42px rgba(56, 189, 248, 0.5), 0 0 34px rgba(129, 140, 248, 0.45);
+        }
+        .btn-start:active { transform: translateY(0); }
+
         /* ========== 3) 功能卡片 ========== */
         .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
         @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
@@ -185,7 +203,7 @@
     <main class="welcome">
         <!-- 毛玻璃水晶焦点 -->
         <div class="hero-focal">
-            <span class="hero-focal__badge">SmartHome Planner Suite · Phase 5</span>
+            <span class="hero-focal__badge">✨ AI 智装管家 v1.0 现已上线</span>
             <h1 class="hero-focal__title">
                 欢迎使用 <span class="hl">AI 智装管家</span><br>您的全屋装修决策中枢
             </h1>
@@ -193,6 +211,7 @@
                 从墙漆地砖的精算防坑，到全屋弱电拓扑推演，再到 2D 空间干涉预演——
                 一站式把装修里最容易踩坑的三件事，交给数据说话。选择下方模块，即刻开始。
             </p>
+            <button class="btn-start" onclick="window.location.href='index.html'">🚀 免费开始推演</button>
         </div>
 
         <div class="cards">
@@ -242,13 +261,11 @@
             link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
         })();
 
-        // 引导卡片：通知父级中控台切换到对应模块（同源 postMessage）
+        // 独立官网模式：点击卡片携带 Hash 参数跳转至工作台并激活对应模块
         document.querySelectorAll('.card').forEach(card => {
             card.addEventListener('click', () => {
                 const route = card.dataset.route;
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ navTo: route }, '*');
-                }
+                window.location.href = `index.html#${route}`;
             });
         });
     </script>

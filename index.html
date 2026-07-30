@@ -114,15 +114,7 @@
         </div>
 
         <nav class="nav">
-            <div class="nav__label">导航</div>
-            <button class="nav-item" type="button" data-route="welcome">
-                <span class="nav-item__icon">🏠</span>
-                <span class="nav-item__meta">
-                    <div class="nav-item__name">首页 / 欢迎页</div>
-                    <div class="nav-item__desc">工作台总览 · 模块入口</div>
-                </span>
-            </button>
-            <div class="nav__label" style="margin-top:14px;">核心模块</div>
+            <div class="nav__label">核心模块</div>
             <button class="nav-item" type="button" data-route="calculator">
                 <span class="nav-item__icon">🧮</span>
                 <span class="nav-item__meta">
@@ -154,7 +146,7 @@
 
     <!-- ===== Right: content ===== -->
     <main class="content">
-        <iframe id="app-frame" src="welcome.html" title="模块内容区"></iframe>
+        <iframe id="app-frame" src="smart_calculator.html" title="模块内容区"></iframe>
     </main>
 
     <script>
@@ -162,7 +154,6 @@
         // 路由映射表：每个模块对应 iframe 源、页面标题与 Emoji 图标
         // ============================================================
         const ROUTES = {
-            welcome:    { src: 'welcome.html',          title: 'AI 智装管家 · 全屋装修决策中枢', icon: '🏠' },
             calculator: { src: 'smart_calculator.html', title: '算料管家 - AI智装',              icon: '🧮' },
             network:    { src: 'network_planner.html',  title: '弱电预演 - AI智装',              icon: '🔌' },
             sandbox:    { src: '2d_sandbox.html',       title: '空间沙盒 - AI智装',              icon: '🧊' }
@@ -195,16 +186,19 @@
 
         navItems.forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
 
-        // 点击 Logo 返回欢迎页（清除模块高亮）
-        document.getElementById('logoHome').addEventListener('click', () => navigate('welcome'));
+        // 点击 Logo 跳出工作台，返回独立官网
+        document.getElementById('logoHome').addEventListener('click', () => window.location.href = 'welcome.html');
 
-        // 接收欢迎页引导卡片的跳转请求
-        window.addEventListener('message', (e) => {
-            if (e.data && e.data.navTo && ROUTES[e.data.navTo]) navigate(e.data.navTo);
+        // 首屏初始化：读取 URL Hash 实现精准跳转，无效则默认进入算料管家
+        const initialHash = window.location.hash.replace('#', '');
+        const startRoute = ROUTES[initialHash] ? initialHash : 'calculator';
+        navigate(startRoute);
+
+        // 支持浏览器前进/后退与运行时 Hash 变化
+        window.addEventListener('hashchange', () => {
+            const key = window.location.hash.replace('#', '');
+            if (ROUTES[key]) navigate(key);
         });
-
-        // 首屏：欢迎页（iframe 已内联 src，这里补齐标题与图标状态）
-        navigate('welcome');
     </script>
 </body>
 </html>

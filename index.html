@@ -190,6 +190,13 @@
                     <div class="nav-item__desc">户型标定 · 布局干涉预演</div>
                 </span>
             </button>
+            <button class="nav-item" type="button" data-route="compare">
+                <span class="nav-item__icon">⚖️</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">选材对比库</div>
+                    <div class="nav-item__desc">硬核参数对决 · 防坑选购</div>
+                </span>
+            </button>
         </nav>
 
         <div class="sidebar__bottom">
@@ -216,7 +223,8 @@
         const ROUTES = {
             calculator: { src: 'smart_calculator.html', title: '算料管家 - AI智装',              icon: '🧮' },
             network:    { src: 'network_planner.html',  title: '弱电预演 - AI智装',              icon: '🔌' },
-            sandbox:    { src: '2d_sandbox.html',       title: '空间沙盒 - AI智装',              icon: '🧊' }
+            sandbox:    { src: '2d_sandbox.html',       title: '空间沙盒 - AI智装',              icon: '🧊' },
+            compare:    { src: 'material_compare.html', title: '选材对比库 - AI智装',            icon: '⚖️' }
         };
 
         const frame = document.getElementById('app-frame');

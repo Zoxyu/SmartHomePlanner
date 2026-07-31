@@ -7,8 +7,8 @@
     <title>AI 智装管家 · 智能弱电与网络规划引擎</title>
     <style>
         :root {
-            --accent: #3b82f6;
-            --accent-strong: #2563eb;
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
             --success: #10b981;
             --warn: #f59e0b;
             --danger: #ef4444;
@@ -37,7 +37,7 @@
             --shadow-hover: 0 18px 48px rgba(2, 6, 23, 0.5);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+        html { font-size: 16px; -webkit-font-smoothing: antialiased; background: transparent !important; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background: transparent !important;
@@ -97,7 +97,7 @@
         }
         .card__icon {
             width: 32px; height: 32px; border-radius: 10px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: #fff; display: flex; align-items: center;
             justify-content: center; font-size: 1rem; flex-shrink: 0;
         }
@@ -181,6 +181,17 @@
         }
         .qty-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
+        /* 隐藏原生数字输入框的上下箭头，并强制居中 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            text-align: center;
+        }
+
         /* ---------- Toggle ---------- */
         .toggle-group { display: flex; gap: 10px; }
         .toggle-option {
@@ -263,7 +274,7 @@
         }
         .rail-bar {
             height: 100%; width: 0%; border-radius: 999px;
-            background: linear-gradient(90deg, #3b82f6, #10b981);
+            background: linear-gradient(90deg, #38bdf8, #10b981);
             transition: width 0.45s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.3s ease;
         }
         .rail-bar.over {
@@ -421,9 +432,22 @@
             .rail-gauge__msg.over { color: #9f2f2a !important; }
             .rail-gauge__msg.idle { color: #767676 !important; }
         }
+
+        /* ---------- Toast 提示 ---------- */
+        .toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #fff;
+            padding: 10px 20px; border-radius: 999px; font-size: 0.85rem;
+            font-weight: 700; pointer-events: none; white-space: nowrap;
+            opacity: 0; transition: opacity 0.3s ease, top 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .toast.show { opacity: 1; top: 32px; }
     </style>
 </head>
 <body>
+    <div class="toast" id="sysToast"></div>
     <div class="container">
         <!-- 合同级打印页眉（仅打印可见，日期与编号由 JS 动态填充） -->
         <div class="print-header">
@@ -473,7 +497,7 @@
                             <label>需要覆盖房间数：</label>
                             <div class="qty-control visible">
                                 <button class="qty-btn" type="button" data-target="roomCount" data-delta="-1">−</button>
-                                <input type="number" class="qty-input" id="roomCountInput" value="3" min="1" max="20">
+                                <input type="number" class="qty-input" id="roomCountInput" value="3" min="1" max="1000">
                                 <button class="qty-btn" type="button" data-target="roomCount" data-delta="1">+</button>
                             </div>
                         </div>
@@ -498,7 +522,7 @@
                                 </div>
                                 <div class="qty-control" id="qtyCamera">
                                     <button class="qty-btn" type="button" data-target="camera" data-delta="-1">−</button>
-                                    <input type="number" class="qty-input" value="2" min="1" max="16" data-field="camera">
+                                    <input type="number" class="qty-input" value="2" min="1" max="1000" data-field="camera">
                                     <button class="qty-btn" type="button" data-target="camera" data-delta="1">+</button>
                                 </div>
                             </div>
@@ -510,7 +534,7 @@
                                 </div>
                                 <div class="qty-control" id="qtyNas">
                                     <button class="qty-btn" type="button" data-target="nas" data-delta="-1">−</button>
-                                    <input type="number" class="qty-input" value="1" min="1" max="4" data-field="nas">
+                                    <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="nas">
                                     <button class="qty-btn" type="button" data-target="nas" data-delta="1">+</button>
                                 </div>
                             </div>
@@ -522,7 +546,7 @@
                                 </div>
                                 <div class="qty-control" id="qtyTv">
                                     <button class="qty-btn" type="button" data-target="tv" data-delta="-1">−</button>
-                                    <input type="number" class="qty-input" value="1" min="1" max="8" data-field="tv">
+                                    <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="tv">
                                     <button class="qty-btn" type="button" data-target="tv" data-delta="1">+</button>
                                 </div>
                             </div>
@@ -534,7 +558,7 @@
                                 </div>
                                 <div class="qty-control" id="qtyCurtain">
                                     <button class="qty-btn" type="button" data-target="curtain" data-delta="-1">−</button>
-                                    <input type="number" class="qty-input" value="2" min="1" max="10" data-field="curtain">
+                                    <input type="number" class="qty-input" value="2" min="1" max="1000" data-field="curtain">
                                     <button class="qty-btn" type="button" data-target="curtain" data-delta="1">+</button>
                                 </div>
                             </div>
@@ -546,7 +570,7 @@
                                 </div>
                                 <div class="qty-control" id="qtyToilet">
                                     <button class="qty-btn" type="button" data-target="toilet" data-delta="-1">−</button>
-                                    <input type="number" class="qty-input" value="1" min="1" max="4" data-field="toilet">
+                                    <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="toilet">
                                     <button class="qty-btn" type="button" data-target="toilet" data-delta="1">+</button>
                                 </div>
                             </div>
@@ -661,6 +685,17 @@
             });
         })();
 
+        // ---------- Toast 工具函数 ----------
+        let toastTimer = null;
+        function showToast(msg) {
+            const el = document.getElementById('sysToast');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
         // ========== State ==========
         const config = {
             netMode: 'mesh',
@@ -710,6 +745,11 @@
         });
 
         roomInput.addEventListener('input', () => {
+            const MAX_LIMIT = 1000;
+            if (parseInt(roomInput.value, 10) > MAX_LIMIT) {
+                roomInput.value = MAX_LIMIT;
+                showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
+            }
             config.roomCount = Math.max(1, parseInt(roomInput.value, 10) || 1);
             recalc();
         });
@@ -727,6 +767,11 @@
                 recalc();
             });
             numIn.addEventListener('input', () => {
+                const MAX_LIMIT = 1000;
+                if (parseInt(numIn.value, 10) > MAX_LIMIT) {
+                    numIn.value = MAX_LIMIT;
+                    showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
+                }
                 config[key].qty = Math.max(1, parseInt(numIn.value, 10) || 1);
                 recalc();
             });
@@ -738,12 +783,21 @@
                 const delta = parseInt(btn.dataset.delta, 10);
                 const target = btn.dataset.target;
                 if (target === 'roomCount') {
-                    const v = Math.max(1, Math.min(20, config.roomCount + delta));
+                    const mx = parseInt(roomInput.max, 10) || 1000;
+                    let v = config.roomCount + delta;
+                    if (v > mx) {
+                        v = mx;
+                        if (delta > 0) showToast(`为保证推演性能，单项数值最高不可超过 ${mx} 哦`);
+                    } else if (v < 1) { v = 1; }
                     config.roomCount = v; roomInput.value = v;
                 } else if (deviceKeys.includes(target)) {
                     const inp = btn.closest('.qty-control').querySelector('input');
-                    const mx = parseInt(inp.max, 10) || 99;
-                    const v = Math.max(1, Math.min(mx, config[target].qty + delta));
+                    const mx = parseInt(inp.max, 10) || 1000;
+                    let v = config[target].qty + delta;
+                    if (v > mx) {
+                        v = mx;
+                        if (delta > 0) showToast(`为保证推演性能，单项数值最高不可超过 ${mx} 哦`);
+                    } else if (v < 1) { v = 1; }
                     config[target].qty = v; inp.value = v;
                 }
                 recalc();
@@ -942,7 +996,14 @@
             }
         }
 
-        [railTotalInput, railUsedInput].forEach(inp => inp.addEventListener('input', checkRailSpace));
+        [railTotalInput, railUsedInput].forEach(inp => inp.addEventListener('input', () => {
+                    const MAX_LIMIT = 1000;
+                    if (parseInt(inp.value, 10) > MAX_LIMIT) {
+                        inp.value = MAX_LIMIT;
+                        showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
+                    }
+                    checkRailSpace();
+                }));
         checkRailSpace();
 
         // ========== localStorage 持久化（零依赖） ==========

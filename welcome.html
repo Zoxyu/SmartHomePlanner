@@ -38,7 +38,7 @@
             --fab-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { min-height: 100%; background: var(--bg-base); }
+        html { min-height: 100%; background: var(--bg-base) !important; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background: transparent !important;
@@ -48,6 +48,18 @@
             padding: 48px 24px; -webkit-font-smoothing: antialiased;
             position: relative; overflow-x: hidden;
         }
+
+        /* ---------- 全局动态弥散光晕 ---------- */
+        .aura { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+        .aura__blob { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; }
+        .aura__blob--1 { width: 620px; height: 620px; top: -140px; left: -120px; background: #ec4899; opacity: 0.38; animation: drift1 10s ease-in-out infinite; }
+        .aura__blob--2 { width: 560px; height: 560px; top: 20%; right: -160px; background: #06b6d4; opacity: 0.34; animation: drift2 8s ease-in-out infinite; }
+        .aura__blob--3 { width: 600px; height: 600px; bottom: -180px; left: 20%; background: #8b5cf6; opacity: 0.30; animation: drift3 12s ease-in-out infinite; }
+        .aura__blob--4 { width: 480px; height: 480px; top: 28%; left: 34%; background: #3b82f6; opacity: 0.26; animation: drift4 14s ease-in-out infinite; }
+        @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(190px, 150px) scale(1.35); } }
+        @keyframes drift2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-200px, 130px) scale(0.8); } }
+        @keyframes drift3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(170px, -180px) scale(1.35); } }
+        @keyframes drift4 { 0%, 100% { transform: translate(0, 0) scale(0.85); } 50% { transform: translate(-180px, -120px) scale(1.25); } }
 
         /* ========== Layout ========== */
         .welcome { position: relative; z-index: 1; max-width: 980px; width: 100%; text-align: center; }
@@ -187,6 +199,14 @@
     </style>
 </head>
 <body>
+    <!-- ===== 全局动态弥散光晕 ===== -->
+    <div class="aura" aria-hidden="true">
+        <div class="aura__blob aura__blob--1"></div>
+        <div class="aura__blob aura__blob--2"></div>
+        <div class="aura__blob aura__blob--3"></div>
+        <div class="aura__blob aura__blob--4"></div>
+    </div>
+
     <!-- 主题切换悬浮按钮（与工作台共用 shp_theme 缓存） -->
     <button class="theme-fab" id="themeFab" type="button" title="切换浅色/深色主题">🌙</button>
 
@@ -254,31 +274,52 @@
     </main>
 
     <script>
-        // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
+        // ========== 主题同步：三态循环 light → dark → system + 监听父框架广播 ==========
         (function initThemeSync() {
             const THEME_KEY = 'shp_theme';
             const fab = document.getElementById('themeFab');
-            function applyTheme(theme) {
-                document.documentElement.dataset.theme = theme;
-                if (fab) fab.textContent = theme === 'light' ? '🌞' : '🌙';
+            const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+            const ICONS = { light: '🌞', dark: '🌙', system: '💻' };
+
+            function getPref() {
+                try {
+                    const v = localStorage.getItem(THEME_KEY);
+                    if (v === 'light' || v === 'dark' || v === 'system') return v;
+                } catch (e) {}
+                return 'dark';
             }
-            // 首屏：从本地缓存恢复主题（默认深色）
-            let current = 'dark';
-            try {
-                const saved = localStorage.getItem(THEME_KEY);
-                if (saved === 'light' || saved === 'dark') current = saved;
-            } catch (e) {}
-            applyTheme(current);
-            // 悬浮按钮：切换 html data-theme 并写回 localStorage，与 index.html 互通
+            function resolve(pref) {
+                return pref === 'system' ? (darkMQ.matches ? 'dark' : 'light') : pref;
+            }
+            function apply(pref) {
+                document.documentElement.dataset.theme = resolve(pref);
+                if (fab) fab.textContent = ICONS[pref];
+            }
+
+            // 首屏恢复
+            apply(getPref());
+
+            // 悬浮按钮：三态循环
             if (fab) {
                 fab.addEventListener('click', () => {
-                    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-                    applyTheme(next);
+                    const order = ['light', 'dark', 'system'];
+                    const cur = getPref();
+                    const next = order[(order.indexOf(cur) + 1) % 3];
+                    apply(next);
                     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
                 });
             }
+
+            // 系统主题变化监听
+            darkMQ.addEventListener('change', () => {
+                if (getPref() === 'system') apply('system');
+            });
+
+            // 监听父框架 postMessage 广播
             window.addEventListener('message', (e) => {
-                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) {
+                    document.documentElement.dataset.theme = e.data.theme;
+                }
             });
         })();
 

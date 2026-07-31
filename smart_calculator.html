@@ -7,8 +7,8 @@
     <title>AI 智装管家 · 傻瓜式防坑算料器</title>
     <style>
         :root {
-            --accent: #3b82f6;
-            --accent-strong: #2563eb;
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
             --success: #10b981;
             --warn: #f59e0b;
             --danger: #ef4444;
@@ -46,6 +46,7 @@
         html {
             font-size: 16px;
             -webkit-font-smoothing: antialiased;
+            background: transparent !important;
         }
 
         body {
@@ -147,7 +148,7 @@
             width: 32px;
             height: 32px;
             border-radius: 10px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: #fff;
             display: flex;
             align-items: center;
@@ -175,7 +176,7 @@
         }
 
         .room-card--active {
-            border-color: #3b82f6;
+            border-color: #38bdf8;
             box-shadow:
                 0 0 0 1px rgba(59, 130, 246, 0.15),
                 0 12px 40px rgba(37, 99, 235, 0.18);
@@ -298,7 +299,7 @@
         .btn-primary {
             flex: 1;
             border: none;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: #fff;
             font-size: 0.88rem;
             font-weight: 700;
@@ -402,10 +403,82 @@
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
         }
 
+        /* 隐藏原生数字输入框的上下箭头，并强制居中 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            text-align: center;
+        }
+
         .form-hint {
             font-size: 0.75rem;
             color: var(--text-muted);
             margin-top: 4px;
+        }
+
+        /* ---------- Radio 视觉选项卡 ---------- */
+        .radio-grid {
+            display: grid;
+            gap: 8px;
+        }
+        .radio-grid--2x2 { grid-template-columns: 1fr 1fr; }
+        .radio-grid--2col { grid-template-columns: 1fr 1fr; }
+
+        .radio-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border-sub);
+            background: var(--inner-bg);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-align: center;
+            user-select: none;
+        }
+        .radio-option:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+            color: var(--text-main);
+        }
+        .radio-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+        }
+        .radio-option:has(input:checked) {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.08);
+            color: var(--accent-strong);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+
+        /* 自定义尺寸联动输入行 */
+        .custom-tile-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .custom-tile-row .form-input {
+            width: 90px;
+            padding: 10px 8px;
+            font-size: 0.88rem;
+        }
+        .custom-tile-row span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
         }
 
         .divider {
@@ -664,9 +737,22 @@
             .summary-item__value { color: #23408e !important; }
             .empty-tip { color: #909090 !important; }
         }
+
+        /* ---------- Toast 提示 ---------- */
+        .toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #fff;
+            padding: 10px 20px; border-radius: 999px; font-size: 0.85rem;
+            font-weight: 700; pointer-events: none; white-space: nowrap;
+            opacity: 0; transition: opacity 0.3s ease, top 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .toast.show { opacity: 1; top: 32px; }
     </style>
 </head>
 <body>
+    <div class="toast" id="sysToast"></div>
 
     <div class="container">
         <!-- 合同级打印页眉（仅打印可见，日期与编号由 JS 动态填充） -->
@@ -772,6 +858,17 @@
             });
         })();
 
+        // ---------- Toast 工具函数 ----------
+        let toastTimer = null;
+        function showToast(msg) {
+            const el = document.getElementById('sysToast');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
         // ---------- State ----------
         let rooms = [];
         let activeRoomId = null;
@@ -817,6 +914,18 @@
             '150x900': '木纹砖 (150 × 900 mm)'
         };
 
+        const layPatternLabels = {
+            'straight': '正铺',
+            'gongzi': '工字铺',
+            'herringbone': '人字/鱼骨铺'
+        };
+
+        const wasteRates = {
+            'straight': 0.05,
+            'gongzi': 0.08,
+            'herringbone': 0.12
+        };
+
         // ---------- Helpers ----------
         const toNum = (val) => {
             const n = parseFloat(val);
@@ -838,6 +947,10 @@
             windowWidth: 0,
             windowHeight: 0,
             tileSize: '800x800',
+            customTileW: 800,
+            customTileH: 800,
+            layPattern: 'straight',
+            groutWidth: 1.5,
             coats: 2,
             paintNote: ''
         });
@@ -861,11 +974,19 @@
 
             const floorArea = length * width;
 
-            // Tile
-            const [tileW, tileH] = room.tileSize.split('x').map(Number);
-            const tileAreaSqM = (tileW * tileH) / 1000000;
+            // Tile — 行业级算法：含留缝 + 铺贴损耗
+            let tileW, tileH;
+            if (room.tileSize === 'custom') {
+                tileW = toNum(room.customTileW) || 800;
+                tileH = toNum(room.customTileH) || 800;
+            } else {
+                [tileW, tileH] = room.tileSize.split('x').map(Number);
+            }
+            const grout = toNum(room.groutWidth); // mm
+            const tileAreaSqM = ((tileW + grout) * (tileH + grout)) / 1000000;
+            const wasteRate = wasteRates[room.layPattern] || 0.05;
             const tileCount = tileAreaSqM > 0 && floorArea > 0
-                ? Math.ceil((floorArea / tileAreaSqM) * 1.05)
+                ? Math.ceil((floorArea / tileAreaSqM) * (1 + wasteRate))
                 : 0;
 
             // Paint
@@ -880,7 +1001,9 @@
                 floorArea,
                 tileAreaSqM,
                 tileCount,
-                paintLiters
+                paintLiters,
+                wasteRate,
+                layPatternLabel: layPatternLabels[room.layPattern] || '正铺'
             };
         };
 
@@ -952,19 +1075,48 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">地砖尺寸</label>
-                        <select class="form-select" data-field="tileSize">
-                            <option value="800x800" ${room.tileSize === '800x800' ? 'selected' : ''}>800 × 800 mm</option>
-                            <option value="600x1200" ${room.tileSize === '600x1200' ? 'selected' : ''}>600 × 1200 mm</option>
-                            <option value="750x1500" ${room.tileSize === '750x1500' ? 'selected' : ''}>750 × 1500 mm</option>
-                            <option value="150x900" ${room.tileSize === '150x900' ? 'selected' : ''}>木纹砖 (150 × 900 mm)</option>
-                        </select>
+                        <div class="radio-grid radio-grid--2x2" data-field="tileSize">
+                            <label class="radio-option"><input type="radio" name="tileSize_${room.id}" value="800x800" data-field="tileSize" ${room.tileSize === '800x800' ? 'checked' : ''}>800×800</label>
+                            <label class="radio-option"><input type="radio" name="tileSize_${room.id}" value="600x1200" data-field="tileSize" ${room.tileSize === '600x1200' ? 'checked' : ''}>600×1200</label>
+                            <label class="radio-option"><input type="radio" name="tileSize_${room.id}" value="750x1500" data-field="tileSize" ${room.tileSize === '750x1500' ? 'checked' : ''}>750×1500</label>
+                            <label class="radio-option"><input type="radio" name="tileSize_${room.id}" value="150x900" data-field="tileSize" ${room.tileSize === '150x900' ? 'checked' : ''}>木纹砖 150×900</label>
+                            <label class="radio-option"><input type="radio" name="tileSize_${room.id}" value="custom" data-field="tileSize" ${room.tileSize === 'custom' ? 'checked' : ''}>自定义尺寸</label>
+                        </div>
+                        <div class="custom-tile-row" data-custom-tile style="display: ${room.tileSize === 'custom' ? 'flex' : 'none'};">
+                            <input type="number" class="form-input" data-field="customTileW" value="${room.customTileW || 800}" min="1" max="1000" step="1">
+                            <span>×</span>
+                            <input type="number" class="form-input" data-field="customTileH" value="${room.customTileH || 800}" min="1" max="1000" step="1">
+                            <span>mm</span>
+                        </div>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">铺贴方式</label>
+                        <div class="radio-grid radio-grid--2x2" data-field="layPattern">
+                            <label class="radio-option"><input type="radio" name="layPattern_${room.id}" value="straight" data-field="layPattern" ${(room.layPattern || 'straight') === 'straight' ? 'checked' : ''}>正铺 (损耗5%)</label>
+                            <label class="radio-option"><input type="radio" name="layPattern_${room.id}" value="gongzi" data-field="layPattern" ${room.layPattern === 'gongzi' ? 'checked' : ''}>工字铺 (损耗8%)</label>
+                            <label class="radio-option"><input type="radio" name="layPattern_${room.id}" value="herringbone" data-field="layPattern" ${room.layPattern === 'herringbone' ? 'checked' : ''}>人字/鱼骨铺 (损耗12%)</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">留缝宽度</label>
+                        <div class="radio-grid radio-grid--2col" data-field="groutWidth">
+                            <label class="radio-option"><input type="radio" name="groutWidth_${room.id}" value="0" data-field="groutWidth" ${String(room.groutWidth) === '0' ? 'checked' : ''}>无缝/密拼 (0mm)</label>
+                            <label class="radio-option"><input type="radio" name="groutWidth_${room.id}" value="1" data-field="groutWidth" ${String(room.groutWidth) === '1' ? 'checked' : ''}>密缝 (1mm)</label>
+                            <label class="radio-option"><input type="radio" name="groutWidth_${room.id}" value="1.5" data-field="groutWidth" ${String(room.groutWidth) === '1.5' ? 'checked' : ''}>常规 (1.5mm)</label>
+                            <label class="radio-option"><input type="radio" name="groutWidth_${room.id}" value="2.5" data-field="groutWidth" ${String(room.groutWidth) === '2.5' ? 'checked' : ''}>宽缝 (2.5mm)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-grid">
+                    <div class="form-group">
                         <label class="form-label">涂刷遍数</label>
-                        <select class="form-select" data-field="coats">
-                            <option value="2" ${room.coats === 2 ? 'selected' : ''}>两遍（底漆1+面漆2）</option>
-                            <option value="1" ${room.coats === 1 ? 'selected' : ''}>一遍</option>
-                        </select>
+                        <div class="radio-grid radio-grid--2col" data-field="coats">
+                            <label class="radio-option"><input type="radio" name="coats_${room.id}" value="2" data-field="coats" ${room.coats === 2 ? 'checked' : ''}>两遍（底漆1+面漆2）</label>
+                            <label class="radio-option"><input type="radio" name="coats_${room.id}" value="1" data-field="coats" ${room.coats === 1 ? 'checked' : ''}>一遍</label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">墙漆备注</label>
@@ -1002,10 +1154,14 @@
             const room = rooms.find(r => r.id === id);
             if (!room || !field) return null;
 
-            if (field === 'paintNote' || field === 'tileSize') {
+            if (field === 'paintNote' || field === 'tileSize' || field === 'layPattern') {
                 room[field] = input.value;
             } else if (field === 'coats') {
                 room[field] = parseInt(input.value, 10) || 2;
+            } else if (field === 'groutWidth') {
+                room[field] = parseFloat(input.value) || 0;
+            } else if (field === 'customTileW' || field === 'customTileH') {
+                room[field] = toNum(input.value);
             } else {
                 room[field] = input.value;
             }
@@ -1042,7 +1198,7 @@
                 paintDetailEl.textContent = `净墙面 ${formatArea(currentData.netWallArea)} ㎡，${paintAdvice.detailText}`;
 
                 tileCountEl.textContent = currentData.tileCount.toString();
-                tileDetailEl.textContent = `地面 ${formatArea(currentData.floorArea)} ㎡，单块 ${currentData.tileAreaSqM.toFixed(3)} ㎡（已含 5% 损耗）`;
+                tileDetailEl.textContent = `地面 ${formatArea(currentData.floorArea)} ㎡，采用${currentData.layPatternLabel}(损耗${Math.round(currentData.wasteRate * 100)}%)，单块(含缝) ${currentData.tileAreaSqM.toFixed(3)} ㎡`;
 
                 if (oldPaintText !== paintBucketsEl.textContent) {
                     animateValueChange(paintBucketsEl, paintCard);
@@ -1067,7 +1223,12 @@
                 const data = computeRoom(room);
                 totalPaintLiters += data.paintLiters;
 
-                const label = tileSpecLabels[room.tileSize] || room.tileSize;
+                let label;
+                if (room.tileSize === 'custom') {
+                    label = `自定义 ${room.customTileW}×${room.customTileH} mm`;
+                } else {
+                    label = tileSpecLabels[room.tileSize] || room.tileSize;
+                }
                 if (!tileSummary[label]) tileSummary[label] = 0;
                 tileSummary[label] += data.tileCount;
             });
@@ -1107,16 +1268,32 @@
         roomsListEl.addEventListener('input', (e) => {
             const input = e.target;
             if (!input.matches('[data-field]')) return;
+            // 强制拦截数字输入上限
+            if (input.type === 'number') {
+                const MAX_LIMIT = 1000;
+                if (parseInt(input.value, 10) > MAX_LIMIT) {
+                    input.value = MAX_LIMIT;
+                    showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
+                }
+            }
             syncStateFromInput(input);
             updateResults();
             saveCalcState(); // 输入即存：长宽高/门窗等数值实时落盘
         });
 
-        // select 在部分旧内核上只发 change 不发 input，委托兼容两类事件
+        // select/radio 在部分旧内核上只发 change 不发 input，委托兼容两类事件
         roomsListEl.addEventListener('change', (e) => {
             const input = e.target;
             if (!input.matches('[data-field]')) return;
             syncStateFromInput(input);
+
+            // 自定义尺寸联动显隐
+            if (input.dataset.field === 'tileSize') {
+                const card = input.closest('.room-card');
+                const customRow = card && card.querySelector('[data-custom-tile]');
+                if (customRow) customRow.style.display = input.value === 'custom' ? 'flex' : 'none';
+            }
+
             updateResults();
             saveCalcState();
         });
@@ -1255,6 +1432,13 @@
 
             if (saved && Array.isArray(saved.rooms) && saved.rooms.length) {
                 rooms = saved.rooms.slice(0, MAX_ROOMS);
+                // 向后兼容：旧缓存缺少新字段时补默认值
+                rooms.forEach(r => {
+                    if (r.layPattern === undefined) r.layPattern = 'straight';
+                    if (r.groutWidth === undefined) r.groutWidth = 1.5;
+                    if (r.customTileW === undefined) r.customTileW = 800;
+                    if (r.customTileH === undefined) r.customTileH = 800;
+                });
                 nextId = saved.nextId || (Math.max(...rooms.map(r => r.id)) + 1);
                 activeRoomId = rooms.some(r => r.id === saved.activeRoomId) ? saved.activeRoomId : rooms[0].id;
             } else {

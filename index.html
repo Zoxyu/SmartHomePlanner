@@ -11,7 +11,7 @@
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         /* ===== 昼夜主题变量（默认夜间） ===== */
-        :root, body[data-theme="dark"] {
+        :root, html[data-theme="dark"] {
             --bg-base: #0f172a;
             --text-light: #e2e8f0;
             --text-dim: #94a3b8;
@@ -20,7 +20,7 @@
             --toggle-bg: rgba(148, 163, 184, 0.08);
             --toggle-border: rgba(148, 163, 184, 0.2);
         }
-        body[data-theme="light"] {
+        html[data-theme="light"] {
             --bg-base: #edf1f8;
             --text-light: #1e293b;
             --text-dim: #475569;
@@ -61,7 +61,22 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid var(--sidebar-border);
             position: relative; z-index: 1;
+            transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            white-space: nowrap; overflow: hidden;
         }
+
+        /* 折叠按钮悬浮在侧边栏右侧边界 */
+        .sidebar-toggle {
+            position: absolute; top: 34px; right: -14px; z-index: 50;
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--bg-base); border: 1px solid var(--sidebar-border);
+            color: var(--text-dim); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            font-size: 0.8rem; font-family: monospace;
+        }
+        .sidebar-toggle:hover { color: var(--accent); border-color: var(--accent); }
+        .sidebar-toggle * { pointer-events: none; }
         .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; cursor: pointer; }
         .logo__mark {
             width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
@@ -69,7 +84,7 @@
             background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(129,140,248,0.22));
             border: 1px solid rgba(56, 189, 248, 0.3);
         }
-        .logo__text { min-width: 0; }
+        .logo__text { min-width: 0; transition: opacity 0.2s ease; opacity: 1; }
         .logo__title { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
         .logo__badge {
             display: inline-block; font-size: 0.56rem; font-weight: 700;
@@ -81,6 +96,7 @@
         .nav__label {
             font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.14em; color: #64748b; padding: 0 12px; margin-bottom: 6px;
+            transition: opacity 0.2s ease; opacity: 1;
         }
         .nav-item {
             display: flex; align-items: center; gap: 12px;
@@ -101,7 +117,7 @@
             background: rgba(148, 163, 184, 0.1); transition: var(--transition);
         }
         .nav-item.active .nav-item__icon { background: rgba(56, 189, 248, 0.18); }
-        .nav-item__meta { min-width: 0; }
+        .nav-item__meta { min-width: 0; transition: opacity 0.2s ease; opacity: 1; }
         .nav-item__name { line-height: 1.2; }
         .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: #64748b; margin-top: 3px; white-space: nowrap; }
         .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
@@ -116,11 +132,26 @@
         }
         .theme-toggle:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.4); }
         .theme-toggle__icon { font-size: 1.05rem; line-height: 1; }
+        .theme-toggle__label { transition: opacity 0.2s ease; opacity: 1; }
         .sidebar__footer {
             padding: 14px 12px 0;
             border-top: 1px solid rgba(148, 163, 184, 0.1);
             font-size: 0.66rem; color: #64748b; line-height: 1.8;
+            transition: opacity 0.2s ease; opacity: 1;
         }
+
+        /* ============ 折叠状态 (.sidebar--collapsed) ============ */
+        .sidebar--collapsed { width: 88px; padding-left: 12px; padding-right: 12px; }
+        .sidebar--collapsed .sidebar-toggle { transform: rotate(180deg); }
+        .sidebar--collapsed .logo { justify-content: center; padding: 4px 0 0; }
+        .sidebar--collapsed .logo__text,
+        .sidebar--collapsed .nav__label,
+        .sidebar--collapsed .nav-item__meta,
+        .sidebar--collapsed .theme-toggle__label,
+        .sidebar--collapsed .sidebar__footer { opacity: 0; pointer-events: none; }
+        .sidebar--collapsed .nav-item { justify-content: center; padding: 12px 0; }
+        .sidebar--collapsed .theme-toggle { justify-content: center; padding: 11px 0; }
+        .sidebar--collapsed .nav-item__icon { margin: 0; }
 
         /* ---------- Content ---------- */
         .content { flex: 1; position: relative; z-index: 1; background: transparent; }
@@ -159,6 +190,7 @@
 
     <!-- ===== Left: dark sidebar ===== -->
     <aside class="sidebar">
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" title="收起/展开侧边栏">◀</button>
         <div class="logo" id="logoHome" title="返回工作台首页">
             <span class="logo__mark">🏠</span>
             <span class="logo__text">
@@ -169,28 +201,28 @@
 
         <nav class="nav">
             <div class="nav__label">核心模块</div>
-            <button class="nav-item" type="button" data-route="calculator">
+            <button class="nav-item" type="button" data-route="calculator" title="算料管家">
                 <span class="nav-item__icon">🧮</span>
                 <span class="nav-item__meta">
                     <div class="nav-item__name">算料管家</div>
                     <div class="nav-item__desc">墙漆地砖 · 傻瓜式防坑算料</div>
                 </span>
             </button>
-            <button class="nav-item" type="button" data-route="network">
+            <button class="nav-item" type="button" data-route="network" title="弱电预演">
                 <span class="nav-item__icon">🔌</span>
                 <span class="nav-item__meta">
                     <div class="nav-item__name">弱电预演</div>
                     <div class="nav-item__desc">网络拓扑 · 强电空开推演</div>
                 </span>
             </button>
-            <button class="nav-item" type="button" data-route="sandbox">
+            <button class="nav-item" type="button" data-route="sandbox" title="2D 空间沙盒">
                 <span class="nav-item__icon">🧊</span>
                 <span class="nav-item__meta">
                     <div class="nav-item__name">2D 空间沙盒</div>
                     <div class="nav-item__desc">户型标定 · 布局干涉预演</div>
                 </span>
             </button>
-            <button class="nav-item" type="button" data-route="compare">
+            <button class="nav-item" type="button" data-route="compare" title="选材对比库">
                 <span class="nav-item__icon">⚖️</span>
                 <span class="nav-item__meta">
                     <div class="nav-item__name">选材对比库</div>
@@ -231,43 +263,67 @@
         const navItems = document.querySelectorAll('.nav-item');
 
         // ============================================================
-        // 全局昼夜主题：切换 + 持久化 + 跨 iframe 广播
+        // 全局昼夜主题：三态循环 light → dark → system + 持久化 + 跨 iframe 广播
         // ============================================================
         const THEME_KEY = 'shp_theme';
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         const themeLabel = document.getElementById('themeLabel');
+        const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
 
-        function getTheme() {
-            return document.body.dataset.theme === 'light' ? 'light' : 'dark';
+        // 获取当前存储的主题偏好（light / dark / system）
+        function getThemePref() {
+            try {
+                const v = localStorage.getItem(THEME_KEY);
+                if (v === 'light' || v === 'dark' || v === 'system') return v;
+            } catch (e) {}
+            return 'dark';
         }
 
-        // 通过 postMessage 把主题推送给 iframe，子页面监听后同步自身 data-theme
-        function broadcastTheme(theme) {
-            try { if (frame.contentWindow) frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
+        // 根据偏好解析实际应用的底层主题
+        function resolveTheme(pref) {
+            if (pref === 'system') return darkMQ.matches ? 'dark' : 'light';
+            return pref;
         }
 
-        function applyTheme(theme) {
-            document.body.dataset.theme = theme;
-            themeIcon.textContent = theme === 'light' ? '🌞' : '🌙';
-            themeLabel.textContent = theme === 'light' ? '浅色主题' : '深色主题';
-            try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
-            broadcastTheme(theme);
+        // 通过 postMessage 把主题推送给 iframe
+        function broadcastTheme(actual) {
+            try { if (frame.contentWindow) frame.contentWindow.postMessage({ theme: actual }, '*'); } catch (e) {}
         }
 
+        const THEME_META = {
+            light:  { icon: '🌞', label: '浅色主题' },
+            dark:   { icon: '🌙', label: '深色主题' },
+            system: { icon: '💻', label: '跟随系统' }
+        };
+
+        function applyThemePref(pref) {
+            const actual = resolveTheme(pref);
+            document.documentElement.dataset.theme = actual;
+            themeIcon.textContent = THEME_META[pref].icon;
+            themeLabel.textContent = THEME_META[pref].label;
+            try { localStorage.setItem(THEME_KEY, pref); } catch (e) {}
+            broadcastTheme(actual);
+        }
+
+        // 三态循环：light → dark → system → light
         themeToggle.addEventListener('click', () => {
-            applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+            const order = ['light', 'dark', 'system'];
+            const cur = getThemePref();
+            const next = order[(order.indexOf(cur) + 1) % 3];
+            applyThemePref(next);
         });
 
-        // iframe 载入新模块后重新广播当前主题，确保新页面同步
-        frame.addEventListener('load', () => broadcastTheme(getTheme()));
+        // 系统主题变化监听：仅在 system 模式时响应
+        darkMQ.addEventListener('change', () => {
+            if (getThemePref() === 'system') applyThemePref('system');
+        });
 
-        // 首屏：从本地缓存恢复主题（默认夜间）
-        (function initTheme() {
-            let saved = 'dark';
-            try { saved = localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch (e) {}
-            applyTheme(saved);
-        })();
+        // iframe 载入新模块后重新广播当前主题
+        frame.addEventListener('load', () => broadcastTheme(resolveTheme(getThemePref())));
+
+        // 首屏初始化
+        applyThemePref(getThemePref());
 
         // 动态 Favicon：用 SVG Data URI 把 Emoji 渲染成标签页图标
         function setFavicon(emoji) {
@@ -289,6 +345,8 @@
             navItems.forEach(n => n.classList.toggle('active', n.dataset.route === key));
             document.title = route.title;
             setFavicon(route.icon);
+            // 新增：静默更新浏览器 URL 的 Hash，确保刷新时不丢失当前模块
+            window.history.replaceState(null, '', '#' + key);
         }
 
         navItems.forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
@@ -306,6 +364,30 @@
             const key = window.location.hash.replace('#', '');
             if (ROUTES[key]) navigate(key);
         });
+
+        // ========== 侧边栏收起/展开逻辑 ==========
+        const SIDEBAR_KEY = 'shp_sidebar_collapsed';
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        function toggleSidebar(isCollapsed) {
+            sidebar.classList.toggle('sidebar--collapsed', isCollapsed);
+            try { localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0'); } catch (e) {}
+        }
+
+        sidebarToggle.addEventListener('click', () => {
+            const currentlyCollapsed = sidebar.classList.contains('sidebar--collapsed');
+            toggleSidebar(!currentlyCollapsed);
+        });
+
+        // 首屏初始化：读取本地缓存恢复侧边栏状态
+        (function initSidebar() {
+            try {
+                if (localStorage.getItem(SIDEBAR_KEY) === '1') {
+                    toggleSidebar(true);
+                }
+            } catch (e) {}
+        })();
     </script>
 </body>
 </html>

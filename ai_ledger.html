@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>if (window.self === window.top) window.location.replace('index.html#ledger');</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 智装管家 · 智能记账本</title>
     <style>
@@ -53,6 +54,21 @@
             padding: 40px 20px 140px;
         }
 
+        /* 全局悬浮防伪水印（屏幕与打印双端生效） */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            /* 利用 SVG Data URI 生成 -45度 浅灰色水印 */
+            background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cg transform='translate(200,200) rotate(-45)' opacity='0.08'%3E%3Ctext x='0' y='0' font-family='sans-serif' font-size='22' font-weight='800' fill='%2364748b' text-anchor='middle' alignment-baseline='middle'%3EAI 智装管家 · 专属推演方案%3C/text%3E%3C/g%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-position: center center;
+            z-index: 9999; /* 强制置于所有 UI 元素之上 */
+            pointer-events: none; /* 核心：绝不阻挡任何鼠标点击和触摸事件 */
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -70,9 +86,10 @@
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: var(--accent-strong);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 6px 12px;
+            color: var(--accent, #38bdf8);
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 6px 14px;
             border-radius: 999px;
             margin-bottom: 12px;
         }
@@ -440,7 +457,10 @@
 
         <!-- Ledger -->
         <section class="ledger" aria-label="记账流水">
-            <h2 class="ledger__title">记账流水</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 class="ledger__title" style="margin-bottom: 0;">记账流水</h2>
+                <button id="clearLedgerBtn" type="button" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 5px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">🗑️ 清空账单缓存</button>
+            </div>
             <div class="ledger-list" id="ledgerList"></div>
         </section>
     </div>
@@ -477,26 +497,21 @@
         // ---------- Data & State ----------
         const BUDGET = 300000;
 
-        let transactions = [
-            {
-                id: 1,
-                date: '2026-07-27',
-                category: '硬装',
-                subcategory: '水电改造',
-                summary: '水电改造材料与人工',
-                amount: 5000,
-                icon: '🔧'
-            },
-            {
-                id: 2,
-                date: '2026-07-28',
-                category: '家电',
-                subcategory: '洗碗机',
-                summary: '洗碗机采购',
-                amount: 4500,
-                icon: '🍽️'
-            }
+        const LEDGER_STORAGE_KEY = 'shp_ledger_state_v1';
+        const defaultTransactions = [
+            { id: 1, date: '2026-07-27', category: '硬装', subcategory: '水电改造', summary: '水电改造材料与人工', amount: 5000, icon: '🔧' },
+            { id: 2, date: '2026-07-28', category: '家电', subcategory: '洗碗机', summary: '洗碗机采购', amount: 4500, icon: '🍽️' }
         ];
+        let transactions = [];
+        try {
+            const saved = localStorage.getItem(LEDGER_STORAGE_KEY);
+            transactions = saved ? JSON.parse(saved) : [...defaultTransactions];
+        } catch (e) {
+            transactions = [...defaultTransactions];
+        }
+        const saveLedgerState = () => {
+            try { localStorage.setItem(LEDGER_STORAGE_KEY, JSON.stringify(transactions)); } catch (e) {}
+        };
 
         // ---------- DOM refs ----------
         const elTotalBudget = document.getElementById('totalBudget');
@@ -635,6 +650,7 @@
 
         // ---------- Send Handler ----------
         const handleSend = () => {
+            if (elBtn.disabled) return;
             const rawText = elInput.value.trim();
             if (!rawText) return;
 
@@ -651,6 +667,7 @@
                         id: Date.now(),
                         ...parsed
                     });
+                    saveLedgerState();
                     updateUI();
                 }
 
@@ -669,6 +686,13 @@
 
         // ---------- Init ----------
         updateUI();
+
+        document.getElementById('clearLedgerBtn').addEventListener('click', () => {
+            if (!confirm('确定要清空所有账单并删除本地缓存吗？此操作不可撤销。')) return;
+            localStorage.removeItem(LEDGER_STORAGE_KEY);
+            transactions = [];
+            updateUI();
+        });
     </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" style="background: transparent !important;">
 <head>
     <meta charset="UTF-8">
     <script>if (window.self === window.top) window.location.replace('index.html#ledger');</script>
@@ -7,8 +7,8 @@
     <title>AI 智装管家 · 智能记账本</title>
     <style>
         :root {
-            --accent: #3b82f6;
-            --accent-strong: #2563eb;
+            --accent: #38bdf8;
+            --accent-strong: #0ea5e9;
             --success: #10b981;
             --warn: #f59e0b;
             --danger: #ef4444;
@@ -161,7 +161,7 @@
         /* ---------- Progress ---------- */
         .progress-card {
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--card-border);
             backdrop-filter: blur(18px) saturate(150%);
             -webkit-backdrop-filter: blur(18px) saturate(150%);
             border-radius: var(--radius);
@@ -200,7 +200,7 @@
         .progress__fill {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
             border-radius: 999px;
             transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
@@ -225,7 +225,7 @@
 
         .ledger-item {
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--card-border);
             backdrop-filter: blur(18px) saturate(150%);
             -webkit-backdrop-filter: blur(18px) saturate(150%);
             border-radius: var(--radius);
@@ -359,16 +359,16 @@
             font-size: 0.95rem;
             font-weight: 700;
             cursor: pointer;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: #fff;
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 6px 18px rgba(14, 165, 233, 0.3);
             transition: var(--transition);
             font-family: inherit;
         }
 
         .ai-bar__btn:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+            box-shadow: 0 10px 24px rgba(14, 165, 233, 0.4);
         }
 
         .ai-bar__btn:disabled {
@@ -415,6 +415,53 @@
             .ai-bar__btn {
                 width: 100%;
             }
+        }
+
+        /* ---------- Print / PDF export ---------- */
+        .print-header, .print-footer { display: none; }
+        .btn-print-ledger {
+            width: 100%; margin-top: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(56, 189, 248, 0.06);
+            color: var(--accent-strong);
+            font-size: 0.88rem; font-weight: 700; padding: 13px 16px;
+            border-radius: 14px; cursor: pointer;
+            transition: var(--transition); font-family: inherit;
+        }
+        .btn-print-ledger:hover { background: rgba(56, 189, 248, 0.12); border-color: var(--accent); }
+
+        @media print {
+            @page { size: A4 portrait; margin: 12mm; }
+            *, *::before, *::after {
+                animation: none !important; transition: none !important;
+                box-shadow: none !important; text-shadow: none !important;
+            }
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background: #fff !important; padding: 0 !important;
+                color: #1f2937 !important;
+            }
+            .ai-bar, .btn-print-ledger, #clearLedgerBtn { display: none !important; }
+            .print-header {
+                display: flex !important; justify-content: space-between; align-items: flex-end;
+                padding-bottom: 10px; margin-bottom: 22px;
+                border-bottom: 2px solid #555;
+            }
+            .print-header__title { font-size: 1.08rem; font-weight: 800; color: #333; }
+            .print-header__meta { font-size: 0.72rem; color: #4a4a4a; font-weight: 600; }
+            .print-footer {
+                display: block !important; position: fixed; left: 0; right: 0; bottom: 0;
+                padding-top: 6px; border-top: 1px solid #d8d8d8;
+                font-size: 0.62rem; color: #909090; text-align: center;
+            }
+            .container { max-width: 100% !important; }
+            .stat-card, .progress-card, .ledger-item {
+                background: transparent !important; backdrop-filter: none !important;
+                border: 1px solid #e3e3e3 !important; border-radius: 4px !important;
+                break-inside: avoid;
+            }
+            .ledger-item { opacity: 1 !important; transform: none !important; }
         }
     </style>
 </head>
@@ -463,6 +510,15 @@
             </div>
             <div class="ledger-list" id="ledgerList"></div>
         </section>
+
+        <!-- Print header (only visible in print) -->
+        <div class="print-header">
+            <span class="print-header__title">AI 智装管家 · 装修账本报告</span>
+            <span class="print-header__meta" id="printMeta"></span>
+        </div>
+        <div class="print-footer">AI 智装管家 · 数据仅供装修决策参考 · 生成时间以打印时刻为准</div>
+
+        <button class="btn-print-ledger" id="printLedgerBtn" type="button">🖨️ 打印 / 导出 PDF</button>
     </div>
 
     <!-- AI Input -->
@@ -535,16 +591,16 @@
                 '家电': '❄️',
                 '家具': '🪑',
                 '灯具': '💡',
-                '卫浴': '',
+                '卫浴': '🚿',
                 '门窗': '🚪',
-                '其他': ''
+                '其他': '📝'
             };
             return map[category] || '📝';
         };
 
         const getTagColor = (category) => {
             const colors = {
-                '硬装': { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb' },
+                '硬装': { bg: 'rgba(56, 189, 248, 0.1)', text: '#0ea5e9' },
                 '软装': { bg: 'rgba(139, 92, 246, 0.1)', text: '#7c3aed' },
                 '家电': { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669' },
                 '家具': { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706' },
@@ -557,6 +613,12 @@
         };
 
         // ---------- Render ----------
+        const escapeHtml = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
+
         const renderDashboard = () => {
             const spent = transactions.reduce((sum, t) => sum + t.amount, 0);
             const remaining = BUDGET - spent;
@@ -582,10 +644,10 @@
                         <div class="ledger-item__meta">
                             <span class="ledger-item__date">${t.date}</span>
                             <span class="ledger-item__tag" style="background:${tagColor.bg};color:${tagColor.text}">
-                                ${t.category} · ${t.subcategory}
+                                ${escapeHtml(t.category)} · ${escapeHtml(t.subcategory)}
                             </span>
                         </div>
-                        <div class="ledger-item__summary">${t.summary}</div>
+                        <div class="ledger-item__summary">${escapeHtml(t.summary)}</div>
                     </div>
                 </div>
                 <div class="ledger-item__amount">${formatCurrency(t.amount)}</div>
@@ -692,6 +754,14 @@
             localStorage.removeItem(LEDGER_STORAGE_KEY);
             transactions = [];
             updateUI();
+        });
+
+        // ---------- Print ----------
+        document.getElementById('printLedgerBtn').addEventListener('click', () => {
+            const now = new Date();
+            document.getElementById('printMeta').textContent =
+                `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            window.print();
         });
     </script>
 </body>

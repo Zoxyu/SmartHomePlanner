@@ -151,15 +151,16 @@
             opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-10px);
             position: absolute; /* 核心修复：脱离文档流，释放排版空间 */
         }
-        /* 强制所有核心容器为绝对正方形 48x48 */
-        .sidebar--collapsed .logo,
-        .sidebar--collapsed .nav-item,
-        .sidebar--collapsed .theme-toggle {
-            width: 48px; height: 48px; padding: 0; margin: 0 auto;
-            justify-content: center; align-items: center; border-radius: 14px;
+        /* 强制所有核心容器为绝对正方形 48x48（仅桌面端） */
+        @media (min-width: 861px) {
+            .sidebar--collapsed .logo,
+            .sidebar--collapsed .nav-item,
+            .sidebar--collapsed .theme-toggle {
+                width: 48px; height: 48px; padding: 0; margin: 0 auto;
+                justify-content: center; align-items: center; border-radius: 14px;
+            }
+            .sidebar--collapsed .logo__mark { width: 48px; height: 48px; border-radius: 14px; }
         }
-        /* Logo图标强制撑满 48px，对齐菜单框 */
-        .sidebar--collapsed .logo__mark { width: 48px; height: 48px; border-radius: 14px; }
         /* 抹除“框中框”底色，放大 Emoji */
         .sidebar--collapsed .nav-item__icon {
             background: transparent !important; border: none !important;
@@ -190,6 +191,7 @@
             .sidebar__bottom { margin-top: 0; }
             .theme-toggle { width: auto; padding: 8px 10px; margin-bottom: 0; }
             .theme-toggle__label { display: none; }
+            .sidebar-toggle { display: none !important; }
         }
     </style>
 </head>
@@ -291,43 +293,42 @@
             const THEME_KEY = 'shp_theme';
             const toggleIndex = document.getElementById('themeToggle');
             const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+            const frame = document.getElementById('app-frame'); // 缓存DOM，修复#11
 
             function getInitialTheme() {
                 try {
                     const saved = localStorage.getItem(THEME_KEY);
                     if (saved === 'light' || saved === 'dark') return saved;
                 } catch (e) {}
-                return darkMQ.matches ? 'dark' : 'light';
+                return null;
             }
 
-            function applyTheme(theme) {
+            function applyTheme(theme, persist = true) {
                 document.documentElement.dataset.theme = theme;
-                try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+                if (persist) { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }
                 const icon = document.getElementById('themeIcon');
                 const label = document.getElementById('themeLabel');
                 if (icon) icon.textContent = theme === 'light' ? '🌞' : '🌙';
                 if (label) label.textContent = theme === 'light' ? '浅色主题' : '深色主题';
-                const frame = document.getElementById('app-frame');
                 if (frame && frame.contentWindow) {
                     try { frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
                 }
             }
 
-            applyTheme(getInitialTheme());
+            const initial = getInitialTheme();
+            applyTheme(initial || (darkMQ.matches ? 'dark' : 'light'), false); // 初始检测不写入缓存
 
-            const handleToggle = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-            if (toggleIndex) toggleIndex.addEventListener('click', handleToggle);
+            if (toggleIndex) toggleIndex.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true));
 
             darkMQ.addEventListener('change', (e) => {
-                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
+                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light', false);
             });
 
             window.addEventListener('message', (e) => {
-                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme, false);
             });
 
-            const frame = document.getElementById('app-frame');
-            if (frame) frame.addEventListener('load', () => applyTheme(document.documentElement.dataset.theme));
+            if (frame) frame.addEventListener('load', () => applyTheme(document.documentElement.dataset.theme, false));
         })();
 
         // 动态 Favicon：用 SVG Data URI 把 Emoji 渲染成标签页图标

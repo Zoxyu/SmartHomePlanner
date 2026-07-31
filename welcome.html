@@ -155,6 +155,7 @@
             box-shadow: var(--card-shadow);
             transition: var(--transition);
             grid-column: span 2;
+            z-index: 1; overflow: hidden;
         }
 
         /* 最后两个卡片（选材对比、智能记账）：各占 3 份，填满第二排 */
@@ -242,10 +243,19 @@
                 transparent 40%
             );
             opacity: 0; transition: opacity 0.3s ease;
-            z-index: -1; pointer-events: none;
+            z-index: 0; pointer-events: none;
         }
         .card:hover::before { opacity: 1; }
-        .card { z-index: 1; overflow: hidden; }
+        .card > * { position: relative; z-index: 1; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, ::before, ::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0s !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -271,7 +281,7 @@
                 从墙漆地砖的精算防坑，到全屋弱电拓扑推演，再到 2D 空间干涉预演——
                 一站式把装修里最容易踩坑的三件事，交给数据说话。选择下方模块，即刻开始。
             </p>
-            <button class="btn-start" onclick="window.location.href='index.html'">🚀 免费开始推演</button>
+            <button class="btn-start" type="button">🚀 免费开始推演</button>
         </div>
 
         <div class="cards">
@@ -346,30 +356,26 @@
                     const saved = localStorage.getItem(THEME_KEY);
                     if (saved === 'light' || saved === 'dark') return saved;
                 } catch (e) {}
-                return darkMQ.matches ? 'dark' : 'light';
+                return null;
             }
 
-            function applyTheme(theme) {
+            function applyTheme(theme, persist = true) {
                 document.documentElement.dataset.theme = theme;
-                try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+                if (persist) { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }
                 if (toggleWelcome) toggleWelcome.textContent = theme === 'light' ? '🌞' : '🌙';
-                const frame = document.getElementById('app-frame');
-                if (frame && frame.contentWindow) {
-                    try { frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
-                }
             }
 
-            applyTheme(getInitialTheme());
+            const initial = getInitialTheme();
+            applyTheme(initial || (darkMQ.matches ? 'dark' : 'light'), false); // 初始检测不写入缓存
 
-            const handleToggle = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-            if (toggleWelcome) toggleWelcome.addEventListener('click', handleToggle);
+            if (toggleWelcome) toggleWelcome.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true));
 
             darkMQ.addEventListener('change', (e) => {
-                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
+                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light', false);
             });
 
             window.addEventListener('message', (e) => {
-                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme, false);
             });
         })();
 
@@ -380,6 +386,11 @@
             if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
             link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
         })();
+
+        // 主 CTA 按钮：跳转工作台
+        document.querySelector('.btn-start').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
 
         // 独立官网模式：点击卡片携带 Hash 参数跳转至工作台并激活对应模块
         document.querySelectorAll('.card').forEach(card => {

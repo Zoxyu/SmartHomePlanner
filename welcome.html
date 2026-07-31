@@ -194,6 +194,13 @@
         .card--net .card__cta { color: #2dd4bf; }
         .card--box .card__cta { color: #c084fc; }
         .card--compare .card__cta { color: #fbbf24; }
+        .card--ledger:hover {
+            border-color: rgba(59, 130, 246, 0.55);
+            box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(59, 130, 246, 0.28);
+        }
+        .card--ledger .card__icon { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3); }
+        .card--ledger .card__stat-num { color: #3b82f6; }
+        .card--ledger .card__cta { color: #3b82f6; }
 
         .welcome__foot { margin-top: 40px; font-size: 0.72rem; color: #64748b; letter-spacing: 0.04em; }
     </style>
@@ -265,6 +272,17 @@
                 <div class="card__stat">
                     <span class="card__stat-num">3</span>
                     <span class="card__stat-label">类目参数横向对标</span>
+                </div>
+                <div class="card__cta">进入模块 →</div>
+            </div>
+
+            <div class="card card--ledger" data-route="ledger">
+                <div class="card__icon">💰</div>
+                <div class="card__name">智能记账本</div>
+                <div class="card__desc">一句话录入花销，AI 自动提取金额与类别，实时追踪全屋预算消耗进度。</div>
+                <div class="card__stat">
+                    <span class="card__stat-num">AI</span>
+                    <span class="card__stat-label">自然语言极速分类</span>
                 </div>
                 <div class="card__cta">进入模块 →</div>
             </div>

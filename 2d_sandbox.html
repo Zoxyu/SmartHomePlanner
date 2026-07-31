@@ -68,10 +68,18 @@
         /* ---------- Header ---------- */
         .brand { text-align: center; margin-bottom: 24px; }
         .brand__eyebrow {
-            display: inline-block; font-size: 0.72rem; font-weight: 700;
-            letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
-            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25);
-            padding: 5px 14px; border-radius: 999px; margin-bottom: 10px;
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            /* 统一使用全局强调色变量，并配合半透明背景 */
+            color: var(--accent, #38bdf8);
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
         }
         .brand__title { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800; letter-spacing: -0.02em; }
         .brand__subtitle { font-size: 0.88rem; color: var(--text-dim); margin-top: 6px; }
@@ -642,7 +650,7 @@
     </div>
     <div class="container">
         <header class="brand">
-            <span class="brand__eyebrow">核心模块 · 空间推演</span>
+            <span class="brand__eyebrow">AI 智装管家 · 2D 空间推演</span>
             <h1 class="brand__title">全屋平面布局编辑器</h1>
             <p class="brand__subtitle">底图自由变换 · 两点比例尺标定 · 物理尺寸图元 · 布局数据 JSON 序列化</p>
         </header>

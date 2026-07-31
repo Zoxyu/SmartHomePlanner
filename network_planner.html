@@ -65,10 +65,18 @@
         /* ---------- Header ---------- */
         .brand { text-align: center; margin-bottom: 36px; }
         .brand__eyebrow {
-            display: inline-block; font-size: 0.75rem; font-weight: 700;
-            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-strong);
-            background: rgba(59, 130, 246, 0.1); padding: 6px 12px;
-            border-radius: 999px; margin-bottom: 12px;
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            /* 统一使用全局强调色变量，并配合半透明背景 */
+            color: var(--accent, #38bdf8);
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
         }
         .brand__title { font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
         .brand__subtitle { font-size: 0.95rem; color: var(--text-muted); }
@@ -428,7 +436,7 @@
         </div>
 
         <header class="brand">
-            <span class="brand__eyebrow">AI 智装管家 · 智能弱电与网络规划引擎</span>
+            <span class="brand__eyebrow">AI 智装管家 · 智能网络与弱电规划</span>
             <h1 class="brand__title">全屋弱电规划 · 一键推演</h1>
             <p class="brand__subtitle">点选您的智能设备配置，实时生成企业级弱电网络拓扑与电气配置清单。</p>
         </header>

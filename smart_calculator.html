@@ -88,9 +88,11 @@
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: var(--accent-strong);
-            background: rgba(59, 130, 246, 0.1);
-            padding: 6px 12px;
+            /* 统一使用全局强调色变量，并配合半透明背景 */
+            color: var(--accent, #38bdf8);
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 6px 14px;
             border-radius: 999px;
             margin-bottom: 12px;
         }
@@ -678,7 +680,7 @@
         </div>
 
         <header class="brand">
-            <span class="brand__eyebrow">AI 智装管家 · 傻瓜式防坑算料器</span>
+            <span class="brand__eyebrow">AI 智装管家 · 傻瓜式算料引擎</span>
             <h1 class="brand__title">全屋算料一目了然</h1>
             <p class="brand__subtitle">逐个房间录入尺寸，右侧实时汇总墙漆与地砖采购清单。</p>
         </header>

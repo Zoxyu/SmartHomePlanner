@@ -127,7 +127,7 @@
         .btn-start:active { transform: translateY(0); }
 
         /* ========== 3) 功能卡片 ========== */
-        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
         @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
 
         .card {
@@ -153,6 +153,10 @@
             border-color: rgba(168, 85, 247, 0.55);
             box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(168, 85, 247, 0.28);
         }
+        .card--compare:hover {
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 18px 44px rgba(2, 6, 23, 0.5), 0 0 26px rgba(245, 158, 11, 0.28);
+        }
 
         .card__icon {
             width: 52px; height: 52px; border-radius: 14px;
@@ -162,6 +166,7 @@
         }
         .card--net .card__icon { background: rgba(20, 184, 166, 0.12); border-color: rgba(20, 184, 166, 0.3); }
         .card--box .card__icon { background: rgba(168, 85, 247, 0.12); border-color: rgba(168, 85, 247, 0.3); }
+        .card--compare .card__icon { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
         .card__name { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; }
         .card__desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
         .card__stat {
@@ -171,10 +176,12 @@
         .card__stat-num { font-size: 1.5rem; font-weight: 900; color: var(--accent); letter-spacing: -0.02em; }
         .card--net .card__stat-num { color: #2dd4bf; }
         .card--box .card__stat-num { color: #c084fc; }
+        .card--compare .card__stat-num { color: #fbbf24; }
         .card__stat-label { font-size: 0.72rem; color: var(--text-dim); font-weight: 600; }
         .card__cta { font-size: 0.75rem; color: var(--accent); font-weight: 700; margin-top: 14px; }
         .card--net .card__cta { color: #2dd4bf; }
         .card--box .card__cta { color: #c084fc; }
+        .card--compare .card__cta { color: #fbbf24; }
 
         .welcome__foot { margin-top: 40px; font-size: 0.72rem; color: #64748b; letter-spacing: 0.04em; }
     </style>
@@ -227,6 +234,17 @@
                 <div class="card__stat">
                     <span class="card__stat-num">1:1</span>
                     <span class="card__stat-label">物理尺寸精准还原</span>
+                </div>
+                <div class="card__cta">进入模块 →</div>
+            </div>
+
+            <div class="card card--compare" data-route="compare">
+                <div class="card__icon">⚖️</div>
+                <div class="card__name">选材对比库</div>
+                <div class="card__desc">客观呈现硬装软装材料参数对决，辅助防坑与高性价比选购决策。</div>
+                <div class="card__stat">
+                    <span class="card__stat-num">3</span>
+                    <span class="card__stat-label">类目参数横向对标</span>
                 </div>
                 <div class="card__cta">进入模块 →</div>
             </div>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <script>if (window.self === window.top) window.location.replace('index.html#compare');</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智装管家 · 选材防坑对比库</title>
+    <title>AI 智装管家 · 选材决策参数库</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%96%EF%B8%8F%3C/text%3E%3C/svg%3E">
     <style>
         :root {
@@ -35,7 +35,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
-        html { background: var(--bg-deep); }
+        html { background: transparent !important; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             display: flex; background: transparent !important; color: var(--text-light);
@@ -49,102 +49,76 @@
             z-index: 9999; pointer-events: none;
         }
 
-        /* ================= 左侧：分类导航栏 ================= */
-        .sidebar {
-            width: 288px; flex-shrink: 0;
-            display: flex; flex-direction: column;
-            padding: 24px 16px 18px;
-            background: var(--sidebar-bg);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border);
+        /* ================= 分类导航：横向滚动 Pill Tabs ================= */
+        #catNav {
+            display: flex; flex-direction: row; gap: 12px;
+            overflow-x: auto; padding-bottom: 4px;
+            max-width: 100%; margin-bottom: 26px;
+            scrollbar-width: thin;
         }
-        .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; }
-        .logo__mark {
-            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
-            background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(129,140,248,0.22));
-            border: 1px solid rgba(56, 189, 248, 0.3);
-        }
-        .logo__title { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
-        .logo__badge {
-            display: inline-block; font-size: 0.56rem; font-weight: 700;
-            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-top: 4px;
-        }
-
-        .nav { margin-top: 28px; display: flex; flex-direction: column; gap: 6px; }
-        #catNav { display: flex; flex-direction: column; gap: 6px; }
-        .nav__label {
-            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.14em; color: var(--text-faint); padding: 0 12px; margin-bottom: 6px;
-        }
+        #catNav::-webkit-scrollbar { height: 6px; }
+        #catNav::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 999px; }
         .nav-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 14px; border-radius: 12px;
-            color: var(--text-dim); font-size: 0.88rem; font-weight: 700;
-            cursor: pointer; user-select: none; border: 1px solid transparent;
-            transition: var(--transition); text-align: left; width: 100%;
-            background: none; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 9px 18px; border-radius: 999px; white-space: nowrap;
+            color: var(--text-dim); font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; user-select: none; border: 1px solid var(--border);
+            background: var(--bg-card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            transition: var(--transition); font-family: inherit; flex-shrink: 0;
         }
-        .nav-item:hover { color: var(--text-light); background: rgba(148, 163, 184, 0.08); }
+        .nav-item:hover { color: var(--text-light); border-color: rgba(56, 189, 248, 0.35); }
         .nav-item.active {
-            color: var(--accent); background: rgba(56, 189, 248, 0.12);
-            border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.12);
+            color: var(--accent); background: rgba(56, 189, 248, 0.16);
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.18);
         }
-        .nav-item__icon {
-            width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
-            background: rgba(148, 163, 184, 0.1); transition: var(--transition);
-        }
-        .nav-item.active .nav-item__icon { background: rgba(56, 189, 248, 0.18); }
+        .nav-item__icon { font-size: 1rem; }
         .nav-item__meta { min-width: 0; }
-        .nav-item__name { line-height: 1.2; }
-        .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: var(--text-faint); margin-top: 3px; white-space: nowrap; }
-        .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
-
-        .sidebar__tip {
-            margin-top: 22px; padding: 14px 14px; border-radius: 12px;
-            background: rgba(56, 189, 248, 0.06); border: 1px dashed rgba(56, 189, 248, 0.25);
-            font-size: 0.7rem; line-height: 1.8; color: var(--text-dim);
-        }
-        .sidebar__footer {
-            margin-top: auto; padding: 14px 12px 0;
-            border-top: 1px solid rgba(148, 163, 184, 0.1);
-            font-size: 0.66rem; color: var(--text-faint); line-height: 1.8;
-        }
+        .nav-item__name { line-height: 1; }
+        .nav-item__desc { display: none; }
 
         /* ================= 右侧：主内容 PK 台 ================= */
         .main {
             flex: 1; overflow-y: auto; padding: 38px 46px 64px;
             background: transparent;
         }
-        .brand { max-width: 980px; margin-bottom: 30px; }
-        .brand__eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .brand { max-width: 100%; margin-bottom: 30px; text-align: center; }
+        .brand__eyebrow {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            /* 统一使用全局强调色变量，并配合半透明背景 */
+            color: var(--accent, #38bdf8);
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            padding: 6px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
         .brand__title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.01em; margin-top: 8px; }
         .brand__subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 8px; line-height: 1.7; }
 
         /* PK 面板整体：分类切换时的淡出/位移过渡 */
-        .pk-panel { max-width: 980px; transition: opacity 0.26s ease, transform 0.26s ease; }
+        .pk-panel { max-width: 100%; transition: opacity 0.26s ease, transform 0.26s ease; }
         .pk-panel.is-switching { opacity: 0; transform: translateY(16px); }
 
         /* ---------- 顶部：1V1 对决头部 ---------- */
         .vs-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 18px; margin-bottom: 26px; }
         .mat-card {
             background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 20px 24px; backdrop-filter: blur(24px);
+            border-radius: 16px; padding: 24px; backdrop-filter: blur(24px);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
         }
         .mat-card--a { border-top: 3px solid var(--a-1); }
-        .mat-card--b { border-top: 3px solid var(--b-2); text-align: right; }
+        .mat-card--b { border-top: 3px solid var(--b-2); }
         .mat-card__side { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.16em; }
         .mat-card--a .mat-card__side { color: var(--a-1); }
         .mat-card--b .mat-card__side { color: var(--b-2); }
-        .mat-card__name { font-size: 1.28rem; font-weight: 800; margin-top: 9px; letter-spacing: -0.01em; }
-        .mat-card__tag { font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; }
-        .mat-card__score { margin-top: 15px; display: flex; align-items: baseline; gap: 8px; }
-        .mat-card--b .mat-card__score { justify-content: flex-end; }
-        .mat-card__score b { font-size: 1.95rem; font-weight: 800; line-height: 1; }
-        .mat-card--a .mat-card__score b { color: var(--a-1); }
-        .mat-card--b .mat-card__score b { color: var(--b-2); }
-        .mat-card__score span { font-size: 0.66rem; color: var(--text-faint); }
+        .mat-card__name { font-size: 1.5rem; font-weight: 800; margin-top: 10px; letter-spacing: -0.01em; }
+        .mat-card__tag { font-size: 0.72rem; color: var(--text-dim); margin-top: 7px; }
 
         .vs-badge {
             align-self: center; width: 66px; height: 66px; border-radius: 50%; flex-shrink: 0;
@@ -185,7 +159,7 @@
         .bar-fill--b { background: linear-gradient(90deg, var(--b-1), var(--b-2)); box-shadow: 0 0 12px rgba(201, 163, 160, 0.3); }
         .bar-row__score { font-size: 0.78rem; font-weight: 800; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
-        /* ---------- 底部：硬核防坑总结（毛玻璃卡片） ---------- */
+        /* ---------- 底部：客观选材建议（毛玻璃卡片） ---------- */
         .verdict {
             margin-top: 26px; position: relative; overflow: hidden;
             border-radius: 18px; padding: 24px 30px;
@@ -205,63 +179,30 @@
 
         /* ================= 移动端：侧栏 → 顶部横栏 ================= */
         @media (max-width: 860px) {
-            body { flex-direction: column; overflow: auto; }
-            .sidebar {
-                width: 100%; flex-direction: row; align-items: center; flex-wrap: wrap;
-                padding: 12px 14px; gap: 10px; border-right: none; border-bottom: 1px solid var(--border);
-            }
-            .logo__badge, .nav__label, .nav-item__desc, .sidebar__tip, .sidebar__footer { display: none; }
-            .nav { flex-direction: row; margin: 0; gap: 6px; overflow-x: auto; flex: 1; }
-            #catNav { flex-direction: row; gap: 6px; overflow-x: auto; }
-            .nav-item { padding: 8px 12px; font-size: 0.78rem; gap: 7px; flex-shrink: 0; }
-            .nav-item__icon { width: 26px; height: 26px; font-size: 0.9rem; border-radius: 8px; }
+            body { overflow: auto; }
             .main { padding: 24px 18px 48px; overflow: visible; }
             .vs-header { grid-template-columns: 1fr; }
             .vs-badge { justify-self: center; }
-            .mat-card--b { text-align: left; }
-            .mat-card--b .mat-card__score { justify-content: flex-start; }
             .bars { padding: 20px 18px 12px; }
             .dim__winner { margin-left: 0; }
         }
     </style>
 </head>
 <body>
-    <!-- ===== 左侧：分类导航 ===== -->
-    <aside class="sidebar">
-        <div class="logo">
-            <span class="logo__mark">⚖️</span>
-            <span>
-                <span class="logo__title">选材防坑对比库</span><br>
-                <span class="logo__badge">选材防坑 · 参数对决</span>
-            </span>
-        </div>
-
-        <nav class="nav">
-            <div class="nav__label">对比类目</div>
-            <div id="catNav"></div>
-        </nav>
-
-        <div class="sidebar__tip">
-            💡 评分为同场景横向相对值（满分 100），<br>
-            柱条越长代表该维度表现越强，<br>
-            结论均基于真实施工与使用反馈提炼。
-        </div>
-
-        <div class="sidebar__footer">
-            ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
-            📐 SmartHome Planner · 选材防坑
-        </div>
-    </aside>
-
-    <!-- ===== 右侧：PK 台 ===== -->
+    <!-- ===== 主内容：PK 台 ===== -->
     <main class="main">
-        <header class="brand">
-            <span class="brand__eyebrow">AI 智装管家 · 1V1 参数对决</span>
-            <h1 class="brand__title">选材不踩坑，硬核参数说话</h1>
-            <p class="brand__subtitle">抛开营销话术，把两种材料拉上 PK 台逐项对标。选中左侧类目，右侧即刻展开雷达条对决与防坑结论。</p>
-        </header>
+        <div class="container">
+            <header class="brand">
+                <span class="brand__eyebrow">AI 智装管家 · 选材决策参数库</span>
+                <h1 class="brand__title">选材决策，让客观参数说话</h1>
+                <p class="brand__subtitle">抛开营销话术，把两种材料拉上 PK 台逐项对标。切换上方类目，即刻展开雷达条对标与客观选材建议，结论由您自己判断。</p>
+            </header>
 
-        <section class="pk-panel" id="pkPanel"></section>
+            <!-- 分类导航：横向滚动 Pill Tabs -->
+            <div id="catNav"></div>
+
+            <section class="pk-panel" id="pkPanel"></section>
+        </div>
     </main>
 
     <script>
@@ -288,43 +229,46 @@
                 category: '五金 / 餐具',
                 desc: '316L 不锈钢 vs 纯钛',
                 materialA: { name: '316L 不锈钢', tag: '含钼奥氏体 · 医用 / 食品接触级' },
-                materialB: { name: '纯钛 TA1', tag: '航空级 · 零重金属析出' },
+                materialB: { name: '纯钛 TA1', tag: '航空级 · 极低析出风险' },
                 dimensions: [
                     { label: '表面防刮花能力', note: '莫氏硬度与日常摩擦耐受', a: 90, b: 55, winner: 'a', winnerText: 'A 占优' },
                     { label: '绝对抗腐蚀性', note: '钝化膜自修复 · 耐酸碱 / 海水', a: 80, b: 92, winner: 'b', winnerText: 'B 更佳' },
                     { label: '生物亲和性', note: '长期接触人体 / 食材的安全性', a: 72, b: 96, winner: 'b', winnerText: 'B 更佳' },
+                    { label: '密度 / 轻量化', note: '钛 ≈4.5 vs 钢 ≈7.9 g/cm³ · 越低越轻', a: 40, b: 92, winner: 'b', winnerText: 'B 更轻' },
                     { label: '性价比', note: '材料成本与终端售价比', a: 95, b: 38, winner: 'a', winnerText: 'A 占优' }
                 ],
-                verdict: '316L 不锈钢在<strong>防刮花</strong>与<strong>性价比</strong>上具备显著优势，适合注重日常抗造与高频使用的家庭；纯钛则在<strong>轻量化</strong>与<strong>绝对无重金属析出</strong>上表现卓越，更适合对生物亲和性有极致要求的场景。'
+                verdict: '316L 不锈钢的优势在于<strong>表面防刮花</strong>与<strong>性价比</strong>，日常抗造、维护成本低，适合高频使用的家庭餐具；纯钛的优势在于<strong>轻量</strong>与<strong>极低析出风险</strong>，生物亲和性更佳，适合对材质安全性与便携性有更高要求的场景。两者各有所长，建议依据预算与使用侧重自行选择。'
             },
             {
                 id: 'flooring',
                 icon: '🪵',
                 category: '地面硬装',
                 desc: '木纹砖 vs 纯实木地板',
-                materialA: { name: '木纹砖', tag: '釉面瓷质砖 · 零甲醛释放' },
+                materialA: { name: '木纹砖', tag: '釉面瓷质砖 · 极低甲醛释放 (需符合 ENF 级)' },
                 materialB: { name: '纯实木地板', tag: '天然原木 · 需定期保养' },
                 dimensions: [
                     { label: '表面耐磨度', note: '莫氏硬度 6-7 vs 木材约 2-3', a: 95, b: 45, winner: 'a', winnerText: 'A 占优' },
                     { label: '地暖导热率', note: '瓷砖 ≈1.5 vs 木材 ≈0.15 W/m·K', a: 92, b: 40, winner: 'a', winnerText: 'A 占优' },
+                    { label: '环保与稳定性', note: '瓷砖天然无醛 vs 木板需认准 GB/T 39600 ENF 级', a: 92, b: 60, winner: 'a', winnerText: 'A 占优' },
                     { label: '后期打理成本', note: '免打蜡精油 · 直接拖洗', a: 90, b: 35, winner: 'a', winnerText: 'A 占优' },
                     { label: '脚感温润度', note: '木质天然温弹 · 冬季不冰脚', a: 42, b: 93, winner: 'b', winnerText: 'B 更佳' }
                 ],
-                verdict: '木纹砖在<strong>表面耐磨</strong>、<strong>地暖导热</strong>与<strong>日常打理</strong>上表现更优，且零甲醛释放，适合铺设地暖、追求低维护成本的家庭；纯实木地板<strong>脚感温润</strong>、纹理自然，更适合注重居住质感、愿意投入定期保养的卧室与客厅。'
+                verdict: '木纹砖的优势在于<strong>耐磨</strong>、<strong>地暖导热快</strong>与<strong>打理省心</strong>，且天然无醛、尺寸稳定，适合铺设地暖、追求低维护的客餐厅与厨卫；纯实木地板的优势在于<strong>脚感温润</strong>与自然纹理，居住质感更佳，适合注重舒适体验、愿意定期保养的卧室与客厅。建议结合地暖情况与保养意愿权衡。'
             },
             {
                 id: 'finish',
                 icon: '🎨',
                 category: '定制饰面',
                 desc: '氟碳喷涂 vs 粉末喷涂',
-                materialA: { name: '可可灰氟碳喷涂', tag: 'PVDF 氟碳 · 两涂两烤' },
+                materialA: { name: '氟碳喷涂 (PVDF)', tag: '两涂两烤 · 耐候涂层' },
                 materialB: { name: '普通静电粉末喷涂', tag: '环氧 / 聚酯 · 一涂一烤' },
                 dimensions: [
                     { label: '漆面膜厚度均匀性', note: '氟碳流平佳 · 粉末边角易堆积', a: 90, b: 62, winner: 'a', winnerText: 'A 占优' },
+                    { label: '涂层理论厚度', note: 'PVDF ≥40μm 极薄服帖 vs 粉末 60-120μm 易失真', a: 90, b: 55, winner: 'a', winnerText: 'A 占优' },
                     { label: '抗紫外线褪色率', note: 'PVDF 约 20 年保色 vs 粉末 3-5 年', a: 93, b: 55, winner: 'a', winnerText: 'A 占优' },
                     { label: '金属质感细腻度', note: '哑光细腻 · 防指纹表现', a: 88, b: 58, winner: 'a', winnerText: 'A 占优' }
                 ],
-                verdict: '可可灰氟碳喷涂在<strong>漆膜均匀度</strong>、<strong>抗紫外线保色</strong>与<strong>金属质感细腻度</strong>上更为出色，哑光防指纹效果适合极窄边框门洞、背景墙等注重光影质感的显眼位置；普通静电粉末喷涂<strong>性价比更高</strong>，适合预算有限、对长期保色要求不高的柜体内部或次要立面。'
+                verdict: '氟碳喷涂 (PVDF) 的优势在于<strong>漆膜均匀服帖</strong>、<strong>抗紫外线保色持久</strong>与<strong>金属质感细腻</strong>，适合极窄边框门洞、背景墙等注重光影质感的显眼立面；粉末喷涂的优势在于<strong>性价比</strong>，成本更低，适合预算有限、对长期保色要求不高的柜体内部或次要立面。建议依据立面重要性与预算分配选择。'
             }
         ];
 
@@ -335,12 +279,6 @@
         const pkPanel = document.getElementById('pkPanel');
         let currentCat = 0;
         let switching = false; // 防止过渡期间重复触发
-
-        // 综合评分 = 各维度得分的算术平均（四舍五入）
-        function overallScore(data, side) {
-            const sum = data.dimensions.reduce((acc, d) => acc + d[side], 0);
-            return Math.round(sum / data.dimensions.length);
-        }
 
         // ============================================================
         // 左侧分类导航渲染
@@ -367,9 +305,6 @@
         // 右侧 PK 面板渲染
         // ============================================================
         function renderPanel(data) {
-            const scoreA = overallScore(data, 'a');
-            const scoreB = overallScore(data, 'b');
-
             const dimHtml = data.dimensions.map(d => `
                 <div class="dim">
                     <div class="dim__head">
@@ -396,26 +331,24 @@
                         <div class="mat-card__side">A 方</div>
                         <div class="mat-card__name">${data.materialA.name}</div>
                         <div class="mat-card__tag">${data.materialA.tag}</div>
-                        <div class="mat-card__score"><b>${scoreA}</b><span>综合评分</span></div>
                     </div>
                     <div class="vs-badge">VS</div>
                     <div class="mat-card mat-card--b">
                         <div class="mat-card__side">B 方</div>
                         <div class="mat-card__name">${data.materialB.name}</div>
                         <div class="mat-card__tag">${data.materialB.tag}</div>
-                        <div class="mat-card__score"><b>${scoreB}</b><span>综合评分</span></div>
                     </div>
                 </div>
 
                 <div class="bars">
-                    <div class="bars__title">📊 雷达条对决 · 逐项硬核对标</div>
+                    <div class="bars__title">📊 雷达条对标 · 逐项参数对比</div>
                     ${dimHtml}
                 </div>
 
                 <div class="verdict">
                     <div class="verdict__head">
-                        <span class="verdict__icon">🛡️</span>
-                        <span class="verdict__title">硬核防坑总结</span>
+                        <span class="verdict__icon">⚖️</span>
+                        <span class="verdict__title">客观选材建议</span>
                     </div>
                     <div class="verdict__text">${data.verdict}</div>
                 </div>

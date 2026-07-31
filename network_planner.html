@@ -328,7 +328,7 @@
 
         /* ---------- Print / PDF export：商业咨询报告级排版 (A4 portrait) ---------- */
         @media print {
-            @page { size: A4 portrait; margin: 12mm 11mm; }
+            @page { size: A4 portrait; margin: 0; }
 
             /* 全局：关闭动效与投影，版面只留墨迹与留白 */
             *, *::before, *::after {
@@ -349,7 +349,7 @@
                     linear-gradient(90deg, rgba(85, 85, 85, 0.05) 1px, transparent 1px) !important;
                 background-size: 50px 50px !important;
                 color: #3d3d3d !important;   /* 禁用纯黑，正文深碳灰 */
-                padding: 0 0 20mm !important; /* 为固定页脚预留呼吸空间 */
+                padding: 12mm 11mm 20mm !important; /* margin:0 后用 padding 补偿回版面边距 */
                 min-height: auto !important;
                 line-height: 1.65 !important;
             }

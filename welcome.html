@@ -274,52 +274,41 @@
     </main>
 
     <script>
-        // ========== 主题同步：三态循环 light → dark → system + 监听父框架广播 ==========
+        // ========== 主题同步：二态互切 light ↔ dark + 初始智能检测 + 监听父框架广播 ==========
         (function initThemeSync() {
             const THEME_KEY = 'shp_theme';
-            const fab = document.getElementById('themeFab');
+            const toggleWelcome = document.getElementById('themeFab');
             const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
-            const ICONS = { light: '🌞', dark: '🌙', system: '💻' };
 
-            function getPref() {
+            function getInitialTheme() {
                 try {
-                    const v = localStorage.getItem(THEME_KEY);
-                    if (v === 'light' || v === 'dark' || v === 'system') return v;
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved === 'light' || saved === 'dark') return saved;
                 } catch (e) {}
-                return 'dark';
-            }
-            function resolve(pref) {
-                return pref === 'system' ? (darkMQ.matches ? 'dark' : 'light') : pref;
-            }
-            function apply(pref) {
-                document.documentElement.dataset.theme = resolve(pref);
-                if (fab) fab.textContent = ICONS[pref];
+                return darkMQ.matches ? 'dark' : 'light';
             }
 
-            // 首屏恢复
-            apply(getPref());
-
-            // 悬浮按钮：三态循环
-            if (fab) {
-                fab.addEventListener('click', () => {
-                    const order = ['light', 'dark', 'system'];
-                    const cur = getPref();
-                    const next = order[(order.indexOf(cur) + 1) % 3];
-                    apply(next);
-                    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
-                });
+            function applyTheme(theme) {
+                document.documentElement.dataset.theme = theme;
+                try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+                if (toggleWelcome) toggleWelcome.textContent = theme === 'light' ? '🌞' : '🌙';
+                const frame = document.getElementById('app-frame');
+                if (frame && frame.contentWindow) {
+                    try { frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
+                }
             }
 
-            // 系统主题变化监听
-            darkMQ.addEventListener('change', () => {
-                if (getPref() === 'system') apply('system');
+            applyTheme(getInitialTheme());
+
+            const handleToggle = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+            if (toggleWelcome) toggleWelcome.addEventListener('click', handleToggle);
+
+            darkMQ.addEventListener('change', (e) => {
+                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
             });
 
-            // 监听父框架 postMessage 广播
             window.addEventListener('message', (e) => {
-                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) {
-                    document.documentElement.dataset.theme = e.data.theme;
-                }
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme);
             });
         })();
 

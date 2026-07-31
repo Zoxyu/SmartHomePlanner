@@ -45,7 +45,7 @@
             color: var(--text-light);
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            padding: 48px 24px; -webkit-font-smoothing: antialiased;
+            padding: 24px 24px; -webkit-font-smoothing: antialiased;
             position: relative; overflow-x: hidden;
         }
 
@@ -85,8 +85,8 @@
             -webkit-backdrop-filter: blur(16px) saturate(140%);
             border: 1px solid var(--hero-border);
             border-radius: 26px;
-            padding: 48px 40px 44px;
-            margin-bottom: 40px;
+            padding: 32px 40px 30px;
+            margin-bottom: 24px;
             box-shadow: var(--hero-shadow);
         }
         /* 顶部一道极细高光，强化水晶悬浮感 */
@@ -102,12 +102,12 @@
             display: inline-block; font-size: 0.72rem; font-weight: 700;
             letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent);
             background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3);
-            padding: 6px 16px; border-radius: 999px; margin-bottom: 26px;
+            padding: 6px 16px; border-radius: 999px; margin-bottom: 18px;
             box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
         }
         .hero-focal__title {
             font-size: clamp(1.7rem, 4.8vw, 2.8rem); font-weight: 800;
-            letter-spacing: -0.02em; line-height: 1.32; margin-bottom: 18px;
+            letter-spacing: -0.02em; line-height: 1.32; margin-bottom: 14px;
         }
         .hero-focal__title .hl {
             background: linear-gradient(120deg, #38bdf8 0%, #818cf8 48%, #22d3ee 100%);
@@ -122,7 +122,7 @@
 
         /* 主行动按钮 CTA：高级渐变 + 光晕阴影 */
         .btn-start {
-            margin-top: 30px;
+            margin-top: 20px;
             display: inline-flex; align-items: center; gap: 8px;
             font-family: inherit; font-size: 1rem; font-weight: 800;
             color: #06121f; cursor: pointer;
@@ -138,18 +138,34 @@
         }
         .btn-start:active { transform: translateY(0); }
 
-        /* ========== 3) 功能卡片 ========== */
-        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-        @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+        /* ========== 3) 功能卡片（Bento Grid 便当盒排版） ========== */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+        }
 
         .card {
             position: relative; text-align: left; cursor: pointer; user-select: none;
             background: var(--card-bg);
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--card-border);
-            border-radius: 18px; padding: 24px 22px;
+            border-radius: 18px;
+            padding: 20px 20px;
             box-shadow: var(--card-shadow);
             transition: var(--transition);
+            grid-column: span 2;
+        }
+
+        /* 最后两个卡片（选材对比、智能记账）：各占 3 份，填满第二排 */
+        .card:nth-child(4),
+        .card:nth-child(5) {
+            grid-column: span 3;
+        }
+
+        @media (max-width: 860px) {
+            .cards { grid-template-columns: 1fr; }
+            .card, .card:nth-child(4), .card:nth-child(5) { grid-column: span 1; }
         }
         /* 悬停：上浮 + 柔和主题色边框流光 */
         .card:hover { transform: translateY(-6px); }
@@ -202,7 +218,34 @@
         .card--ledger .card__stat-num { color: #3b82f6; }
         .card--ledger .card__cta { color: #3b82f6; }
 
-        .welcome__foot { margin-top: 40px; font-size: 0.72rem; color: #64748b; letter-spacing: 0.04em; }
+        .welcome__foot { margin-top: 24px; font-size: 0.72rem; color: #64748b; letter-spacing: 0.04em; }
+
+        /* ========== 次世代微交互：瀑布流入场 + 鼠标聚光灯 ========== */
+        @keyframes smoothEnter {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hero-focal { animation: smoothEnter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+        .card { animation: smoothEnter 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+
+        /* 鼠标聚光灯追踪特效 (Spotlight) */
+        .card::before {
+            content: ""; position: absolute; inset: 0; border-radius: inherit;
+            background: radial-gradient(
+                800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(56, 189, 248, 0.12),
+                transparent 40%
+            );
+            opacity: 0; transition: opacity 0.3s ease;
+            z-index: -1; pointer-events: none;
+        }
+        .card:hover::before { opacity: 1; }
+        .card { z-index: 1; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -343,6 +386,17 @@
             card.addEventListener('click', () => {
                 const route = card.dataset.route;
                 window.location.href = `index.html#${route}`;
+            });
+        });
+
+        // 鼠标星轨追踪特效：实时计算鼠标相对卡片的 X/Y 坐标，传递给 CSS 变量
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
             });
         });
     </script>

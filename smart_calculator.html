@@ -806,6 +806,15 @@
                         <div class="result-card__detail" id="tileDetail">地面 0 ㎡，单块 0 ㎡</div>
                     </div>
 
+                    <div class="result-card" id="waterproofCard">
+                        <div class="result-card__label">🚿 防水涂刷面积</div>
+                        <div class="result-card__value">
+                            <span id="waterproofArea">0</span>
+                            <span class="result-card__unit">㎡</span>
+                        </div>
+                        <div class="result-card__detail" id="waterproofDetail">周长 × 涂刷高度，干区可设 0.3m</div>
+                    </div>
+
                     <div class="result-card__detail" id="paintNoteDisplay" style="margin-top: 14px; display: none;"></div>
                 </div>
 
@@ -901,6 +910,9 @@
         const paintCard = document.getElementById('paintCard');
         const tileCard = document.getElementById('tileCard');
         const paintNoteDisplay = document.getElementById('paintNoteDisplay');
+        const waterproofAreaEl = document.getElementById('waterproofArea');
+        const waterproofDetailEl = document.getElementById('waterproofDetail');
+        const waterproofCard = document.getElementById('waterproofCard');
 
         const totalPaintLitersEl = document.getElementById('totalPaintLiters');
         const totalPaintBucketsEl = document.getElementById('totalPaintBuckets');
@@ -951,6 +963,7 @@
             customTileH: 800,
             layPattern: 'straight',
             groutWidth: 1.5,
+            waterproofHeight: 2.4,
             coats: 2,
             paintNote: ''
         });
@@ -993,6 +1006,11 @@
             const coveragePerLiter = coats === 2 ? 8 : 16;
             const paintLiters = netWallArea / coveragePerLiter;
 
+            // Waterproof — 防水涂刷面积 = 房间周长 × 涂刷高度
+            const wpHeight = toNum(room.waterproofHeight);
+            const perimeter = (length + width) * 2;
+            const waterproofArea = wpHeight > 0 ? perimeter * wpHeight : 0;
+
             return {
                 totalWallArea,
                 deduction,
@@ -1003,7 +1021,9 @@
                 tileCount,
                 paintLiters,
                 wasteRate,
-                layPatternLabel: layPatternLabels[room.layPattern] || '正铺'
+                layPatternLabel: layPatternLabels[room.layPattern] || '正铺',
+                waterproofArea,
+                wpHeight
             };
         };
 
@@ -1123,6 +1143,18 @@
                         <input type="text" class="form-input" data-field="paintNote" value="${room.paintNote || ''}" placeholder="如：雪花石膏白">
                     </div>
                 </div>
+
+                <hr class="divider">
+
+                <div class="wet-section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">🚿 防水涂刷高度（m）</label>
+                            <input type="number" class="form-input" data-field="waterproofHeight" value="${room.waterproofHeight ?? 2.4}" step="0.1" min="0" max="1000">
+                            <span class="form-hint">建议：淋浴区或全卫通刷默认 2.4m，干区 0.3m</span>
+                        </div>
+                    </div>
+                </div>
             `;
 
             roomsListEl.appendChild(card);
@@ -1162,6 +1194,8 @@
                 room[field] = parseFloat(input.value) || 0;
             } else if (field === 'customTileW' || field === 'customTileH') {
                 room[field] = toNum(input.value);
+            } else if (field === 'waterproofHeight') {
+                room[field] = toNum(input.value);
             } else {
                 room[field] = input.value;
             }
@@ -1199,6 +1233,14 @@
 
                 tileCountEl.textContent = currentData.tileCount.toString();
                 tileDetailEl.textContent = `地面 ${formatArea(currentData.floorArea)} ㎡，采用${currentData.layPatternLabel}(损耗${Math.round(currentData.wasteRate * 100)}%)，单块(含缝) ${currentData.tileAreaSqM.toFixed(3)} ㎡`;
+
+                // 防水涂刷面积
+                const oldWpText = waterproofAreaEl.textContent;
+                waterproofAreaEl.textContent = formatArea(currentData.waterproofArea);
+                waterproofDetailEl.textContent = `周长 × ${currentData.wpHeight}m 涂刷高度，干区可设 0.3m`;
+                if (oldWpText !== waterproofAreaEl.textContent) {
+                    animateValueChange(waterproofAreaEl, waterproofCard);
+                }
 
                 if (oldPaintText !== paintBucketsEl.textContent) {
                     animateValueChange(paintBucketsEl, paintCard);
@@ -1438,6 +1480,7 @@
                     if (r.groutWidth === undefined) r.groutWidth = 1.5;
                     if (r.customTileW === undefined) r.customTileW = 800;
                     if (r.customTileH === undefined) r.customTileH = 800;
+                    if (r.waterproofHeight === undefined) r.waterproofHeight = 2.4;
                 });
                 nextId = saved.nextId || (Math.max(...rooms.map(r => r.id)) + 1);
                 activeRoomId = rooms.some(r => r.id === saved.activeRoomId) ? saved.activeRoomId : rooms[0].id;

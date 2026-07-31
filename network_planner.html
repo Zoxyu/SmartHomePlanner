@@ -162,6 +162,10 @@
         }
         .device-row.active { border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.04); }
         .device-row input[type="checkbox"] { accent-color: var(--success); width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; }
+        .device-label-wrap {
+            display: flex; align-items: center; gap: 12px;
+            flex: 1; min-width: 0; cursor: pointer;
+        }
         .device-info { flex: 1; min-width: 0; }
         .device-name { font-size: 0.9rem; font-weight: 700; }
         .device-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
@@ -515,11 +519,13 @@
                     <div class="accordion__body"><div class="accordion__content">
                         <div class="device-list">
                             <div class="device-row" data-device="camera">
-                                <input type="checkbox" id="chkCamera">
-                                <div class="device-info">
-                                    <div class="device-name">🎥 监控安防（PoE 摄像头）</div>
-                                    <div class="device-hint">PoE 网线供电，需预留网口</div>
-                                </div>
+                                <label class="device-label-wrap">
+                                    <input type="checkbox" id="chkCamera">
+                                    <div class="device-info">
+                                        <div class="device-name">🎥 监控安防（PoE 摄像头）</div>
+                                        <div class="device-hint">PoE 网线供电，需预留网口</div>
+                                    </div>
+                                </label>
                                 <div class="qty-control" id="qtyCamera">
                                     <button class="qty-btn" type="button" data-target="camera" data-delta="-1">−</button>
                                     <input type="number" class="qty-input" value="2" min="1" max="1000" data-field="camera">
@@ -527,11 +533,13 @@
                                 </div>
                             </div>
                             <div class="device-row" data-device="nas">
-                                <input type="checkbox" id="chkNas">
-                                <div class="device-info">
-                                    <div class="device-name">💾 NAS 服务器</div>
-                                    <div class="device-hint">需独立网口，建议配 UPS</div>
-                                </div>
+                                <label class="device-label-wrap">
+                                    <input type="checkbox" id="chkNas">
+                                    <div class="device-info">
+                                        <div class="device-name">💾 NAS 服务器</div>
+                                        <div class="device-hint">需独立网口，建议配 UPS</div>
+                                    </div>
+                                </label>
                                 <div class="qty-control" id="qtyNas">
                                     <button class="qty-btn" type="button" data-target="nas" data-delta="-1">−</button>
                                     <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="nas">
@@ -539,11 +547,13 @@
                                 </div>
                             </div>
                             <div class="device-row" data-device="tv">
-                                <input type="checkbox" id="chkTv">
-                                <div class="device-info">
-                                    <div class="device-name">📺 智能电视</div>
-                                    <div class="device-hint">建议有线连接，更稳定</div>
-                                </div>
+                                <label class="device-label-wrap">
+                                    <input type="checkbox" id="chkTv">
+                                    <div class="device-info">
+                                        <div class="device-name">📺 智能电视</div>
+                                        <div class="device-hint">建议有线连接，更稳定</div>
+                                    </div>
+                                </label>
                                 <div class="qty-control" id="qtyTv">
                                     <button class="qty-btn" type="button" data-target="tv" data-delta="-1">−</button>
                                     <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="tv">
@@ -551,11 +561,13 @@
                                 </div>
                             </div>
                             <div class="device-row" data-device="curtain">
-                                <input type="checkbox" id="chkCurtain">
-                                <div class="device-info">
-                                    <div class="device-name">🪟 电动窗帘</div>
-                                    <div class="device-hint">需顶部预留 220V 零火线</div>
-                                </div>
+                                <label class="device-label-wrap">
+                                    <input type="checkbox" id="chkCurtain">
+                                    <div class="device-info">
+                                        <div class="device-name">🪟 电动窗帘</div>
+                                        <div class="device-hint">需顶部预留 220V 零火线</div>
+                                    </div>
+                                </label>
                                 <div class="qty-control" id="qtyCurtain">
                                     <button class="qty-btn" type="button" data-target="curtain" data-delta="-1">−</button>
                                     <input type="number" class="qty-input" value="2" min="1" max="1000" data-field="curtain">
@@ -563,11 +575,13 @@
                                 </div>
                             </div>
                             <div class="device-row" data-device="toilet">
-                                <input type="checkbox" id="chkToilet">
-                                <div class="device-info">
-                                    <div class="device-name">🚿 智能马桶</div>
-                                    <div class="device-hint">需预留带防溅盒插座</div>
-                                </div>
+                                <label class="device-label-wrap">
+                                    <input type="checkbox" id="chkToilet">
+                                    <div class="device-info">
+                                        <div class="device-name">🚿 智能马桶</div>
+                                        <div class="device-hint">需预留带防溅盒插座</div>
+                                    </div>
+                                </label>
                                 <div class="qty-control" id="qtyToilet">
                                     <button class="qty-btn" type="button" data-target="toilet" data-delta="-1">−</button>
                                     <input type="number" class="qty-input" value="1" min="1" max="1000" data-field="toilet">

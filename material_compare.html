@@ -277,7 +277,8 @@
         // ============================================================
         const catNav = document.getElementById('catNav');
         const pkPanel = document.getElementById('pkPanel');
-        let currentCat = 0;
+        let currentCat = parseInt(localStorage.getItem('shp_compare_cat')) || 0;
+        if (currentCat >= COMPARE_DATA.length) currentCat = 0;
         let switching = false; // 防止过渡期间重复触发
 
         // ============================================================
@@ -373,6 +374,7 @@
             if (idx === currentCat || switching) return;
             switching = true;
             currentCat = idx;
+            try { localStorage.setItem('shp_compare_cat', idx); } catch(e) {}
             updateNavActive();
 
             pkPanel.classList.add('is-switching');

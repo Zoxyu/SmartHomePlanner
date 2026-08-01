@@ -749,6 +749,32 @@
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
         .toast.show { opacity: 1; top: 32px; }
+
+        /* ---------- 模块级高级弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--card-bg, var(--bg-panel, #fff)); border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: var(--transition); color: var(--text-main, var(--text-light, #333));
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-muted, var(--text-dim, #666)); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-muted, var(--text-dim, #666)); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
@@ -874,7 +900,7 @@
                     </div>
 
                     <div class="summary-actions">
-                        <button class="btn-ghost" id="resetAllBtn" type="button">一键清空</button>
+                        <button class="btn-ghost" id="resetAllBtn" type="button">清空房间数据</button>
                     </div>
                     <button class="btn-print" id="printBtn" type="button">🖨️ 打印 / 导出 PDF</button>
                 </div>
@@ -884,6 +910,17 @@
 
     <!-- 版权页脚（仅打印可见，固定于页底） -->
     <div class="print-footer">© 2026 AI 智装管家 SmartHome Planner · 本清单由 AI 自动推演，具体施工请以现场勘测为准 · 数据仅供采购决策参考</div>
+
+    <div class="global-modal-mask" id="moduleModalMask">
+        <div class="global-modal">
+            <div class="gm-title">操作确认</div>
+            <div class="gm-desc" id="moduleModalDesc">确定要执行此操作吗？</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
@@ -1619,18 +1656,31 @@
             addRoomBtn.textContent = atLimit ? `最多添加 ${MAX_ROOMS} 个房间` : '+ 添加新房间';
         };
 
+        // ---------- 高级弹窗 Helper ----------
+        let currentConfirmAction = null;
+        document.getElementById('moduleConfirmBtn').addEventListener('click', () => {
+            document.getElementById('moduleModalMask').classList.remove('show');
+            if (currentConfirmAction) currentConfirmAction();
+        });
+        function customConfirm(desc, action) {
+            document.getElementById('moduleModalDesc').innerHTML = desc;
+            currentConfirmAction = action;
+            document.getElementById('moduleModalMask').classList.add('show');
+        }
+
         // ---------- Reset all ----------
         document.getElementById('resetAllBtn').addEventListener('click', () => {
-            if (!confirm('确定要清空所有房间数据并删除本地缓存吗？此操作不可撤销。')) return;
-            localStorage.removeItem(CALC_STORAGE_KEY); // 手动清理缓存入口
-            rooms = [createRoom('客厅')];
-            nextId = rooms[0].id + 1;
-            activeRoomId = rooms[0].id;
-            roomsListEl.innerHTML = '';
-            renderRoomCard(rooms[0]);
-            triggerPanelFade();
-            updateAddBtnState();
-            updateResults();
+            customConfirm('确定要清空所有房间数据并删除本地缓存吗？此操作不可撤销。', () => {
+                localStorage.removeItem(CALC_STORAGE_KEY);
+                rooms = [createRoom('客厅')];
+                nextId = rooms[0].id + 1;
+                activeRoomId = rooms[0].id;
+                roomsListEl.innerHTML = '';
+                renderRoomCard(rooms[0]);
+                triggerPanelFade();
+                updateAddBtnState();
+                updateResults();
+            });
         });
 
         // ---------- Print / PDF export ----------

@@ -429,45 +429,83 @@
             transition: var(--transition); font-family: inherit;
         }
         .btn-print-ledger:hover { background: rgba(56, 189, 248, 0.12); border-color: var(--accent); }
+        .btn-edit-budget { cursor:pointer; opacity:0.5; margin-left:6px; font-size:0.85rem; }
+        .btn-edit-budget:hover { opacity:1; }
 
         @media print {
-            @page { size: A4 portrait; margin: 12mm; }
+            @page { size: A4 portrait; margin: 18mm 12mm; }
             *, *::before, *::after {
                 animation: none !important; transition: none !important;
                 box-shadow: none !important; text-shadow: none !important;
             }
-            body {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                background: #fff !important; padding: 0 !important;
-                color: #1f2937 !important;
-            }
-            .ai-bar, .btn-print-ledger, #clearLedgerBtn { display: none !important; }
+            /* 利用固定定位实现跨页连续页眉页脚 */
             .print-header {
+                position: fixed; top: 0; left: 0; right: 0;
                 display: flex !important; justify-content: space-between; align-items: flex-end;
-                padding-bottom: 10px; margin-bottom: 22px;
-                border-bottom: 2px solid #555;
+                padding-bottom: 10px; border-bottom: 2px solid #555; background: #fff; z-index: 10;
             }
             .print-header__title { font-size: 1.08rem; font-weight: 800; color: #333; }
             .print-header__meta { font-size: 0.72rem; color: #4a4a4a; font-weight: 600; }
+
             .print-footer {
-                display: block !important; position: fixed; left: 0; right: 0; bottom: 0;
-                padding-top: 6px; border-top: 1px solid #d8d8d8;
-                font-size: 0.62rem; color: #909090; text-align: center;
+                position: fixed; bottom: 0; left: 0; right: 0;
+                display: block !important; padding-top: 6px; border-top: 1px solid #d8d8d8;
+                font-size: 0.62rem; color: #909090; text-align: center; background: #fff; z-index: 10;
             }
-            .container { max-width: 100% !important; }
-            .stat-card, .progress-card, .ledger-item {
+            /* CSS计数器页码注入 */
+            .print-footer::after { content: "第 " counter(page) " 页"; display: block; margin-top: 4px; font-weight: 700; color: #666; }
+
+            body {
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+                background: #fff !important; color: #1f2937 !important;
+                /* 留出上下边距防止内容被固定定位的页眉页脚遮挡 */
+                padding: 50px 0 40px !important;
+            }
+            .ai-bar, .btn-print-ledger, #clearLedgerBtn, [data-action="delete-item"] { display: none !important; }
+            .container { max-width: 100% !important; margin: 0 !important; }
+            .dashboard, .progress-card, .ledger-item {
                 background: transparent !important; backdrop-filter: none !important;
-                border: 1px solid #e3e3e3 !important; border-radius: 4px !important;
-                break-inside: avoid;
+                border: 1px solid #e3e3e3 !important; border-radius: 4px !important; break-inside: avoid;
             }
             .ledger-item { opacity: 1 !important; transform: none !important; }
         }
+
+        /* ---------- 模块级高级弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--card-bg, var(--bg-panel, #fff)); border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: var(--transition); color: var(--text-main, var(--text-light, #333));
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-muted, var(--text-dim, #666)); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-muted, var(--text-dim, #666)); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <!-- Print header (only visible in print) -->
+        <div class="print-header">
+            <span class="print-header__title">AI 智装管家 · 装修账本报告</span>
+            <span class="print-header__meta" id="printMeta"></span>
+        </div>
+
         <!-- Header -->
         <header class="brand">
             <span class="brand__eyebrow">AI 智装管家 · 智能记账本</span>
@@ -478,7 +516,7 @@
         <!-- Dashboard -->
         <section class="dashboard" aria-label="预算看板">
             <div class="stat-card stat-card--primary">
-                <div class="stat-card__label">总预算</div>
+                <div class="stat-card__label">总预算 <span class="btn-edit-budget" id="editBudgetBtn" title="修改预算">✏️</span></div>
                 <div class="stat-card__value" id="totalBudget">¥0</div>
             </div>
             <div class="stat-card stat-card--warn">
@@ -511,11 +549,6 @@
             <div class="ledger-list" id="ledgerList"></div>
         </section>
 
-        <!-- Print header (only visible in print) -->
-        <div class="print-header">
-            <span class="print-header__title">AI 智装管家 · 装修账本报告</span>
-            <span class="print-header__meta" id="printMeta"></span>
-        </div>
         <div class="print-footer">AI 智装管家 · 数据仅供装修决策参考 · 生成时间以打印时刻为准</div>
 
         <button class="btn-print-ledger" id="printLedgerBtn" type="button">🖨️ 打印 / 导出 PDF</button>
@@ -536,6 +569,17 @@
         <p class="ai-bar__hint">AI 会自动识别金额、分类并生成记账记录</p>
     </div>
 
+    <div class="global-modal-mask" id="moduleModalMask">
+        <div class="global-modal">
+            <div class="gm-title">操作确认</div>
+            <div class="gm-desc" id="moduleModalDesc">确定要执行此操作吗？</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
         (function initThemeSync() {
@@ -551,7 +595,7 @@
         })();
 
         // ---------- Data & State ----------
-        const BUDGET = 300000;
+        let BUDGET = parseInt(localStorage.getItem('shp_ledger_budget')) || 300000;
 
         const LEDGER_STORAGE_KEY = 'shp_ledger_state_v1';
         const defaultTransactions = [
@@ -639,7 +683,7 @@
 
             item.innerHTML = `
                 <div class="ledger-item__left">
-                    <div class="ledger-item__icon">${t.icon}</div>
+                    <div class="ledger-item__icon">${escapeHtml(t.icon)}</div>
                     <div class="ledger-item__info">
                         <div class="ledger-item__meta">
                             <span class="ledger-item__date">${t.date}</span>
@@ -650,7 +694,10 @@
                         <div class="ledger-item__summary">${escapeHtml(t.summary)}</div>
                     </div>
                 </div>
-                <div class="ledger-item__amount">${formatCurrency(t.amount)}</div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="ledger-item__amount">${formatCurrency(t.amount)}</div>
+                    <button type="button" data-action="delete-item" data-id="${t.id}" style="border:none; background:transparent; cursor:pointer; font-size:0.9rem; opacity:0.6; transition:opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'" title="删除该笔账单">🗑️</button>
+                </div>
             `;
 
             return item;
@@ -675,7 +722,7 @@
 
             // Try to extract the last number as amount
             const numberMatches = normalized.match(/\d+(?:\.\d+)?/g);
-            let amount = numberMatches ? parseFloat(numberMatches[numberMatches.length - 1]) : 0;
+            let amount = numberMatches ? Math.max(...numberMatches.map(Number)) : 0;
 
             // Category detection
             const rules = [
@@ -693,11 +740,15 @@
             const subcategory = matched ? matched.subcategory : '通用支出';
 
             // Build a concise summary
-            const cleaned = normalized
-                .replace(/[\d,\.]+/g, '')
-                .replace(/(元|块|人民币|花了|用了|消费|支出|买了|买了点)/g, '')
-                .trim();
-
+            let cleaned = normalized;
+            if (amount > 0) {
+                const amountStr = amount.toString();
+                const lastIdx = normalized.lastIndexOf(amountStr);
+                if (lastIdx !== -1) {
+                    cleaned = normalized.substring(0, lastIdx) + normalized.substring(lastIdx + amountStr.length);
+                }
+            }
+            cleaned = cleaned.replace(/(元|块|人民币|花了|用了|消费|支出|买了|买了点)/g, '').trim();
             const summary = cleaned || 'AI 自动识别支出';
 
             return {
@@ -749,10 +800,44 @@
         // ---------- Init ----------
         updateUI();
 
+        // ---------- 高级弹窗 Helper ----------
+        let currentConfirmAction = null;
+        document.getElementById('moduleConfirmBtn').addEventListener('click', () => {
+            document.getElementById('moduleModalMask').classList.remove('show');
+            if (currentConfirmAction) currentConfirmAction();
+        });
+        function customConfirm(desc, action) {
+            document.getElementById('moduleModalDesc').innerHTML = desc;
+            currentConfirmAction = action;
+            document.getElementById('moduleModalMask').classList.add('show');
+        }
+
         document.getElementById('clearLedgerBtn').addEventListener('click', () => {
-            if (!confirm('确定要清空所有账单并删除本地缓存吗？此操作不可撤销。')) return;
-            localStorage.removeItem(LEDGER_STORAGE_KEY);
-            transactions = [];
+            customConfirm('确定要清空所有账单并删除本地缓存吗？此操作不可撤销。', () => {
+                localStorage.removeItem(LEDGER_STORAGE_KEY);
+                transactions = [];
+                updateUI();
+            });
+        });
+
+        // ---------- 自定义总预算 ----------
+        document.getElementById('editBudgetBtn').addEventListener('click', () => {
+            const input = prompt('请输入新的总预算（单位：元）', BUDGET);
+            if (input === null) return;
+            const val = parseInt(input, 10);
+            if (!(val > 0)) { alert('输入无效，预算必须为正整数'); return; }
+            BUDGET = val;
+            try { localStorage.setItem('shp_ledger_budget', String(val)); } catch (e) {}
+            updateUI();
+        });
+
+        // ---------- 单条账单删除（事件委托） ----------
+        elLedgerList.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action="delete-item"]');
+            if (!btn) return;
+            const id = Number(btn.dataset.id);
+            transactions = transactions.filter(t => t.id !== id);
+            saveLedgerState();
             updateUI();
         });
 

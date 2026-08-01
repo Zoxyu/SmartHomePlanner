@@ -8,6 +8,7 @@
     <style>
         :root {
             --accent: #38bdf8;
+            --danger: #ef4444;
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         /* ===== 昼夜主题变量（默认夜间） ===== */
@@ -131,7 +132,7 @@
             cursor: pointer; transition: var(--transition);
         }
         .theme-toggle:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.4); }
-        .theme-toggle__icon { font-size: 1.05rem; line-height: 1; }
+        .theme-toggle__icon { font-size: 1.1rem; line-height: 1; width: 24px; text-align: center; display: inline-block; }
         .theme-toggle__label { transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0); }
         .sidebar__footer {
             padding: 14px 12px 0;
@@ -154,9 +155,12 @@
         /* 强制所有核心容器为绝对正方形 48x48（仅桌面端） */
         @media (min-width: 861px) {
             .sidebar--collapsed .logo,
-            .sidebar--collapsed .nav-item,
-            .sidebar--collapsed .theme-toggle {
+            .sidebar--collapsed .nav-item {
                 width: 48px; height: 48px; padding: 0; margin: 0 auto;
+                justify-content: center; align-items: center; border-radius: 14px;
+            }
+            .sidebar--collapsed .theme-toggle {
+                width: 48px; height: 48px; padding: 0; margin: 0 auto 14px auto;
                 justify-content: center; align-items: center; border-radius: 14px;
             }
             .sidebar--collapsed .logo__mark { width: 48px; height: 48px; border-radius: 14px; }
@@ -193,6 +197,43 @@
             .theme-toggle__label { display: none; }
             .sidebar-toggle { display: none !important; }
         }
+
+        /* ---------- 全局 Toast ---------- */
+        .sys-toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 10000;
+            background: rgba(15, 23, 42, 0.85); color: #fff; padding: 10px 24px;
+            border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); pointer-events: none;
+        }
+        .sys-toast.show { opacity: 1; visibility: visible; top: 32px; }
+
+        /* ---------- 全局弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--bg-base); border: 1px solid var(--sidebar-border);
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: var(--transition); color: var(--text-light);
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-dim); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-light); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
@@ -259,6 +300,10 @@
                 <span class="theme-toggle__icon" id="themeIcon">🌙</span>
                 <span class="theme-toggle__label" id="themeLabel">深色主题</span>
             </button>
+            <button class="theme-toggle" id="dataManageBtn" type="button" title="本地存储管理">
+                <span class="theme-toggle__icon">🗄️</span>
+                <span class="theme-toggle__label">数据清理</span>
+            </button>
             <div class="sidebar__footer">
                 ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
                 📐 SmartHome Planner · v1.0
@@ -270,6 +315,18 @@
     <main class="content">
         <iframe id="app-frame" src="smart_calculator.html" title="模块内容区"></iframe>
     </main>
+
+    <div class="sys-toast" id="globalToast">系统提示</div>
+    <div class="global-modal-mask" id="globalModalMask">
+        <div class="global-modal">
+            <div class="gm-title">清理全站数据</div>
+            <div class="gm-desc">您当前的所有推演方案均安全地存储在浏览器本地缓存中。<br><br>点击确定将永久清空“算料、弱电、沙盒、记账”等所有模块的数据，该操作不可恢复。</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" id="gmCancelBtn" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="gmConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ============================================================
@@ -394,6 +451,35 @@
                 }
             } catch (e) {}
         })();
+
+        // ========== 全局 Toast 与 首次进入提示 ==========
+        const globalToast = document.getElementById('globalToast');
+        function showGlobalToast(msg, duration = 3500) {
+            globalToast.textContent = msg;
+            globalToast.classList.add('show');
+            setTimeout(() => globalToast.classList.remove('show'), duration);
+        }
+        if (!sessionStorage.getItem('shp_welcomed')) {
+            setTimeout(() => showGlobalToast('欢迎！本项目采用纯本地缓存技术，您的数据已安全隔离。'), 800);
+            sessionStorage.setItem('shp_welcomed', '1');
+        }
+
+        // ========== 全局数据清理弹窗 ==========
+        const dataManageBtn = document.getElementById('dataManageBtn');
+        const globalModalMask = document.getElementById('globalModalMask');
+        const gmCancelBtn = document.getElementById('gmCancelBtn');
+        const gmConfirmBtn = document.getElementById('gmConfirmBtn');
+
+        dataManageBtn.addEventListener('click', () => globalModalMask.classList.add('show'));
+        gmCancelBtn.addEventListener('click', () => globalModalMask.classList.remove('show'));
+        globalModalMask.addEventListener('click', (e) => { if (e.target === globalModalMask) globalModalMask.classList.remove('show'); });
+
+        gmConfirmBtn.addEventListener('click', () => {
+            globalModalMask.classList.remove('show');
+            localStorage.clear();
+            showGlobalToast('全站数据已清空，正在重置系统...');
+            setTimeout(() => window.location.reload(), 1500);
+        });
     </script>
 </body>
 </html>

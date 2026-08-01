@@ -640,6 +640,32 @@
             body:not(.print-mode-canvas):not(.print-mode-report) .lib-item__name,
             body:not(.print-mode-canvas):not(.print-mode-report) .acc__head { color: #333333 !important; }
         }
+
+        /* ---------- 模块级高级弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--card-bg, var(--bg-panel, #fff)); border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: var(--transition); color: var(--text-main, var(--text-light, #333));
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-muted, var(--text-dim, #666)); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-muted, var(--text-dim, #666)); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
@@ -864,6 +890,17 @@
         </div>
     </div>
 
+    <div class="global-modal-mask" id="moduleModalMask">
+        <div class="global-modal">
+            <div class="gm-title">操作确认</div>
+            <div class="gm-desc" id="moduleModalDesc">确定要执行此操作吗？</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
         (function initThemeSync() {
@@ -958,6 +995,10 @@
         // 3) Helpers
         // ============================================================
         function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
 
         function hexToRgba(hex, a) {
             const n = parseInt(hex.slice(1), 16);
@@ -1084,7 +1125,7 @@
             el.style.zIndex = ++topZ;
             el.innerHTML = `
                 <span class="placed__alarm">干涉报警！</span>
-                <span class="placed__label">${item.name}</span>
+                <span class="placed__label">${escapeHtml(item.name)}</span>
                 <span class="placed__size"></span>
             `;
             item.el = el;
@@ -1858,12 +1899,6 @@
         const reportDate = document.getElementById('reportDate');
         const reportSerial = document.getElementById('reportSerial');
 
-        function escapeHtml(s) {
-            return String(s).replace(/[&<>"']/g, c => (
-                { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-            ));
-        }
-
         // 语义化尺寸解析器：根据 cat / type 将 realW×realH 翻译为行业描述
         function describeSize(item) {
             const w = Math.round(item.realW);
@@ -2084,10 +2119,23 @@
         }
 
         // 清空画板：删缓存 + 整页重置，回到全新初始态
+        // ---------- 高级弹窗 Helper ----------
+        let currentConfirmAction = null;
+        document.getElementById('moduleConfirmBtn').addEventListener('click', () => {
+            document.getElementById('moduleModalMask').classList.remove('show');
+            if (currentConfirmAction) currentConfirmAction();
+        });
+        function customConfirm(desc, action) {
+            document.getElementById('moduleModalDesc').innerHTML = desc;
+            currentConfirmAction = action;
+            document.getElementById('moduleModalMask').classList.add('show');
+        }
+
         document.getElementById('clearBoardBtn').addEventListener('click', () => {
-            if (!confirm('确定要清空画板并删除本地缓存吗？此操作不可撤销。')) return;
-            localStorage.removeItem(BOARD_STORAGE_KEY);
-            location.reload();
+            customConfirm('确定要清空画板并删除本地缓存吗？此操作不可撤销。', () => {
+                localStorage.removeItem(BOARD_STORAGE_KEY);
+                location.reload();
+            });
         });
 
         document.addEventListener('DOMContentLoaded', restoreBoardState);

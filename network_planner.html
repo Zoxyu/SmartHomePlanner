@@ -448,6 +448,32 @@
             backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
         .toast.show { opacity: 1; top: 32px; }
+
+        /* ---------- 模块级高级弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--card-bg, var(--bg-panel, #fff)); border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: var(--transition); color: var(--text-main, var(--text-light, #333));
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-muted, var(--text-dim, #666)); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-muted, var(--text-dim, #666)); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
@@ -496,6 +522,14 @@
                                     <div class="radio-label__desc">AC + AP 面板组网，每房间一个 AP 面板</div>
                                 </div>
                             </label>
+                        </div>
+                        <div class="sub-input visible" id="meshCountWrap" style="margin-top: 10px;">
+                            <label>Mesh 节点数量：</label>
+                            <div class="qty-control visible">
+                                <button class="qty-btn" type="button" data-target="meshNodes" data-delta="-1">−</button>
+                                <input type="number" class="qty-input" id="meshNodesInput" value="2" min="1" max="10">
+                                <button class="qty-btn" type="button" data-target="meshNodes" data-delta="1">+</button>
+                            </div>
                         </div>
                         <div class="sub-input" id="roomCountWrap">
                             <label>需要覆盖房间数：</label>
@@ -564,7 +598,7 @@
                                 <label class="device-label-wrap">
                                     <input type="checkbox" id="chkCurtain">
                                     <div class="device-info">
-                                        <div class="device-name">🪟 电动窗帘</div>
+                                        <div class="device-name">🖼️ 电动窗帘</div>
                                         <div class="device-hint">需顶部预留 220V 零火线</div>
                                     </div>
                                 </label>
@@ -677,13 +711,24 @@
                     <div class="result-list" id="wirList"><div class="result-empty">请配置左侧选项</div></div>
                 </div>
                 <button class="btn-print" id="printBtn" type="button">🖨️ 打印 / 导出 PDF</button>
-                <button class="btn-reset" id="clearCacheBtn" type="button">🗑️ 清除缓存并重置配置</button>
+                <button class="btn-reset" id="clearCacheBtn" type="button">🗑️ 清空弱电预演数据</button>
             </aside>
         </div>
     </div>
 
     <!-- 版权页脚（仅打印可见，固定于页底） -->
     <div class="print-footer">© 2026 AI 智装管家 SmartHome Planner · 本清单由 AI 自动推演，具体施工请以现场勘测为准 · 数据仅供采购决策参考</div>
+
+    <div class="global-modal-mask" id="moduleModalMask">
+        <div class="global-modal">
+            <div class="gm-title">操作确认</div>
+            <div class="gm-desc" id="moduleModalDesc">确定要执行此操作吗？</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
@@ -731,6 +776,8 @@
         const devBadge  = $('#devBadge');
         const roomWrap  = $('#roomCountWrap');
         const roomInput = $('#roomCountInput');
+        const meshCountWrap = $('#meshCountWrap');
+        const meshNodesInput = $('#meshNodesInput');
         const resultNet = $('#resultNet');
         const resultPwr = $('#resultPwr');
         const resultWir = $('#resultWir');
@@ -753,6 +800,7 @@
                 $('#optMesh').classList.toggle('selected', r.value === 'mesh');
                 $('#optAcAp').classList.toggle('selected', r.value === 'acap');
                 roomWrap.classList.toggle('visible', r.value === 'acap');
+                meshCountWrap.classList.toggle('visible', r.value === 'mesh');
                 netBadge.textContent = r.value === 'mesh' ? 'Mesh 组网' : 'AC+AP 组网';
                 recalc();
             });
@@ -765,6 +813,11 @@
                 showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
             }
             config.roomCount = Math.max(1, parseInt(roomInput.value, 10) || 1);
+            recalc();
+        });
+
+        meshNodesInput.addEventListener('input', () => {
+            config.meshNodes = Math.max(1, Math.min(10, parseInt(meshNodesInput.value, 10) || 2));
             recalc();
         });
 
@@ -782,9 +835,13 @@
             });
             numIn.addEventListener('input', () => {
                 const MAX_LIMIT = 1000;
-                if (parseInt(numIn.value, 10) > MAX_LIMIT) {
+                let val = parseInt(numIn.value, 10);
+                if (val > MAX_LIMIT) {
                     numIn.value = MAX_LIMIT;
                     showToast(`为保证推演性能，单项数值最高不可超过 ${MAX_LIMIT} 哦`);
+                } else if (val === 0 || val < 0) {
+                    numIn.value = 1;
+                    showToast('已勾选设备，数量最少为 1');
                 }
                 config[key].qty = Math.max(1, parseInt(numIn.value, 10) || 1);
                 recalc();
@@ -804,6 +861,10 @@
                         if (delta > 0) showToast(`为保证推演性能，单项数值最高不可超过 ${mx} 哦`);
                     } else if (v < 1) { v = 1; }
                     config.roomCount = v; roomInput.value = v;
+                } else if (target === 'meshNodes') {
+                    let v = config.meshNodes + delta;
+                    v = Math.max(1, Math.min(10, v));
+                    config.meshNodes = v; meshNodesInput.value = v;
                 } else if (deviceKeys.includes(target)) {
                     const inp = btn.closest('.qty-control').querySelector('input');
                     const mx = parseInt(inp.max, 10) || 1000;
@@ -875,7 +936,13 @@
 
             // Network mode recommendation
             if (config.netMode === 'mesh') {
-                items.push({ icon: '📡', text: `<strong>Mesh 分布式路由</strong> × ${config.meshNodes} 节点，适合 120-180㎡ 大户型，无缝漫游` });
+                let meshDesc = '';
+                if (config.meshNodes === 1) meshDesc = '适合 60-90㎡ 中小户型，基础覆盖';
+                else if (config.meshNodes === 2) meshDesc = '适合 120-180㎡ 大户型，无缝漫游';
+                else if (config.meshNodes === 3) meshDesc = '适合 180-250㎡ 大平层或复式，全方位覆盖';
+                else meshDesc = '适合 250㎡以上 别墅或复杂多层，极致无死角';
+
+                items.push({ icon: '📡', text: `<strong>Mesh 分布式路由</strong> × ${config.meshNodes} 节点，${meshDesc}` });
                 chips.push({ cls: 'blue', text: `${config.meshNodes} 个 Mesh 节点` });
             } else {
                 items.push({ icon: '📶', text: `<strong>AC 控制器</strong> × 1 + <strong>AP 面板</strong> × ${config.roomCount}，每房间独立覆盖` });
@@ -908,7 +975,7 @@
             // ---- Electrical ----
             const pwr = [];
             if (config.toilet.on)  pwr.push({ icon: '🔌', text: `智能马桶 × ${config.toilet.qty} — 每个需预留<strong>带防溅盒五孔插座</strong>（距地 40cm）` });
-            if (config.curtain.on) pwr.push({ icon: '🪟', text: `电动窗帘 × ${config.curtain.qty} — 窗帘盒旁<strong>顶部预留 220V 零火线</strong>（单轨/双轨各一路）` });
+            if (config.curtain.on) pwr.push({ icon: '🖼️', text: `电动窗帘 × ${config.curtain.qty} — 窗帘盒旁<strong>顶部预留 220V 零火线</strong>（单轨/双轨各一路）` });
             if (config.camera.on)  pwr.push({ icon: '🎥', text: `PoE 摄像头 × ${config.camera.qty} — 网线供电<strong>无需额外强电</strong>，但 NVR 端需 1 路插座` });
             if (config.nas.on)     pwr.push({ icon: '🔋', text: `<strong>NAS 强烈建议配备 UPS 不间断电源</strong>（推荐在线式 ≥ 600VA），防止意外断电损坏硬盘` });
             if (config.tv.on)      pwr.push({ icon: '📺', text: `智能电视 × ${config.tv.qty} — 建议<strong>独立回路 4㎡ 铜线</strong>，配 16A 空开` });
@@ -1061,6 +1128,10 @@
             config.roomCount = Math.max(1, Math.min(20, parseInt(c.roomCount, 10) || 3));
             roomInput.value = config.roomCount;
 
+            config.meshNodes = Math.max(1, Math.min(10, parseInt(c.meshNodes, 10) || 2));
+            meshNodesInput.value = config.meshNodes;
+            meshCountWrap.classList.toggle('visible', config.netMode === 'mesh');
+
             // 设备勾选与数量
             deviceKeys.forEach(key => {
                 if (!c[key]) return;
@@ -1091,10 +1162,23 @@
         document.addEventListener('DOMContentLoaded', restoreNetState);
 
         // 手动清理缓存：删除后整页重置回默认配置
+        // ---------- 高级弹窗 Helper ----------
+        let currentConfirmAction = null;
+        document.getElementById('moduleConfirmBtn').addEventListener('click', () => {
+            document.getElementById('moduleModalMask').classList.remove('show');
+            if (currentConfirmAction) currentConfirmAction();
+        });
+        function customConfirm(desc, action) {
+            document.getElementById('moduleModalDesc').innerHTML = desc;
+            currentConfirmAction = action;
+            document.getElementById('moduleModalMask').classList.add('show');
+        }
+
         $('#clearCacheBtn').addEventListener('click', () => {
-            if (!confirm('确定要清除本地缓存并重置所有配置吗？此操作不可撤销。')) return;
-            localStorage.removeItem(NET_STORAGE_KEY);
-            location.reload();
+            customConfirm('确定要清除本地缓存并重置所有配置吗？此操作不可撤销。', () => {
+                localStorage.removeItem(NET_STORAGE_KEY);
+                location.reload();
+            });
         });
 
         // ========== Print / PDF export ==========

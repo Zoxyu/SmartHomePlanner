@@ -10,6 +10,7 @@
             --accent: #38bdf8;
             --danger: #ef4444;
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         /* ===== 昼夜主题变量（默认夜间） ===== */
         :root, html[data-theme="dark"] {
@@ -62,7 +63,7 @@
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-right: 1px solid var(--sidebar-border);
             position: relative; z-index: 100;
-            transition: width 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             white-space: nowrap;
         }
 
@@ -72,13 +73,18 @@
             width: 24px; height: 48px; border-radius: 12px;
             background: var(--bg-base); border: 1px solid var(--sidebar-border);
             color: var(--text-dim); display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: var(--transition);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            cursor: pointer; transition: var(--spring);
+            box-shadow: 0 0 14px rgba(0, 0, 0, 0.08); /* 居中对称阴影 */
             font-size: 0.7rem; font-family: monospace;
         }
+        /* 只有箭头随状态旋转，外层胶囊保持静止 */
+        .sidebar-toggle__arrow {
+            display: inline-block; line-height: 1;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sidebar--collapsed .sidebar-toggle__arrow { transform: rotate(180deg); }
         .sidebar-toggle:hover { color: var(--accent); border-color: var(--accent); }
         .sidebar-toggle * { pointer-events: none; }
-        .sidebar--collapsed .sidebar-toggle { transform: translateY(-50%) rotate(180deg); }
         .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; cursor: pointer; }
         .logo__mark {
             width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
@@ -185,6 +191,12 @@
         #app-frame {
             position: absolute; inset: 0; width: 100%; height: 100%;
             border: none; background: transparent;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        /* 切换时的离场状态 */
+        #app-frame.is-switching {
+            opacity: 0;
+            transform: translateY(12px);
         }
 
         /* ---------- Mobile: sidebar → top bar ---------- */
@@ -228,7 +240,7 @@
         .global-modal {
             width: 360px; background: var(--bg-base); border: 1px solid var(--sidebar-border);
             border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
-            transform: scale(0.95); transition: var(--transition); color: var(--text-light);
+            transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); color: var(--text-light);
         }
         .global-modal-mask.show .global-modal { transform: scale(1); }
         .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
@@ -242,6 +254,17 @@
         .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-light); }
         .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
         .gm-btn--danger:hover { background: var(--danger); color: #fff; }
+
+        /* 真实触碰反馈：按下瞬间微缩 */
+        .nav-item:active, .theme-toggle:active, .gm-btn:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+        /* 按下反馈：仅外层胶囊微缩，箭头旋转状态独立不受影响 */
+        .sidebar-toggle:active {
+            transform: translateY(-50%) scale(0.96);
+            transition: transform 0.1s ease;
+        }
     </style>
 </head>
 <body>
@@ -255,7 +278,7 @@
 
     <!-- ===== Left: dark sidebar ===== -->
     <aside class="sidebar">
-        <button class="sidebar-toggle" id="sidebarToggle" type="button" title="收起/展开侧边栏">◀</button>
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" title="收起/展开侧边栏"><span class="sidebar-toggle__arrow">◀</span></button>
         <div class="logo" id="logoHome" title="返回工作台首页">
             <span class="logo__mark">🏠</span>
             <span class="logo__text">
@@ -412,12 +435,30 @@
         function navigate(key) {
             const route = ROUTES[key];
             if (!route) return;
-            if (frame.getAttribute('src') !== route.src) frame.src = route.src;
+
+            // 同步侧边栏高亮与标题
             navItems.forEach(n => n.classList.toggle('active', n.dataset.route === key));
             document.title = route.title;
             setFavicon(route.icon);
-            // 新增：静默更新浏览器 URL 的 Hash，确保刷新时不丢失当前模块
             window.history.replaceState(null, '', '#' + key);
+
+            const currentSrc = frame.getAttribute('src');
+            // 初次加载（无 src）直接载入
+            if (!currentSrc) { frame.src = route.src; return; }
+            // 相同源无需重复加载（避免首屏闪屏）
+            if (currentSrc === route.src) return;
+
+            // 执行无缝切换动效：淡出 -> 换源 -> 淡入
+            frame.classList.add('is-switching');
+            setTimeout(() => {
+                frame.src = route.src;
+                frame.onload = () => {
+                    frame.classList.remove('is-switching');
+                    // 重新向子 iframe 发送当前主题状态，防止白屏闪烁
+                    const currentTheme = document.documentElement.dataset.theme;
+                    try { frame.contentWindow.postMessage({ theme: currentTheme }, '*'); } catch (e) {}
+                };
+            }, 250); // 250ms 等待 CSS 淡出动画完成
         }
 
         navItems.forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));

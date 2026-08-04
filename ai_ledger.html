@@ -766,7 +766,8 @@
             renderLedger();
         };
 
-        // ---------- AI Parser (client-side simulation) ----------
+        // ---------- AI Parser (已废弃：前端模拟解析，改由后端大模型 API 接管) ----------
+        /*
         const parseInput = (text) => {
             const normalized = text.trim();
             if (!normalized) return null;
@@ -811,35 +812,68 @@
                 icon: getIcon(category)
             };
         };
+        */
 
-        // ---------- Send Handler ----------
-        const handleSend = () => {
-            if (elBtn.disabled) return;
+        // ---------- Send Handler（接入后端大模型 API） ----------
+        const handleSend = async () => {
+            if (elBtn.disabled) return; // 防抖：阻止并发点击
             const rawText = elInput.value.trim();
             if (!rawText) return;
 
-            // 1. Button loading state
+            // 1. 按钮加载态
             const originalText = elBtn.textContent;
             elBtn.disabled = true;
-            elBtn.textContent = 'AI 分析中...';
+            elBtn.textContent = 'AI 思考中...';
 
-            setTimeout(() => {
-                const parsed = parseInput(rawText);
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/parse-ledger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: rawText })
+                });
 
-                if (parsed) {
+                // 第一道防线：HTTP 层错误（如 400 敏感词/长度限制拦截）
+                if (!response.ok) {
+                    let errMsg = `服务异常 (${response.status})，请稍后重试`;
+                    try {
+                        const errData = await response.json();
+                        if (errData && errData.detail) errMsg = errData.detail;
+                    } catch (e) {}
+                    showToast(errMsg);
+                    return;
+                }
+
+                const data = await response.json();
+
+                // 第二/三道防线：业务层错误（大模型判定非记账场景）
+                if (data.status === 'error') {
+                    showToast(data.msg || 'AI 无法识别该笔账单，请换个说法试试');
+                    return;
+                }
+
+                // 成功入账
+                if (data.status === 'success') {
                     transactions.push({
                         id: Date.now(),
-                        ...parsed
+                        date: new Date().toISOString().split('T')[0],
+                        category: data.category || '其他',
+                        subcategory: data.subcategory || '通用支出',
+                        summary: data.summary || 'AI 自动识别支出',
+                        amount: Number(data.amount) || 0,
+                        icon: getIcon(data.category)
                     });
                     saveLedgerState();
                     updateUI();
+                    elInput.value = ''; // 仅入账成功才清空输入框，失败时保留便于修改重试
                 }
-
-                // Reset input & button
-                elInput.value = '';
+            } catch (err) {
+                // 网络层异常（后端未启动 / CORS / 断网）
+                showToast('无法连接 AI 服务，请检查后端是否已启动');
+            } finally {
+                // 无论成败，恢复按钮状态
                 elBtn.disabled = false;
                 elBtn.textContent = originalText;
-            }, 1500);
+            }
         };
 
         // ---------- Events ----------

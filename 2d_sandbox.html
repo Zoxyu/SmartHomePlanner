@@ -368,15 +368,17 @@
         }
         .scale-badge.calibrated { color: var(--success); border-color: rgba(34, 197, 94, 0.35); }
 
-        /* Toast */
+        /* ---------- Toast 提示（全局标准样式，与算料管家/记账本一致） ---------- */
         .toast {
-            position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
-            z-index: 80; background: rgba(239, 68, 68, 0.92); color: #fff;
-            padding: 7px 16px; border-radius: 999px; font-size: 0.75rem;
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #fff;
+            padding: 10px 20px; border-radius: 999px; font-size: 0.85rem;
             font-weight: 700; pointer-events: none; white-space: nowrap;
-            opacity: 0; transition: opacity 0.25s ease;
+            opacity: 0; transition: opacity 0.3s ease, top 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
-        .toast.show { opacity: 1; }
+        .toast.show { opacity: 1; top: 32px; }
 
         /* ---------- Placed items ---------- */
         .placed {
@@ -542,16 +544,17 @@
 
         /* ---------- Print / PDF export：双轨导出（图纸横向 / 报告纵向） ---------- */
         @media print {
-            /* 命名页：报告纵向 A4（默认），图纸横向 A4 */
-            @page { size: A4 portrait; margin: 12mm; }
-            @page canvasPage { size: A4 landscape; margin: 8mm; }
+            /* 命名页：报告纵向 A4（默认），图纸横向 A4；
+               margin:0 阻断浏览器注入默认页眉页脚，边距由 body padding 补偿 */
+            @page { size: A4 portrait; margin: 0; }
+            @page canvasPage { size: A4 landscape; margin: 0; }
 
             body {
                 background-color: #FAFAFA !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 color: #3d3d3d !important;
-                padding: 0 !important;
+                padding: 12mm !important;
             }
             *, *::before, *::after {
                 animation: none !important; transition: none !important;
@@ -559,7 +562,7 @@
             }
 
             /* ===== 图纸模式：横向全屏画板，隐藏报告与左侧菜单 ===== */
-            body.print-mode-canvas { page: canvasPage; min-height: auto !important; }
+            body.print-mode-canvas { page: canvasPage; min-height: auto !important; padding: 8mm !important; }
             body.print-mode-canvas .library,
             body.print-mode-canvas .board-status,
             body.print-mode-canvas .board-footer,
@@ -666,6 +669,21 @@
         .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
         .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
         .gm-btn--danger:hover { background: var(--danger); color: #fff; }
+        /* 输入型弹窗专属样式（与 ai_ledger 一致） */
+        .gm-input {
+            width: 100%; border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 12px; padding: 12px 14px; font-size: 1.05rem;
+            background: var(--input-bg, var(--inner-bg, transparent)); color: var(--text-main, var(--text-light, #333));
+            outline: none; font-family: inherit; transition: var(--transition);
+            margin-bottom: 24px; text-align: center; font-weight: 700;
+        }
+        .gm-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
+        .gm-btn--primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff; border: none;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
+        }
+        .gm-btn--primary:hover { box-shadow: 0 8px 22px rgba(14, 165, 233, 0.4); transform: translateY(-1px); }
     </style>
 </head>
 <body>
@@ -833,7 +851,7 @@
                         <button class="fp-btn fp-btn--lock" id="fpLockBtn" type="button">🔒 锁定底图</button>
                     </div>
                     <div class="calib-banner" id="calibBanner" hidden></div>
-                    <div class="toast" id="toast"></div>
+                    <div class="toast" id="sysToast"></div>
                     <div class="scale-badge" id="scaleBadge"></div>
                 </div>
 
@@ -897,6 +915,19 @@
             <div class="gm-actions">
                 <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
                 <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 比例尺标定高级弹窗（替换原生 prompt，必须在 script 之前解析） -->
+    <div class="global-modal-mask" id="calibPromptMask">
+        <div class="global-modal">
+            <div class="gm-title">📐 标定实际物理长度</div>
+            <div class="gm-desc" style="margin-bottom: 14px;">请输入刚才所选线段在真实世界中的长度（单位：毫米）</div>
+            <input type="number" id="calibPromptInput" class="gm-input" placeholder="例如：3000" autocomplete="off">
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" id="calibCancelBtn" type="button">取消标定</button>
+                <button class="gm-btn gm-btn--primary" id="calibConfirmBtn" type="button">确认标定</button>
             </div>
         </div>
     </div>
@@ -975,7 +1006,7 @@
         const recalibBtn = document.getElementById('recalibBtn');
         const calibBanner = document.getElementById('calibBanner');
         const scaleBadge = document.getElementById('scaleBadge');
-        const toastEl = document.getElementById('toast');
+        const toastEl = document.getElementById('sysToast');
         const fpToolbar = document.getElementById('fpToolbar');
         const fpZoomIn = document.getElementById('fpZoomIn');
         const fpZoomOut = document.getElementById('fpZoomOut');
@@ -1007,10 +1038,11 @@
 
         let toastTimer = null;
         function showToast(msg) {
+            if (!toastEl) return;
             toastEl.textContent = msg;
             toastEl.classList.add('show');
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+            toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
         }
 
         // Interaction gate: with a floor plan present, everything downstream
@@ -1410,7 +1442,7 @@
             floorplanInput.value = '';
             if (!file) return;
             if (!/^image\/(png|jpeg)$/.test(file.type)) {
-                alert('仅支持 PNG / JPG 格式的户型图');
+                showToast('仅支持 PNG / JPG 格式的户型图');
                 return;
             }
             const reader = new FileReader();
@@ -1731,29 +1763,71 @@
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                if (calib.active) cancelCalibration();
+                // 标定弹窗打开时：Esc 同步关闭弹窗并取消标定，避免弹窗悬空
+                if (calibPromptMask.classList.contains('show')) {
+                    closeCalibPrompt();
+                    cancelCalibration();
+                }
+                else if (calib.active) cancelCalibration();
                 else if (ruler.active) exitRuler();
                 else if (!editMask.hidden) closeEditor();
                 else deselect();
             }
         });
 
+        // ===== 比例尺标定高级弹窗：替换原生 prompt =====
+        const calibPromptMask = document.getElementById('calibPromptMask');
+        const calibPromptInput = document.getElementById('calibPromptInput');
+        let tempDistPx = 0; // 暂存本次标定线段的像素距离
+
         function finishCalibration(distPx) {
-            const input = prompt('请输入这段线段的实际长度（单位：毫米）', '3000');
-            const mm = parseFloat(input);
+            tempDistPx = distPx;
+            calibPromptInput.value = '3000'; // 回填默认值，用户可直接修改
+            calibPromptMask.classList.add('show');
+            setTimeout(() => { calibPromptInput.focus(); calibPromptInput.select(); }, 100);
+        }
+
+        function closeCalibPrompt() {
+            calibPromptMask.classList.remove('show');
+        }
+
+        // 确认标定
+        document.getElementById('calibConfirmBtn').addEventListener('click', () => {
+            const mm = parseFloat(calibPromptInput.value);
             if (!(mm > 0)) {
-                alert('输入无效，本次标定已取消，沿用原比例');
+                showToast('输入无效，本次标定已取消，沿用原比例');
+                closeCalibPrompt();
                 cancelCalibration();
                 return;
             }
             // Core algorithm: 1px = (real length ÷ pixel distance) mm
-            window.PIXEL_RATIO = mm / distPx;
+            window.PIXEL_RATIO = mm / tempDistPx;
             calibrated = true;
+            closeCalibPrompt();
             cancelCalibration();
             updateScaleBadge();
             rescaleAll();
             saveBoardState(); // 标定完成后静默持久化新比例
-        }
+        });
+
+        // Enter 键回车确认
+        calibPromptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('calibConfirmBtn').click();
+        });
+
+        // 取消标定
+        document.getElementById('calibCancelBtn').addEventListener('click', () => {
+            closeCalibPrompt();
+            cancelCalibration();
+        });
+
+        // 点击遮罩层：视同取消标定
+        calibPromptMask.addEventListener('click', (e) => {
+            if (e.target === calibPromptMask) {
+                closeCalibPrompt();
+                cancelCalibration();
+            }
+        });
 
         function makeCalibDot(x, y) {
             const d = document.createElement('div');
@@ -1868,7 +1942,7 @@
         // ============================================================
         exportBtn.addEventListener('click', () => {
             if (!placedItems.length) {
-                alert('画板为空：请先拖入图元再导出布局数据');
+                showToast('画板为空：请先拖入图元再导出布局数据');
                 return;
             }
             const layout = placedItems.map(p => ({
@@ -1886,7 +1960,7 @@
             console.log('【AI 智装管家 · 布局数据】pixelRatio =', +window.PIXEL_RATIO.toFixed(3),
                 'mm/px · calibrated =', calibrated);
             console.log(JSON.stringify(layout, null, 2));
-            alert('布局数据已生成，可对接 AI 分析接口');
+            showToast('布局数据已生成，可对接 AI 分析接口');
         });
 
         // ============================================================
@@ -1947,7 +2021,7 @@
 
         function openReport() {
             if (!placedItems.length) {
-                alert('画板为空：请先拖入图元再生成尺寸方案报告');
+                showToast('画板为空：请先拖入图元再生成尺寸方案报告');
                 return;
             }
             buildReport();
@@ -2000,7 +2074,7 @@
 
         printCanvasBtn.addEventListener('click', () => {
             if (!placedItems.length && !fp.loaded) {
-                alert('画板为空：请先上传底图或拖入图元再导出图纸');
+                showToast('画板为空：请先上传底图或拖入图元再导出图纸');
                 return;
             }
             deselect();

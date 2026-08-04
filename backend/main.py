@@ -11,6 +11,7 @@ AI 智装管家 - 轻量级后端服务
 import json
 import logging
 import os
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -134,6 +135,93 @@ async def call_llm_api(user_text: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# 2D 空间布局分析：Prompt 动态组装（"小白" / "极客"双模式分发）
+# ---------------------------------------------------------------------------
+# 公共安全指令：任何模式下都必须前置注入，确保结论严谨、客观、免责
+LAYOUT_SAFETY_PREAMBLE = (
+    "分析必须极其严谨、客观。必须明确声明：本结论仅基于 2D 理论推演，"
+    "缺乏真实材质射频数据，需结合现场实测。"
+    "严禁使用“绝对无死角”“百分之百覆盖”等绝对化词汇。"
+)
+
+# 分支 A：小白模式 —— 通俗易懂的家装顾问
+LAYOUT_NORMAL_PROMPT = (
+    "你的角色是一位通俗易懂的家装顾问。"
+    "重点关注：在不同房间刷短视频/玩游戏的延迟体验、路由器穿墙能力评估、光猫位置建议。"
+    "语言必须是大白话，让完全没有网络知识的业主也能看懂。"
+    "绝对禁止出现 VLAN、PoE、漫游协议、AC+AP、Mesh、核心交换机等任何专业词汇，"
+    "如需表达专业概念，必须用生活化比喻替代。"
+)
+
+# 分支 B：极客模式 —— 资深弱电工程师
+LAYOUT_GEEK_PROMPT = (
+    "你的角色是一位资深弱电工程师。"
+    "重点关注：AC+AP 与 Mesh 组网的利弊对比与选型建议、"
+    "核心交换机端口数量与 PoE 供电预算评估、"
+    "智能家居与核心数据的 VLAN 二层隔离建议。"
+    "语言可以专业、直接，允许并鼓励使用行业术语，给出可落地的工程参数。"
+)
+
+# 模式 -> 分支 Prompt 映射表（便于未来扩展更多报告模式）
+LAYOUT_MODE_PROMPTS = {
+    "normal": LAYOUT_NORMAL_PROMPT,
+    "geek": LAYOUT_GEEK_PROMPT,
+}
+
+# 统一输出格式约束：两种模式共用同一 JSON 结构，方便前端统一渲染
+LAYOUT_OUTPUT_SCHEMA = (
+    "只输出一个合法 JSON 对象，格式严格为："
+    '{"summary": "整体评估", "suggestions": ["建议1", "建议2"]}，'
+    "其中 summary 为字符串，suggestions 为字符串数组。"
+    "禁止输出任何其他文字、解释或 Markdown 标记。"
+)
+
+
+def assemble_layout_system_prompt(report_mode: str) -> str:
+    """按报告模式动态组装 System Prompt：安全指令 + 模式分支 + 输出格式。"""
+    branch = LAYOUT_MODE_PROMPTS[report_mode]
+    return LAYOUT_SAFETY_PREAMBLE + branch + LAYOUT_OUTPUT_SCHEMA
+
+
+async def call_llm_layout_api(report_mode: str, layout_data: List[Dict[str, Any]]) -> dict:
+    """
+    调用大语言模型分析 2D 空间布局（网络规划推演）。
+    约束：
+    - response_format 强制 JSON 输出；
+    - max_tokens=800 控制报告体量与成本；
+    - temperature=0 保证输出稳定。
+    返回解析后的 dict；解析失败或服务异常时抛出 HTTPException。
+    """
+    try:
+        completion = await llm_client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": assemble_layout_system_prompt(report_mode)},
+                {
+                    "role": "user",
+                    "content": "以下是设备坐标与尺寸信息（JSON），请据此分析："
+                    + json.dumps(layout_data, ensure_ascii=False),
+                },
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=800,
+            temperature=0,
+        )
+    except APIError as exc:
+        logger.error("大模型服务调用失败（布局分析）：%s", exc)
+        raise HTTPException(status_code=502, detail="布局分析服务暂时不可用，请稍后重试。")
+
+    raw_content = completion.choices[0].message.content or ""
+    try:
+        result = json.loads(raw_content)
+    except json.JSONDecodeError:
+        logger.error("大模型返回内容不是合法 JSON：%s", raw_content)
+        raise HTTPException(status_code=502, detail="布局分析服务返回异常，请稍后重试。")
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # 任务四：API 路由
 # ---------------------------------------------------------------------------
 app = FastAPI(
@@ -156,6 +244,20 @@ class LedgerParseRequest(BaseModel):
     """一句话记账请求体。"""
 
     text: str = Field(..., description="用户的一句话记账描述", min_length=1)
+
+
+class LayoutRequest(BaseModel):
+    """2D 空间布局分析请求体。"""
+
+    layout_data: List[Dict[str, Any]] = Field(
+        ...,
+        description="设备坐标与尺寸信息列表，每项包含名称/坐标/尺寸等字段",
+        min_length=1,
+    )
+    report_mode: str = Field(
+        default="normal",
+        description='报告模式："normal"（小白通俗版）或 "geek"（极客专业版）',
+    )
 
 
 @app.get("/api/health")
@@ -183,10 +285,35 @@ async def parse_ledger(request: LedgerParseRequest):
     return JSONResponse(status_code=422, content={"status": "error", "msg": msg})
 
 
+@app.post("/api/analyze-layout")
+async def analyze_layout(request: LayoutRequest):
+    """
+    2D 空间布局分析（网络规划推演）入口：
+    1. 校验报告模式合法性，动态组装对应 Prompt；
+    2. 调用大模型输出结构化分析结论；
+    3. 统一返回 {"summary": ..., "suggestions": [...]}。
+    """
+    if request.report_mode not in LAYOUT_MODE_PROMPTS:
+        raise HTTPException(
+            status_code=400,
+            detail='report_mode 取值非法，仅支持 "normal" 或 "geek"。',
+        )
+
+    result = await call_llm_layout_api(request.report_mode, request.layout_data)
+
+    # 兜底校验：确保返回结构符合约定，缺字段时补齐，避免前端解析报错
+    summary = result.get("summary", "")
+    suggestions = result.get("suggestions", [])
+    if not isinstance(suggestions, list):
+        suggestions = []
+
+    return {"summary": summary, "suggestions": suggestions}
+
+
 # ---------------------------------------------------------------------------
 # 启动入口
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False, use_colors=False)

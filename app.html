@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智装管家 · 全屋装修决策中枢</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E">
+    <style>
+        :root {
+            --accent: #38bdf8;
+            --danger: #ef4444;
+            --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        /* ===== 昼夜主题变量（默认夜间） ===== */
+        :root, html[data-theme="dark"] {
+            --bg-base: #0f172a;
+            --text-light: #e2e8f0;
+            --text-dim: #94a3b8;
+            --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.72) 0%, rgba(22, 35, 61, 0.72) 100%);
+            --sidebar-border: rgba(148, 163, 184, 0.14);
+            --toggle-bg: rgba(148, 163, 184, 0.08);
+            --toggle-border: rgba(148, 163, 184, 0.2);
+        }
+        html[data-theme="light"] {
+            --bg-base: #edf1f8;
+            --text-light: #1e293b;
+            --text-dim: #475569;
+            --sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.68) 0%, rgba(241, 245, 252, 0.68) 100%);
+            --sidebar-border: rgba(15, 23, 42, 0.1);
+            --toggle-bg: rgba(15, 23, 42, 0.05);
+            --toggle-border: rgba(15, 23, 42, 0.14);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            display: flex; background: var(--bg-base); color: var(--text-light);
+            overflow: hidden; -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---------- 全局动态弥散流光背景（氛围底层，随主题呼吸） ---------- */
+        .aura {
+            position: fixed; inset: 0; overflow: hidden;
+            z-index: 0; pointer-events: none;
+        }
+        .aura__blob { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; }
+        .aura__blob--1 { width: 620px; height: 620px; top: -140px; left: -120px; background: #ec4899; opacity: 0.38; animation: drift1 10s ease-in-out infinite; }
+        .aura__blob--2 { width: 560px; height: 560px; top: 20%; right: -160px; background: #06b6d4; opacity: 0.34; animation: drift2 8s ease-in-out infinite; }
+        .aura__blob--3 { width: 600px; height: 600px; bottom: -180px; left: 20%; background: #8b5cf6; opacity: 0.30; animation: drift3 12s ease-in-out infinite; }
+        .aura__blob--4 { width: 480px; height: 480px; top: 28%; left: 34%; background: #3b82f6; opacity: 0.26; animation: drift4 14s ease-in-out infinite; }
+        @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(190px, 150px) scale(1.35); } }
+        @keyframes drift2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-200px, 130px) scale(0.8); } }
+        @keyframes drift3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(170px, -180px) scale(1.35); } }
+        @keyframes drift4 { 0%, 100% { transform: translate(0, 0) scale(0.85); } 50% { transform: translate(-180px, -120px) scale(1.25); } }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+            width: 252px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            padding: 24px 16px 18px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--sidebar-border);
+            position: relative; z-index: 100;
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+        }
+
+        /* 折叠按钮悬浮在侧边栏右侧边界（胶囊形） */
+        .sidebar-toggle {
+            position: absolute; top: 50%; right: -12px; transform: translateY(-50%); z-index: 110;
+            width: 24px; height: 48px; border-radius: 12px;
+            background: var(--bg-base); border: 1px solid var(--sidebar-border);
+            color: var(--text-dim); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--spring);
+            box-shadow: 0 0 14px rgba(0, 0, 0, 0.08); /* 居中对称阴影 */
+            font-size: 0.7rem; font-family: monospace;
+        }
+        /* 只有箭头随状态旋转，外层胶囊保持静止 */
+        .sidebar-toggle__arrow {
+            display: inline-block; line-height: 1;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sidebar--collapsed .sidebar-toggle__arrow { transform: rotate(180deg); }
+        .sidebar-toggle:hover { color: var(--accent); border-color: var(--accent); }
+        .sidebar-toggle * { pointer-events: none; }
+        .logo { display: flex; align-items: center; gap: 12px; padding: 4px 10px 0; cursor: pointer; }
+        .logo__mark {
+            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+            background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(129,140,248,0.22));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .logo__text { min-width: 0; transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0); }
+        .logo__title { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+        .logo__badge {
+            display: inline-block; font-size: 0.56rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+            margin-top: 4px;
+        }
+
+        .nav { margin-top: 28px; display: flex; flex-direction: column; gap: 6px; }
+        .nav__label {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.14em; color: #64748b; padding: 0 12px; margin-bottom: 6px;
+            transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0);
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; border-radius: 12px;
+            color: var(--text-dim); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; user-select: none; border: 1px solid transparent;
+            transition: var(--transition); text-align: left; width: 100%;
+            background: none; font-family: inherit;
+        }
+        .nav-item:hover { color: var(--text-light); background: rgba(148, 163, 184, 0.08); }
+        .nav-item.active {
+            color: var(--accent); background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.12);
+        }
+        .nav-item__icon {
+            width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+            transition: var(--transition);
+        }
+        .nav-item__meta { min-width: 0; transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0); }
+        .nav-item__name { line-height: 1.2; }
+        .nav-item__desc { font-size: 0.66rem; font-weight: 500; color: #64748b; margin-top: 3px; white-space: nowrap; }
+        .nav-item.active .nav-item__desc { color: rgba(56, 189, 248, 0.7); }
+
+        .sidebar__bottom { margin-top: auto; }
+        .theme-toggle {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 11px 14px; margin-bottom: 14px; border-radius: 12px;
+            background: var(--toggle-bg); border: 1px solid var(--toggle-border);
+            color: var(--text-light); font-family: inherit; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: var(--transition);
+        }
+        .theme-toggle:hover { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.4); }
+        .theme-toggle__icon { font-size: 1.1rem; line-height: 1; width: 24px; text-align: center; display: inline-block; }
+        .theme-toggle__label { transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0); }
+        .sidebar__footer {
+            padding: 14px 12px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            font-size: 0.66rem; color: #64748b; line-height: 1.8;
+            transition: opacity 0.2s ease, transform 0.2s ease; opacity: 1; transform: translateX(0);
+        }
+
+        /* ============ 折叠状态：纯宽度裁剪 + 文字滑出淡出 ============ */
+        .sidebar--collapsed { width: 88px; }
+        .sidebar--collapsed .nav { gap: 12px; }
+        .sidebar--collapsed .logo__text,
+        .sidebar--collapsed .nav__label,
+        .sidebar--collapsed .nav-item__meta,
+        .sidebar--collapsed .theme-toggle__label,
+        .sidebar--collapsed .sidebar__footer {
+            opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-10px);
+            position: absolute; /* 核心修复：脱离文档流，释放排版空间 */
+        }
+        /* 强制所有核心容器为绝对正方形 48x48（仅桌面端） */
+        @media (min-width: 861px) {
+            .sidebar--collapsed .logo,
+            .sidebar--collapsed .nav-item {
+                width: 48px; height: 48px; padding: 0; margin: 0 auto;
+                justify-content: center; align-items: center; border-radius: 14px;
+            }
+            .sidebar--collapsed .theme-toggle {
+                width: 48px; height: 48px; padding: 0; margin: 0 auto 14px auto;
+                justify-content: center; align-items: center; border-radius: 14px;
+            }
+            .sidebar--collapsed .logo__mark { width: 48px; height: 48px; border-radius: 14px; }
+        }
+        /* 抹除“框中框”底色，放大 Emoji */
+        .sidebar--collapsed .nav-item__icon {
+            background: transparent !important; border: none !important;
+            width: auto !important; height: auto !important; font-size: 1.4rem;
+        }
+        .sidebar--collapsed .theme-toggle__icon {
+            font-size: 1.4rem;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ---------- Content ---------- */
+        .content { flex: 1; position: relative; z-index: 1; background: transparent; }
+        #app-frame {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            border: none; background: transparent;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        /* 切换时的离场状态 */
+        #app-frame.is-switching {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        /* ---------- Mobile: sidebar → top bar ---------- */
+        @media (max-width: 860px) {
+            body { flex-direction: column; }
+            .sidebar {
+                width: 100%; flex-direction: row; align-items: center;
+                padding: 10px 12px; gap: 8px;
+                border-right: none; border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+                overflow: visible; transition: none;
+            }
+            .logo { padding: 0; flex-shrink: 0; }
+            .logo__badge, .logo__title, .nav__label, .nav-item__desc, .sidebar__footer { display: none; }
+
+            /* 中间导航区：横向滚动，隐藏滚动条 */
+            .nav {
+                flex-direction: row; margin: 0; gap: 6px;
+                overflow-x: auto; flex: 1; padding-bottom: 2px;
+                scrollbar-width: none; /* Firefox */
+            }
+            .nav::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+            .nav-item { padding: 8px 12px; font-size: 0.8rem; gap: 6px; flex-shrink: 0; }
+            .nav-item__icon { width: 24px; height: 24px; font-size: 0.95rem; border-radius: 8px; }
+
+            /* 右侧控制区：强制横向排列并居中 */
+            .sidebar__bottom {
+                margin-top: 0; display: flex; flex-direction: row; gap: 8px;
+                flex-shrink: 0; align-items: center; padding: 0; border: none;
+            }
+            .theme-toggle {
+                width: 38px; height: 38px; padding: 0; margin-bottom: 0;
+                justify-content: center; border-radius: 10px;
+            }
+            .theme-toggle__icon { font-size: 1.2rem; }
+            .theme-toggle__label { display: none; }
+            .sidebar-toggle { display: none !important; }
+        }
+
+        /* ---------- 全局 Toast ---------- */
+        .sys-toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 10000;
+            background: rgba(15, 23, 42, 0.85); color: #fff; padding: 10px 24px;
+            border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); pointer-events: none;
+        }
+        .sys-toast.show { opacity: 1; visibility: visible; top: 32px; }
+
+        /* ---------- 全局弹窗 ---------- */
+        .global-modal-mask {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: var(--transition);
+        }
+        .global-modal-mask.show { opacity: 1; visibility: visible; }
+        .global-modal {
+            width: 360px; background: var(--bg-base); border: 1px solid var(--sidebar-border);
+            border-radius: 18px; padding: 26px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); color: var(--text-light);
+        }
+        .global-modal-mask.show .global-modal { transform: scale(1); }
+        .gm-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; }
+        .gm-desc { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 24px; }
+        .gm-actions { display: flex; gap: 12px; }
+        .gm-btn {
+            flex: 1; border-radius: 12px; padding: 11px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: var(--transition);
+        }
+        .gm-btn--cancel { background: transparent; border-color: rgba(148, 163, 184, 0.3); color: var(--text-dim); }
+        .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-light); }
+        .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
+        .gm-btn--danger:hover { background: var(--danger); color: #fff; }
+
+        /* 真实触碰反馈：按下瞬间微缩 */
+        .nav-item:active, .theme-toggle:active, .gm-btn:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease;
+        }
+        /* 按下反馈：仅外层胶囊微缩，箭头旋转状态独立不受影响 */
+        .sidebar-toggle:active {
+            transform: translateY(-50%) scale(0.96);
+            transition: transform 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== 全局动态弥散光晕（下沉底层，经透明 iframe 供全模块共享） ===== -->
+    <div class="aura" aria-hidden="true">
+        <div class="aura__blob aura__blob--1"></div>
+        <div class="aura__blob aura__blob--2"></div>
+        <div class="aura__blob aura__blob--3"></div>
+        <div class="aura__blob aura__blob--4"></div>
+    </div>
+
+    <!-- ===== Left: dark sidebar ===== -->
+    <aside class="sidebar">
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" title="收起/展开侧边栏"><span class="sidebar-toggle__arrow">◀</span></button>
+        <div class="logo" id="logoHome" title="返回工作台首页">
+            <span class="logo__mark">🏠</span>
+            <span class="logo__text">
+                <span class="logo__title">AI 智装管家</span><br>
+                <span class="logo__badge">全屋装修决策中枢</span>
+            </span>
+        </div>
+
+        <nav class="nav">
+            <div class="nav__label">核心模块</div>
+            <button class="nav-item" type="button" data-route="calculator" title="算料管家">
+                <span class="nav-item__icon">🧮</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">算料管家</div>
+                    <div class="nav-item__desc">墙漆地砖 · 智能用量估算</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="network" title="弱电预演">
+                <span class="nav-item__icon">🔌</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">弱电预演</div>
+                    <div class="nav-item__desc">网络拓扑 · 强电空开推演</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="sandbox" title="2D 空间沙盒">
+                <span class="nav-item__icon">🧊</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">2D 空间沙盒</div>
+                    <div class="nav-item__desc">户型标定 · 布局干涉预演</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="compare" title="选材对比库">
+                <span class="nav-item__icon">⚖️</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">选材对比库</div>
+                    <div class="nav-item__desc">硬核参数对决 · 科学选购</div>
+                </span>
+            </button>
+            <button class="nav-item" type="button" data-route="ledger" title="智能记账本">
+                <span class="nav-item__icon">💰</span>
+                <span class="nav-item__meta">
+                    <div class="nav-item__name">智能记账</div>
+                    <div class="nav-item__desc">预算推演 · AI 自动分类</div>
+                </span>
+            </button>
+        </nav>
+
+        <div class="sidebar__bottom">
+            <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色主题">
+                <span class="theme-toggle__icon" id="themeIcon">🌙</span>
+                <span class="theme-toggle__label" id="themeLabel">深色主题</span>
+            </button>
+            <button class="theme-toggle" id="dataManageBtn" type="button" title="本地存储管理">
+                <span class="theme-toggle__icon">🗄️</span>
+                <span class="theme-toggle__label">数据清理</span>
+            </button>
+            <div class="sidebar__footer">
+                ⚙️ 纯原生 HTML / CSS / JS · 零依赖<br>
+                📐 SmartHome Planner · v1.0
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== Right: content ===== -->
+    <main class="content">
+        <iframe id="app-frame" src="smart_calculator.html" title="模块内容区"></iframe>
+    </main>
+
+    <div class="sys-toast" id="globalToast">系统提示</div>
+    <div class="global-modal-mask" id="globalModalMask">
+        <div class="global-modal">
+            <div class="gm-title">清理全站数据</div>
+            <div class="gm-desc">您当前的所有推演方案均安全地存储在浏览器本地缓存中。<br><br>点击确定将永久清空“算料、弱电、沙盒、记账”等所有模块的数据，该操作不可恢复。</div>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" id="gmCancelBtn" type="button">取消</button>
+                <button class="gm-btn gm-btn--danger" id="gmConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 路由映射表：每个模块对应 iframe 源、页面标题与 Emoji 图标
+        // ============================================================
+        const ROUTES = {
+            calculator: { src: 'smart_calculator.html', title: '算料管家 - AI智装',              icon: '🧮' },
+            network:    { src: 'network_planner.html',  title: '弱电预演 - AI智装',              icon: '🔌' },
+            sandbox:    { src: '2d_sandbox.html',       title: '空间沙盒 - AI智装',              icon: '🧊' },
+            compare:    { src: 'material_compare.html', title: '选材对比库 - AI智装',            icon: '⚖️' },
+            ledger:     { src: 'ai_ledger.html',        title: '智能记账本 - AI智装',            icon: '💰' }
+        };
+
+        const frame = document.getElementById('app-frame');
+        const navItems = document.querySelectorAll('.nav-item');
+        let navTimer = null; // 用于防抖和取消未完成的路由切换
+
+        // ============================================================
+        // 全局昼夜主题：二态互切 light ↔ dark + 初始智能检测 + 跨 iframe 广播
+        // ============================================================
+        (function initThemeSync() {
+            const THEME_KEY = 'shp_theme';
+            const toggleIndex = document.getElementById('themeToggle');
+            const darkMQ = window.matchMedia('(prefers-color-scheme: dark)');
+            const frame = document.getElementById('app-frame'); // 缓存DOM，修复#11
+
+            function getInitialTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved === 'light' || saved === 'dark') return saved;
+                } catch (e) {}
+                return null;
+            }
+
+            function applyTheme(theme, persist = true) {
+                document.documentElement.dataset.theme = theme;
+                if (persist) { try { localStorage.setItem(THEME_KEY, theme); } catch (e) {} }
+                const icon = document.getElementById('themeIcon');
+                const label = document.getElementById('themeLabel');
+                if (icon) icon.textContent = theme === 'light' ? '🌞' : '🌙';
+                if (label) label.textContent = theme === 'light' ? '浅色主题' : '深色主题';
+                if (frame && frame.contentWindow) {
+                    try { frame.contentWindow.postMessage({ theme }, '*'); } catch (e) {}
+                }
+            }
+
+            const initial = getInitialTheme();
+            applyTheme(initial || (darkMQ.matches ? 'dark' : 'light'), false); // 初始检测不写入缓存
+
+            if (toggleIndex) toggleIndex.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true));
+
+            darkMQ.addEventListener('change', (e) => {
+                if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light', false);
+            });
+
+            window.addEventListener('message', (e) => {
+                if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark')) applyTheme(e.data.theme, false);
+            });
+
+            if (frame) frame.addEventListener('load', () => applyTheme(document.documentElement.dataset.theme, false));
+        })();
+
+        // 动态 Favicon：用 SVG Data URI 把 Emoji 渲染成标签页图标
+        function setFavicon(emoji) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.head.appendChild(link);
+            }
+            link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
+
+        // 核心路由切换（防抖版）：同步外层 UI + 取消未完成换源 + 极速撤回保护
+        function navigate(key) {
+            const route = ROUTES[key];
+            if (!route) return;
+
+            // 1. 同步外层 UI 状态
+            navItems.forEach(n => n.classList.toggle('active', n.dataset.route === key));
+            document.title = route.title;
+            setFavicon(route.icon);
+            window.history.replaceState(null, '', '#' + key);
+
+            // 2. 防抖：斩断上一次还没来得及执行的换源动作
+            if (navTimer) clearTimeout(navTimer);
+
+            // 3. 记录当前真实期望的目标，避免重复执行
+            if (frame.dataset.activeRoute === key) return;
+            frame.dataset.activeRoute = key;
+
+            const currentSrc = frame.getAttribute('src');
+            // 首次进入：无动画直接加载
+            if (!currentSrc) {
+                frame.src = route.src;
+                return;
+            }
+
+            // 4. 极速撤回逻辑：如果底层 iframe 本来就是想去的页面，直接解除下沉隐藏
+            // 这样即使在淡出期间手抖切出去又切回来，也不会导致页面重新 Load 从而丢失输入数据
+            if (currentSrc.endsWith(route.src)) {
+                frame.classList.remove('is-switching');
+                return;
+            }
+
+            // 5. 执行无缝切换动效
+            frame.classList.add('is-switching');
+            navTimer = setTimeout(() => {
+                frame.src = route.src;
+                frame.onload = () => {
+                    // 确保加载完的网页确实是最后一次点击的目标
+                    if (frame.dataset.activeRoute === key) {
+                        frame.classList.remove('is-switching');
+                        const currentTheme = document.documentElement.dataset.theme;
+                        try { frame.contentWindow.postMessage({ theme: currentTheme }, '*'); } catch (e) {}
+                    }
+                };
+            }, 250);
+        }
+
+        navItems.forEach(n => n.addEventListener('click', () => navigate(n.dataset.route)));
+
+        // 点击 Logo 跳出工作台，返回独立官网
+        document.getElementById('logoHome').addEventListener('click', () => window.location.href = 'index.html');
+
+        // 首屏初始化：读取 URL Hash 实现精准跳转，无效则默认进入算料管家
+        const initialHash = window.location.hash.replace('#', '');
+        const startRoute = ROUTES[initialHash] ? initialHash : 'calculator';
+        // 预置 activeRoute：HTML 中 iframe 默认已预载算料管家，避免首屏误触切换动效
+        if (startRoute === 'calculator' && frame.getAttribute('src') === ROUTES.calculator.src) {
+            frame.dataset.activeRoute = 'calculator';
+        }
+        navigate(startRoute);
+
+        // 支持浏览器前进/后退与运行时 Hash 变化
+        window.addEventListener('hashchange', () => {
+            const key = window.location.hash.replace('#', '');
+            if (ROUTES[key]) navigate(key);
+        });
+
+        // ========== 侧边栏收起/展开逻辑 ==========
+        const SIDEBAR_KEY = 'shp_sidebar_collapsed';
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        function toggleSidebar(isCollapsed) {
+            sidebar.classList.toggle('sidebar--collapsed', isCollapsed);
+            try { localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0'); } catch (e) {}
+        }
+
+        sidebarToggle.addEventListener('click', () => {
+            const currentlyCollapsed = sidebar.classList.contains('sidebar--collapsed');
+            toggleSidebar(!currentlyCollapsed);
+        });
+
+        // 首屏初始化：读取本地缓存恢复侧边栏状态
+        (function initSidebar() {
+            try {
+                if (localStorage.getItem(SIDEBAR_KEY) === '1') {
+                    toggleSidebar(true);
+                }
+            } catch (e) {}
+        })();
+
+        // ========== 全局 Toast（供数据清理等场景使用） ==========
+        const globalToast = document.getElementById('globalToast');
+        function showGlobalToast(msg, duration = 3500) {
+            globalToast.textContent = msg;
+            globalToast.classList.add('show');
+            setTimeout(() => globalToast.classList.remove('show'), duration);
+        }
+        if (!sessionStorage.getItem('shp_welcomed')) {
+            setTimeout(() => showGlobalToast('欢迎！本项目采用纯本地缓存技术，您的数据已安全隔离。'), 800);
+            sessionStorage.setItem('shp_welcomed', '1');
+        }
+
+        // ========== 全局数据清理弹窗 ==========
+        const dataManageBtn = document.getElementById('dataManageBtn');
+        const globalModalMask = document.getElementById('globalModalMask');
+        const gmCancelBtn = document.getElementById('gmCancelBtn');
+        const gmConfirmBtn = document.getElementById('gmConfirmBtn');
+
+        dataManageBtn.addEventListener('click', () => globalModalMask.classList.add('show'));
+        gmCancelBtn.addEventListener('click', () => globalModalMask.classList.remove('show'));
+        globalModalMask.addEventListener('click', (e) => { if (e.target === globalModalMask) globalModalMask.classList.remove('show'); });
+
+        gmConfirmBtn.addEventListener('click', () => {
+            globalModalMask.classList.remove('show');
+            localStorage.clear();
+            showGlobalToast('全站数据已清空，正在重置系统...');
+            setTimeout(() => window.location.reload(), 1500);
+        });
+    </script>
+</body>
+</html>

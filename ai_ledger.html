@@ -2,7 +2,7 @@
 <html lang="zh-CN" style="background: transparent !important;">
 <head>
     <meta charset="UTF-8">
-    <script>if (window.self === window.top) window.location.replace('index.html#ledger');</script>
+    <script>if (window.self === window.top) window.location.replace('app.html#ledger');</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 智装管家 · 智能记账本</title>
     <style>
@@ -495,6 +495,32 @@
         .gm-btn--cancel:hover { background: rgba(148, 163, 184, 0.1); color: var(--text-main, var(--text-light, #333)); }
         .gm-btn--danger { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); }
         .gm-btn--danger:hover { background: var(--danger); color: #fff; }
+        .gm-input {
+            width: 100%; border: 1px solid var(--card-border, var(--border-sub, #ccc));
+            border-radius: 12px; padding: 12px 14px; font-size: 1.05rem;
+            background: var(--input-bg, transparent); color: var(--text-main, #333);
+            outline: none; font-family: inherit; transition: var(--transition);
+            margin-bottom: 24px; text-align: center; font-weight: 700;
+        }
+        .gm-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
+        .gm-btn--primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff; border: none;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
+        }
+        .gm-btn--primary:hover { box-shadow: 0 8px 22px rgba(14, 165, 233, 0.4); transform: translateY(-1px); }
+
+        /* ---------- Toast 提示 ---------- */
+        .toast {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; background: rgba(15, 23, 42, 0.85); color: #fff;
+            padding: 10px 20px; border-radius: 999px; font-size: 0.85rem;
+            font-weight: 700; pointer-events: none; white-space: nowrap;
+            opacity: 0; transition: opacity 0.3s ease, top 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        .toast.show { opacity: 1; top: 32px; }
     </style>
 </head>
 <body>
@@ -580,6 +606,20 @@
         </div>
     </div>
 
+    <div class="global-modal-mask" id="promptModalMask">
+        <div class="global-modal">
+            <div class="gm-title">修改总预算</div>
+            <div class="gm-desc" style="margin-bottom: 14px;">请输入新的全屋总装修预算（单位：元）</div>
+            <input type="number" id="promptInput" class="gm-input" placeholder="例如：300000" autocomplete="off">
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('promptModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--primary" id="promptConfirmBtn" type="button">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="sysToast"></div>
+
     <script>
         // ========== 主题同步：读取本地缓存 + 监听父框架 postMessage 广播 ==========
         (function initThemeSync() {
@@ -596,6 +636,17 @@
 
         // ---------- Data & State ----------
         let BUDGET = parseInt(localStorage.getItem('shp_ledger_budget')) || 300000;
+
+        // ---------- Toast 工具函数 ----------
+        let toastTimer = null;
+        function showToast(msg) {
+            const el = document.getElementById('sysToast');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
 
         const LEDGER_STORAGE_KEY = 'shp_ledger_state_v1';
         const defaultTransactions = [
@@ -821,14 +872,35 @@
         });
 
         // ---------- 自定义总预算 ----------
+        const promptModalMask = document.getElementById('promptModalMask');
+        const promptInput = document.getElementById('promptInput');
+        const promptConfirmBtn = document.getElementById('promptConfirmBtn');
+
         document.getElementById('editBudgetBtn').addEventListener('click', () => {
-            const input = prompt('请输入新的总预算（单位：元）', BUDGET);
-            if (input === null) return;
-            const val = parseInt(input, 10);
-            if (!(val > 0)) { alert('输入无效，预算必须为正整数'); return; }
+            promptInput.value = BUDGET; // 回填当前预算
+            promptModalMask.classList.add('show');
+            setTimeout(() => promptInput.focus(), 100); // 自动聚焦
+        });
+
+        const handleBudgetSubmit = () => {
+            const val = parseInt(promptInput.value, 10);
+            if (!(val > 0)) {
+                showToast('输入无效，预算必须为正整数');
+                return;
+            }
             BUDGET = val;
             try { localStorage.setItem('shp_ledger_budget', String(val)); } catch (e) {}
             updateUI();
+            promptModalMask.classList.remove('show');
+        };
+
+        promptConfirmBtn.addEventListener('click', handleBudgetSubmit);
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleBudgetSubmit();
+        });
+        // 点击遮罩层关闭
+        promptModalMask.addEventListener('click', (e) => {
+            if (e.target === promptModalMask) promptModalMask.classList.remove('show');
         });
 
         // ---------- 单条账单删除（事件委托） ----------

@@ -142,6 +142,10 @@ LAYOUT_SAFETY_PREAMBLE = (
     "分析必须极其严谨、客观。必须明确声明：本结论仅基于 2D 理论推演，"
     "缺乏真实材质射频数据，需结合现场实测。"
     "严禁使用“绝对无死角”“百分之百覆盖”等绝对化词汇。"
+    "重要物理限制：你接收到的坐标数据仅为 2D 俯视平面（X/Y轴），"
+    "绝对无法获知设备的三维高度（Z轴）。"
+    "严禁在报告中出现类似“放置在屋子中间偏上/偏下”这种基于平面图臆想高度的幻觉描述。"
+    "但你可以给出通用的施工建议，例如“建议 AP 尽量高挂”。"
 )
 
 # 分支 A：小白模式 —— 通俗易懂的家装顾问
@@ -177,13 +181,38 @@ LAYOUT_OUTPUT_SCHEMA = (
 )
 
 
-def assemble_layout_system_prompt(report_mode: str) -> str:
-    """按报告模式动态组装 System Prompt：安全指令 + 模式分支 + 输出格式。"""
+def build_spatial_guard(spatial_relations: str) -> str:
+    """
+    空间幻觉遏制条款：将前端预计算的设备间物理距离注入 System Prompt。
+    大模型无法基于像素坐标准确心算距离，改由前端算好后强制其引用，
+    杜绝“紧挨着”“靠近”等与实测数据相悖的臆测描述。
+    """
+    if not spatial_relations:
+        return ""
+    return (
+        "【严控空间幻觉】系统已为你精确测算了各设备间的物理距离："
+        + spatial_relations
+        + "。你必须严格依据此测算数据进行评估。"
+        "严禁在报告中使用‘紧挨着’、‘靠近’等与该测算数据相悖的臆测词汇！"
+    )
+
+
+def assemble_layout_system_prompt(report_mode: str, spatial_relations: str = "") -> str:
+    """按报告模式动态组装 System Prompt：安全指令 + 模式分支 + 空间防幻觉 + 输出格式。"""
     branch = LAYOUT_MODE_PROMPTS[report_mode]
-    return LAYOUT_SAFETY_PREAMBLE + branch + LAYOUT_OUTPUT_SCHEMA
+    return (
+        LAYOUT_SAFETY_PREAMBLE
+        + branch
+        + build_spatial_guard(spatial_relations)
+        + LAYOUT_OUTPUT_SCHEMA
+    )
 
 
-async def call_llm_layout_api(report_mode: str, layout_data: List[Dict[str, Any]]) -> dict:
+async def call_llm_layout_api(
+    report_mode: str,
+    layout_data: List[Dict[str, Any]],
+    spatial_relations: str = "",
+) -> dict:
     """
     调用大语言模型分析 2D 空间布局（网络规划推演）。
     约束：
@@ -196,7 +225,10 @@ async def call_llm_layout_api(report_mode: str, layout_data: List[Dict[str, Any]
         completion = await llm_client.chat.completions.create(
             model=LLM_MODEL_NAME,
             messages=[
-                {"role": "system", "content": assemble_layout_system_prompt(report_mode)},
+                {
+                    "role": "system",
+                    "content": assemble_layout_system_prompt(report_mode, spatial_relations),
+                },
                 {
                     "role": "user",
                     "content": "以下是设备坐标与尺寸信息（JSON），请据此分析："
@@ -258,6 +290,10 @@ class LayoutRequest(BaseModel):
         default="normal",
         description='报告模式："normal"（小白通俗版）或 "geek"（极客专业版）',
     )
+    spatial_relations: str = Field(
+        default="",
+        description="前端预计算的设备间物理距离自然语言描述，用于注入防幻觉 Prompt",
+    )
 
 
 @app.get("/api/health")
@@ -299,7 +335,9 @@ async def analyze_layout(request: LayoutRequest):
             detail='report_mode 取值非法，仅支持 "normal" 或 "geek"。',
         )
 
-    result = await call_llm_layout_api(request.report_mode, request.layout_data)
+    result = await call_llm_layout_api(
+        request.report_mode, request.layout_data, request.spatial_relations
+    )
 
     # 兜底校验：确保返回结构符合约定，缺字段时补齐，避免前端解析报错
     summary = result.get("summary", "")

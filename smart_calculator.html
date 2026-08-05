@@ -668,7 +668,7 @@
             /* 隐藏录入区与操作按钮；屏显大标题由合同级页眉替代 */
             .rooms-column, .summary-actions, .btn-print, .brand { display: none !important; }
 
-            /* ---- 合同级页眉：左标题 / 右日期与编号，可可灰粗实线托底 ---- */
+            /* ---- 合同级页眉：左标题 / 右日期，可可灰粗实线托底 ---- */
             .print-header {
                 display: flex !important;
                 justify-content: space-between; align-items: flex-end;
@@ -780,13 +780,12 @@
     <div class="toast" id="sysToast"></div>
 
     <div class="container">
-        <!-- 合同级打印页眉（仅打印可见，日期与编号由 JS 动态填充） -->
+        <!-- 合同级打印页眉（仅打印可见，日期由 JS 动态填充） -->
         <div class="print-header">
             <div class="print-header__title">AI 智装管家 · 全屋推演报告</div>
             <div class="print-header__meta">
                 <span>模块：全屋算料采购清单</span>
                 <span id="printDate">—</span>
-                <span>编号：<span id="printSerial">AI-2026-0000</span></span>
             </div>
         </div>
 
@@ -1689,13 +1688,11 @@
         // ---------- Print / PDF export ----------
         document.getElementById('printBtn').addEventListener('click', () => window.print());
 
-        // 页眉动态信息：当前日期 + 报告编号（AI-年份-随机四位）
+        // 页眉动态信息：当前日期
         (function initPrintMeta() {
             const now = new Date();
             document.getElementById('printDate').textContent =
                 `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-            document.getElementById('printSerial').textContent =
-                `AI-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
         })();
 
         // ---------- Init ----------

@@ -207,6 +207,20 @@
         }
         .export-btn:hover { background: rgba(56, 189, 248, 0.3); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); }
 
+        /* AI 按钮三态：推演中呼吸闪烁 / 报告就绪绿色高亮 */
+        .export-btn--busy {
+            animation: aiBreath 1.2s ease-in-out infinite;
+            cursor: wait !important;
+        }
+        .export-btn--busy:hover { background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.12) 100%); box-shadow: none; }
+        @keyframes aiBreath { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+        .export-btn--ready {
+            border-color: rgba(16, 185, 129, 0.55);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.14) 100%);
+            color: var(--success, #10b981);
+        }
+        .export-btn--ready:hover { background: rgba(16, 185, 129, 0.3); box-shadow: 0 4px 18px rgba(16, 185, 129, 0.25); }
+
         /* 危险操作变体：清空画板 + 清除本地缓存 */
         .export-btn--danger {
             border-color: rgba(239, 68, 68, 0.45);
@@ -436,18 +450,19 @@
         .rz--sw { left: -6px; bottom: -6px; cursor: nesw-resize; }
         .rz--w  { left: -6px; top: calc(50% - 5px); cursor: ew-resize; }
 
-        /* ---------- Wi-Fi signal circle ---------- */
+        /* ---------- Wi-Fi signal circle（色标严格映射物理距离：0-3m 绿 / 3-6m 黄 / 6-10m 浅红） ---------- */
         .signal-ring {
             position: absolute;
             border-radius: 50%;
             background: radial-gradient(circle,
-                rgba(34, 197, 94, 0.30) 0%,
-                rgba(34, 197, 94, 0.18) 40%,
-                rgba(250, 204, 21, 0.16) 62%,
-                rgba(239, 68, 68, 0.12) 82%,
-                rgba(239, 68, 68, 0.04) 94%,
+                rgba(34, 197, 94, 0.22) 0%,    /* 0m: 绿色起始 */
+                rgba(34, 197, 94, 0.12) 30%,   /* 3m: 绿色衰减界限 */
+                rgba(250, 204, 21, 0.14) 45%,  /* 4.5m: 黄色过渡核心 */
+                rgba(250, 204, 21, 0.08) 60%,  /* 6m: 黄色衰减界限 */
+                rgba(239, 68, 68, 0.08) 75%,   /* 7.5m: 浅红色过渡核心 */
+                rgba(239, 68, 68, 0.03) 95%,   /* 9.5m: 浅红色极淡边缘 */
                 transparent 100%);
-            border: 2px dashed rgba(239, 68, 68, 0.3);
+            border: 1px dashed rgba(239, 68, 68, 0.25);
             pointer-events: none;
             z-index: 5;
             animation: signalPulse 2.4s ease-in-out infinite;
@@ -543,6 +558,8 @@
         }
 
         /* ---------- Print / PDF export：双轨导出（图纸横向 / 报告纵向） ---------- */
+        /* 全案导出三页文档：屏幕上始终隐藏，仅打印时由 print-mode-all 激活 */
+        .print-all-doc { display: none; }
         @media print {
             /* 命名页：报告纵向 A4（默认），图纸横向 A4；
                margin:0 阻断浏览器注入默认页眉页脚，边距由 body padding 补偿 */
@@ -613,35 +630,107 @@
             }
             body.print-mode-report .modal--report {
                 width: 100% !important; max-width: 100% !important; max-height: none !important;
-                background: transparent !important; border: none !important; padding: 0 !important;
+                background: transparent !important; border: none !important;
+                padding: 12mm 0 0 0 !important; /* @page margin:0 补偿：内容距纸顶 12mm 安全距离 */
                 overflow: visible !important;
             }
             body.print-mode-report .report-body { overflow: visible !important; }
             body.print-mode-report .report-actions { display: none !important; }
+            /* 报告模式标准页眉：黑实线托底，隐藏原 .report-meta 与弹窗标题 */
+            body.print-mode-report .print-only-header {
+                display: flex !important;
+                justify-content: space-between; align-items: flex-end;
+                padding-bottom: 4px; margin-bottom: 8px;
+                border-bottom: 2px solid #111111;
+                color: #222222; font-weight: 800;
+            }
+            body.print-mode-report .print-only-header__title { font-size: 1rem; letter-spacing: 0.02em; }
+            body.print-mode-report .print-only-header__date { font-size: 0.78rem; font-weight: 600; color: #444444; }
+            body.print-mode-report .report-head,
+            body.print-mode-report .report-meta { display: none !important; }
             body.print-mode-report .modal__title,
             body.print-mode-report .report-section__title { color: #333333 !important; }
-            body.print-mode-report .report-section__title { border-bottom-color: #b8b8b8 !important; }
+            body.print-mode-report .report-section__title { border-bottom-color: #b8b8b8 !important; margin-bottom: 8px !important; }
             body.print-mode-report .report-section { break-inside: avoid; }
-            body.print-mode-report .report-meta { color: #4A4A4A !important; }
+            body.print-mode-report .report-section + .report-section { margin-top: 40px !important; }
             body.print-mode-report .report-table th { color: #555555 !important; }
             body.print-mode-report .report-table td { color: #3d3d3d !important; }
             body.print-mode-report .report-table td .rep-name { color: #23408e !important; }
             body.print-mode-report .report-table th,
             body.print-mode-report .report-table td { border-bottom-color: #d0d0d0 !important; }
 
+            /* ===== 全案模式：① 画板图纸 → ② 尺寸报告 → ③ AI 报告，三块强制分页 ===== */
+            body.print-mode-all { min-height: auto !important; }
+            body.print-mode-all .library,
+            body.print-mode-all .board-status,
+            body.print-mode-all .board-footer,
+            body.print-mode-all .brand,
+            body.print-mode-all .fp-toolbar,
+            body.print-mode-all .calib-banner,
+            body.print-mode-all .toast,
+            body.print-mode-all .canvas-hint,
+            body.print-mode-all .modal-mask,
+            body.print-mode-all .global-modal-mask { display: none !important; }
+            body.print-mode-all .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            body.print-mode-all .sandbox { display: block !important; }
+            body.print-mode-all .board-wrap {
+                background: transparent !important; border: none !important;
+                padding: 0 !important; margin: 6mm auto 0 auto !important;
+            }
+            body.print-mode-all .grid-canvas {
+                background-color: transparent !important;
+                border: 1px solid #c8c8c8 !important;
+                margin: 0 !important;
+                transform-origin: top left;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            /* 统一合同级页眉：每一页顶部同款黑实线托底 */
+            body.print-mode-all .print-only-header {
+                display: flex !important;
+                justify-content: space-between; align-items: flex-end;
+                padding-bottom: 4px; margin-bottom: 8px;
+                border-bottom: 2px solid #111111;
+                color: #222222; font-weight: 800;
+            }
+            body.print-mode-all .print-only-header__title { font-size: 1rem; letter-spacing: 0.02em; }
+            body.print-mode-all .print-only-header__date { font-size: 0.78rem; font-weight: 600; color: #444444; }
+            /* 激活三页文档：每个 print-all-page 强制独占新页，顶部预留 12mm 安全距离 */
+            body.print-mode-all .print-all-doc { display: block !important; }
+            body.print-mode-all .print-all-page {
+                page-break-before: always;
+                break-before: page;
+                padding-top: 12mm !important; /* @page margin:0 补偿：分页后内容不顶纸边 */
+            }
+            body.print-mode-all .print-all-sub {
+                font-size: 0.95rem; font-weight: 800; color: #333333;
+                margin: 2mm 0 4mm;
+            }
+            /* 报告内容转入常规文档流，表格样式对齐报告模式 */
+            body.print-mode-all .report-body { overflow: visible !important; max-height: none !important; }
+            body.print-mode-all .report-section { break-inside: avoid; }
+            body.print-mode-all .report-section__title { color: #333333 !important; border-bottom-color: #b8b8b8 !important; margin-bottom: 8px !important; }
+            body.print-mode-all .report-section + .report-section { margin-top: 40px !important; }
+            body.print-mode-all .report-meta { display: none !important; }
+            body.print-mode-all .report-table th { color: #555555 !important; }
+            body.print-mode-all .report-table td { color: #3d3d3d !important; }
+            body.print-mode-all .report-table td .rep-name { color: #23408e !important; }
+            body.print-mode-all .report-table th,
+            body.print-mode-all .report-table td { border-bottom-color: #d0d0d0 !important; }
+            body.print-mode-all .report-empty { color: #767676 !important; }
+
             /* ===== 默认（直接 Ctrl+P 无模式）：沙盒整页可读，隐藏报告 Modal ===== */
-            body:not(.print-mode-canvas):not(.print-mode-report) .report-mask { display: none !important; }
-            body:not(.print-mode-canvas):not(.print-mode-report) .library,
-            body:not(.print-mode-canvas):not(.print-mode-report) .board-wrap,
-            body:not(.print-mode-canvas):not(.print-mode-report) .lib-item,
-            body:not(.print-mode-canvas):not(.print-mode-report) .acc,
-            body:not(.print-mode-canvas):not(.print-mode-report) .lib-tip {
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .report-mask { display: none !important; }
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .library,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .board-wrap,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .lib-item,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .acc,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .lib-tip {
                 background: transparent !important; border-color: #d8d8d8 !important; color: #3d3d3d !important;
             }
-            body:not(.print-mode-canvas):not(.print-mode-report) .brand__title,
-            body:not(.print-mode-canvas):not(.print-mode-report) .library__title,
-            body:not(.print-mode-canvas):not(.print-mode-report) .lib-item__name,
-            body:not(.print-mode-canvas):not(.print-mode-report) .acc__head { color: #333333 !important; }
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .brand__title,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .library__title,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .lib-item__name,
+            body:not(.print-mode-canvas):not(.print-mode-report):not(.print-mode-all) .acc__head { color: #333333 !important; }
         }
 
         /* ---------- 模块级高级弹窗 ---------- */
@@ -803,11 +892,11 @@
                                 <div class="lib-item__size">600 × 600 mm</div>
                             </span>
                         </div>
-                        <div class="lib-item" draggable="true" data-type="router" data-name="路由器 AP" data-cat="appliance" data-real-width="86" data-real-height="86" data-signal-radius="12000" data-color="#10b981" data-shape="circle">
+                        <div class="lib-item" draggable="true" data-type="router" data-name="路由器 AP" data-cat="appliance" data-real-width="86" data-real-height="86" data-signal-radius="10000" data-color="#10b981" data-shape="circle">
                             <span class="lib-item__swatch" style="background:#10b98133;border:1px solid #10b98180">📶</span>
                             <span class="lib-item__meta">
                                 <span class="lib-item__name">路由器 AP</span>
-                                <div class="lib-item__size">信号半径 12000 mm</div>
+                                <div class="lib-item__size">信号半径 10000 mm</div>
                             </span>
                         </div>
                     </div></div>
@@ -831,9 +920,10 @@
                         <span class="status-chip__dot"></span>
                         <span id="chipCollisionText">无干涉</span>
                     </span>
-                    <button class="export-btn" id="exportBtn" type="button">🧠 导出布局数据 (JSON)</button>
+                    <button class="export-btn" id="exportBtn" type="button">🧠 AI 网络拓扑诊断</button>
                     <button class="export-btn" id="printCanvasBtn" type="button">🖨️ 导出图纸</button>
                     <button class="export-btn" id="reportBtn" type="button">📝 生成尺寸方案报告</button>
+                    <button class="export-btn" id="exportAllBtn" type="button">🖨️ 一键导出全案</button>
                     <button class="export-btn export-btn--danger" id="clearBoardBtn" type="button" title="清除本地缓存并重置画板">🗑️ 清空画板</button>
                 </div>
 
@@ -876,6 +966,14 @@
                 <input class="modal-color" id="editColor" type="color" value="#38bdf8">
             </div>
             <div class="modal-field">
+                <label for="editRealW">物理长度 (mm)</label>
+                <input class="modal-input" id="editRealW" type="number" min="1" step="1" placeholder="如：2000">
+            </div>
+            <div class="modal-field">
+                <label for="editRealH">物理宽度/深度 (mm)</label>
+                <input class="modal-input" id="editRealH" type="number" min="1" step="1" placeholder="如：1500">
+            </div>
+            <div class="modal-field">
                 <label>旋转角度</label>
                 <div class="rot-row">
                     <button class="m-btn m-btn--ghost" id="editRotBtn" type="button">↻ 旋转 90°</button>
@@ -893,11 +991,15 @@
     <!-- ===== Size report modal ===== -->
     <div class="modal-mask report-mask" id="reportMask" hidden>
         <div class="modal modal--report">
+            <!-- 打印专属标准页眉：仅 print-mode-report 下显示 -->
+            <div class="print-only-header">
+                <span class="print-only-header__title">AI 智装管家 · 尺寸方案报告</span>
+                <span class="print-only-header__date"><span id="reportPrintDate">—</span></span>
+            </div>
             <div class="report-head">
                 <h3 class="modal__title">📝 尺寸方案报告</h3>
                 <div class="report-meta">
                     <span id="reportDate">—</span>
-                    <span>编号：<span id="reportSerial">AI-2026-0000</span></span>
                 </div>
             </div>
             <div class="report-body" id="reportBody"></div>
@@ -929,6 +1031,55 @@
                 <button class="gm-btn gm-btn--cancel" id="calibCancelBtn" type="button">取消标定</button>
                 <button class="gm-btn gm-btn--primary" id="calibConfirmBtn" type="button">确认标定</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ===== AI 网络拓扑诊断：模式选择弹窗（必须早于 script 解析完毕）===== -->
+    <div class="global-modal-mask" id="aiModeMask">
+        <div class="global-modal">
+            <div class="gm-title">🧠 AI 网络拓扑诊断</div>
+            <div class="gm-desc">请选择您希望生成的网络评估报告风格：</div>
+            <div class="gm-actions" style="flex-direction: column;">
+                <button class="gm-btn gm-btn--primary" id="btnModeNormal" type="button">🙋‍♂️ 通俗易懂版（关注网速、穿墙、延迟）</button>
+                <button class="gm-btn gm-btn--cancel" id="btnModeGeek" type="button" style="color: var(--accent, #38bdf8); border-color: var(--accent, #38bdf8);">👨‍💻 硬核极客版（关注 VLAN、PoE、AC+AP）</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== AI 网络拓扑诊断：结果展示弹窗（复用尺寸报告弹窗结构）===== -->
+    <div class="modal-mask report-mask" id="aiResultMask" hidden>
+        <div class="modal modal--report">
+            <div class="report-head">
+                <h3 class="modal__title">🧠 AI 网络拓扑诊断报告</h3>
+            </div>
+            <div class="report-body" id="aiResultBody"></div>
+            <div class="modal-actions report-actions">
+                <button class="m-btn m-btn--ghost" id="aiResultReDiagBtn" type="button">🔄 重新诊断</button>
+                <button class="m-btn m-btn--ghost" id="aiResultCloseBtn" type="button">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 一键导出全案：打印专用三页文档（屏幕隐藏，仅 print-mode-all 下渲染）===== -->
+    <div class="print-all-doc" id="printAllDoc">
+        <!-- 第一页：合同级页眉 + 实际画板（由 body.print-mode-all 控制原有 board-wrap 呈现） -->
+        <!-- 第二页：尺寸方案报告 -->
+        <div class="print-all-page">
+            <div class="print-only-header">
+                <span class="print-only-header__title">AI 智装管家 · 尺寸方案报告</span>
+                <span class="print-only-header__date"><span class="print-all-date">—</span></span>
+            </div>
+            <div class="print-all-sub">② 尺寸方案报告</div>
+            <div class="report-body" id="printAllReportBody"></div>
+        </div>
+        <!-- 第三页：AI 诊断报告 -->
+        <div class="print-all-page">
+            <div class="print-only-header">
+                <span class="print-only-header__title">AI 智装管家 · AI 网络拓扑诊断报告</span>
+                <span class="print-only-header__date"><span class="print-all-date">—</span></span>
+            </div>
+            <div class="print-all-sub">③ AI 网络拓扑诊断报告</div>
+            <div class="report-body" id="printAllAiBody"></div>
         </div>
     </div>
 
@@ -1017,6 +1168,8 @@
         const editMask = document.getElementById('editMask');
         const editName = document.getElementById('editName');
         const editColor = document.getElementById('editColor');
+        const editRealW = document.getElementById('editRealW');
+        const editRealH = document.getElementById('editRealH');
         const editRotBtn = document.getElementById('editRotBtn');
         const editRotVal = document.getElementById('editRotVal');
         const rulerBtn = document.getElementById('rulerBtn');
@@ -1489,7 +1642,7 @@
                 fp.locked = true;
                 setLockUI(true);
                 recalibBtn.hidden = false;
-                startCalibration(); // calibration is mandatory right after locking
+                if (!calibrated) { startCalibration(); } // 仅首次未标定时才自动呼出标定弹窗
             } else {
                 // Unlock → back to adjust mode, downstream interactions blocked
                 fp.locked = false;
@@ -1892,6 +2045,8 @@
             pendingRot = item.rot;
             editName.value = item.name;
             editColor.value = item.color;
+            editRealW.value = Math.round(item.realW);
+            editRealH.value = Math.round(item.realH);
             editRotVal.textContent = ((pendingRot % 360) + 360) % 360 + '°';
             editMask.hidden = false;
             editName.focus();
@@ -1914,6 +2069,17 @@
             if (name) item.name = name;
             item.color = editColor.value;
             item.rot = pendingRot;
+            // 物理尺寸修改：合法值（>0）才更新数据模型并重算像素尺寸
+            const newW = parseFloat(editRealW.value);
+            const newH = parseFloat(editRealH.value);
+            if (newW > 0 && newH > 0) {
+                item.realW = newW;
+                item.realH = newH;
+                item.el.style.width = renderW(item) + 'px';
+                item.el.style.height = renderH(item) + 'px';
+                updateSizeLabel(item);
+                if (item.ringEl) syncRing(item); // 信号圈重新居中对齐
+            }
             applyItemColor(item);
             item.el.querySelector('.placed__label').textContent = item.name;
             item.el.style.transform = item.rot ? `rotate(${item.rot}deg)` : '';
@@ -1938,30 +2104,210 @@
         editMask.addEventListener('click', (e) => { if (e.target === editMask) closeEditor(); });
 
         // ============================================================
-        // 13) Export structured layout data (for AI scoring)
+        // 13) AI 网络拓扑诊断：模式选择 -> 调用后端 LLM 接口 -> 展示报告
         // ============================================================
+        const AI_ANALYZE_API = 'http://127.0.0.1:8000/api/analyze-layout';
+
+        // 注：HTML 转义直接复用第 3) 节 Helpers 中的 escapeHtml，避免重复声明
+
+        // ---------- AI 报告缓存与按钮三态管理 ----------
+        window.cachedAiReport = null; // 全局缓存：已渲染的报告 HTML
+        let aiCacheSeq = 0;           // 画板变动计数器：用于作废缓存与在途请求结果
+        const AI_BTN_TEXT = {
+            idle:  '🧠 AI 网络拓扑诊断',
+            busy:  '⏳ AI 推演中...',
+            ready: '📄 查看 AI 诊断报告'
+        };
+        function setAiBtnState(state) {
+            exportBtn.textContent = AI_BTN_TEXT[state];
+            exportBtn.classList.toggle('export-btn--busy', state === 'busy');
+            exportBtn.classList.toggle('export-btn--ready', state === 'ready');
+            exportBtn.disabled = state === 'busy';
+        }
+        // 画板任何变动（拖拽/增删/旋转/标定）均立即作废 AI 报告缓存
+        function onBoardChanged() {
+            aiCacheSeq++;
+            if (window.cachedAiReport) {
+                window.cachedAiReport = null;
+                if (!exportBtn.disabled) setAiBtnState('idle');
+            }
+        }
+
+        // 统一墙体校验闸门：作为 AI 诊断主按钮的第一道关卡（重新诊断链路同样复用）
+        function checkWallAndOpenMode() {
+            const hasWall = placedItems.some(p => p.cat === 'hard');
+            let skipWallWarn = false;
+            try { skipWallWarn = localStorage.getItem('shp_skip_wall_warn') === '1'; } catch (e) {}
+
+            if (!hasWall && !skipWallWarn) {
+                // 无墙且未勾选免打扰：拦截警告
+                customConfirm('检测到您尚未在图纸上绘制【硬装墙体/隔断】。缺乏墙体阻挡数据，AI 预测的 Wi-Fi 信号穿墙衰减将存在较大误差。是否仍要继续分析？'
+                    + '<div style="margin-top: 16px;"><label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"><input type="checkbox" id="skipWallCheck" style="width: 16px; height: 16px; accent-color: var(--accent);"> 我已知晓，不再提示</label></div>', () => {
+                    const chk = document.getElementById('skipWallCheck');
+                    if (chk && chk.checked) {
+                        try { localStorage.setItem('shp_skip_wall_warn', '1'); } catch (e) {}
+                    }
+                    openAIModeMask(); // 确认后才进入模式选择
+                }, '确定');
+            } else {
+                // 有墙或已免打扰：直达模式选择
+                openAIModeMask();
+            }
+        }
+
         exportBtn.addEventListener('click', () => {
-            if (!placedItems.length) {
-                showToast('画板为空：请先拖入图元再导出布局数据');
+            if (window.cachedAiReport) {
+                document.getElementById('aiResultBody').innerHTML = window.cachedAiReport;
+                openAIResultMask();
                 return;
             }
-            const layout = placedItems.map(p => ({
-                id: 'item-' + p.id,
+            if (!placedItems.length) {
+                showToast('画板为空：请先拖入图元再进行诊断');
+                return;
+            }
+            // 调用统一前置拦截
+            checkWallAndOpenMode();
+        });
+        
+        // 打开模式选择弹窗（弹窗 DOM 已前置到 script 之前，首次打开时绑定事件）
+        function openAIModeMask() {
+            const mask = document.getElementById('aiModeMask');
+            if (!mask.dataset.bound) {
+                mask.dataset.bound = '1';
+                document.getElementById('btnModeNormal').addEventListener('click', () => triggerAI('normal'));
+                document.getElementById('btnModeGeek').addEventListener('click', () => triggerAI('geek'));
+                mask.addEventListener('click', (e) => { if (e.target === mask) mask.classList.remove('show'); });
+            }
+            mask.classList.add('show');
+        }
+        
+        // 模式选定后的纯粹转发：关弹窗 -> 直接进入推演流程（墙体校验已由 checkWallAndOpenMode 前置拦截）
+        function triggerAI(mode) {
+            document.getElementById('aiModeMask').classList.remove('show');
+            runAiAnalysis(mode);
+        }
+
+        // 核心流程：异步无感推演 —— 后台请求 -> 结果入缓存 -> 按钮转就绪态
+        async function runAiAnalysis(mode) {
+            setAiBtnState('busy');
+            showToast('AI 正在后台进行空间推演，您可以继续操作画板...');
+        
+            // 记录发起时刻的画板状态序号，返回时校验是否已变动
+            const reqSeq = aiCacheSeq;
+
+            // 组装 layout_data：提取后端推演所需的关键字段
+            const layoutData = placedItems.map(p => ({
                 name: p.name,
-                type: p.type,
                 category: p.cat,
-                categoryName: CAT_LABELS[p.cat],
                 x: Math.round(p.el.offsetLeft),                                  // px, canvas-relative
                 y: Math.round(p.el.offsetTop),
                 realWidth: Math.round(p.el.offsetWidth * window.PIXEL_RATIO),    // mm
-                realHeight: Math.round(p.el.offsetHeight * window.PIXEL_RATIO), // mm
+                realHeight: Math.round(p.el.offsetHeight * window.PIXEL_RATIO),  // mm
                 rotation: p.rot                                                  // deg
             }));
-            console.log('【AI 智装管家 · 布局数据】pixelRatio =', +window.PIXEL_RATIO.toFixed(3),
-                'mm/px · calibrated =', calibrated);
-            console.log(JSON.stringify(layout, null, 2));
-            showToast('布局数据已生成，可对接 AI 分析接口');
-        });
+
+            // 预计算空间距离矩阵：大模型无法基于像素坐标准确心算物理距离，前端算好直接交付
+            let spatialRelations = '';
+            const routerItem = placedItems.find(p => p.type === 'router');
+            if (routerItem) {
+                const rx = (routerItem.el.offsetLeft + routerItem.el.offsetWidth / 2) * window.PIXEL_RATIO;   // mm
+                const ry = (routerItem.el.offsetTop + routerItem.el.offsetHeight / 2) * window.PIXEL_RATIO;   // mm
+                const parts = [];
+                placedItems.forEach(p => {
+                    if (p === routerItem) return;
+                    if (p.cat !== 'hard' && p.cat !== 'appliance') return;
+                    const px = (p.el.offsetLeft + p.el.offsetWidth / 2) * window.PIXEL_RATIO;
+                    const py = (p.el.offsetTop + p.el.offsetHeight / 2) * window.PIXEL_RATIO;
+                    const distM = Math.hypot(px - rx, py - ry) / 1000; // 欧氏距离，米
+                    parts.push(`距离【${p.name}】${distM.toFixed(1)}米`);
+                });
+                spatialRelations = parts.length
+                    ? `核心节点【路由器 AP】${parts.join('；')}`
+                    : '核心节点【路由器 AP】周围暂无硬装墙体或家电类图元。';
+            } else {
+                spatialRelations = '画板中未放置路由器/AP 核心节点，无法测算设备间距。';
+            }
+
+            // 全局边界围栏：计算所有图元的整体物理跨度，打断 AI “东西都挤在一起”的幻觉
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            placedItems.forEach(p => {
+                minX = Math.min(minX, p.el.offsetLeft);
+                minY = Math.min(minY, p.el.offsetTop);
+                maxX = Math.max(maxX, p.el.offsetLeft + p.el.offsetWidth);
+                maxY = Math.max(maxY, p.el.offsetTop + p.el.offsetHeight);
+            });
+            let boundaryInfo = '';
+            if (placedItems.length > 0) {
+                const spanW = ((maxX - minX) * window.PIXEL_RATIO / 1000).toFixed(1);
+                const spanH = ((maxY - minY) * window.PIXEL_RATIO / 1000).toFixed(1);
+                boundaryInfo = `【全局边界】当前图元分布的整体物理跨度约为 ${spanW}米 × ${spanH}米。`;
+            }
+            spatialRelations = boundaryInfo + spatialRelations;
+        
+            try {
+                const resp = await fetch(AI_ANALYZE_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layout_data: layoutData, report_mode: mode, spatial_relations: spatialRelations })
+                });
+                if (!resp.ok) {
+                    let msg = '诊断请求失败（HTTP ' + resp.status + '），请稍后重试';
+                    try {
+                        const err = await resp.json();
+                        if (err && err.detail) msg = err.detail;
+                    } catch (_) { /* 响应体非 JSON 时保留默认报错 */ }
+                    setAiBtnState('idle');
+                    showToast(msg);
+                    return;
+                }
+        
+                const data = await resp.json();
+                const summary = data && data.summary ? escapeHtml(data.summary) : '本次推演未返回总体评估结论。';
+                const suggestions = (data && Array.isArray(data.suggestions)) ? data.suggestions : [];
+                const listHtml = suggestions.length
+                    ? '<ul style="margin: 0; padding-left: 20px; line-height: 1.9;">'
+                        + suggestions.map(s => '<li>' + escapeHtml(s) + '</li>').join('')
+                        + '</ul>'
+                    : '';
+        
+                const reportHtml =
+                    '<p style="font-weight: 800; line-height: 1.75; margin: 0 0 18px;">' + summary + '</p>'
+                    + listHtml;
+
+                // 竞态防护：推演期间画板已变动，本次结果作废
+                if (reqSeq !== aiCacheSeq) {
+                    setAiBtnState('idle');
+                    showToast('画板已变动，本次 AI 诊断结果已作废，请重新生成');
+                    return;
+                }
+
+                // 结果仅入缓存，不直接弹出遮罩层
+                window.cachedAiReport = reportHtml;
+                setAiBtnState('ready');
+                showToast('✅ AI 诊断已完成！请点击上方按钮查看报告');
+            } catch (err) {
+                setAiBtnState('idle');
+                showToast('AI 诊断服务暂时不可用：请确认后端服务已启动');
+            }
+        }
+        
+        // 打开结果展示弹窗（复用尺寸报告弹窗的展示/关闭范式）
+        function openAIResultMask() {
+            const mask = document.getElementById('aiResultMask');
+            if (!mask.dataset.bound) {
+                mask.dataset.bound = '1';
+                const close = () => { mask.hidden = true; };
+                document.getElementById('aiResultCloseBtn').addEventListener('click', close);
+                // 重新诊断：关闭报告弹窗，重新走墙体校验闭环后再进入模式选择
+                document.getElementById('aiResultReDiagBtn').addEventListener('click', () => {
+                    document.getElementById('aiResultMask').hidden = true;
+                    checkWallAndOpenMode(); // 重新诊断同样需要走墙体校验闭环
+                });
+                mask.addEventListener('click', (e) => { if (e.target === mask) close(); });
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) close(); });
+            }
+            mask.hidden = false;
+        }
 
         // ============================================================
         // 14) 双轨导出：图纸（横向）/ 尺寸方案报告（纵向）
@@ -1971,7 +2317,6 @@
         const reportMask = document.getElementById('reportMask');
         const reportBody = document.getElementById('reportBody');
         const reportDate = document.getElementById('reportDate');
-        const reportSerial = document.getElementById('reportSerial');
 
         // 语义化尺寸解析器：根据 cat / type 将 realW×realH 翻译为行业描述
         function describeSize(item) {
@@ -2026,8 +2371,10 @@
             }
             buildReport();
             const now = new Date();
-            reportDate.textContent = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-            reportSerial.textContent = `AI-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+            const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            reportDate.textContent = dateStr;
+            // 同步填充打印专属标准页眉
+            document.getElementById('reportPrintDate').textContent = dateStr;
             reportMask.hidden = false;
         }
         function closeReport() { reportMask.hidden = true; }
@@ -2081,7 +2428,34 @@
             const now = new Date();
             document.getElementById('printHeaderDate').textContent =
                 `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            // 还原图纸模式专属页眉标题（全案导出会将其改写为统一合同标题）
+            document.querySelector('.print-only-header .print-only-header__title').textContent =
+                'AI 智装管家 · 全屋平面推演图纸';
             document.body.className = 'print-mode-canvas';
+            window.print();
+        });
+
+        // 一键导出全案：① 图纸 → ② 尺寸报告 → ③ AI 报告，三块强制分页
+        document.getElementById('exportAllBtn').addEventListener('click', () => {
+            if (!placedItems.length && !fp.loaded) {
+                showToast('画板为空：请先上传底图或拖入图元再导出全案');
+                return;
+            }
+            deselect();
+            // 注入②尺寸报告（复用 buildReport 生成的表格 HTML）
+            buildReport();
+            document.getElementById('printAllReportBody').innerHTML = reportBody.innerHTML;
+            // 注入③ AI 报告（未生成时给出占位提示）
+            document.getElementById('printAllAiBody').innerHTML = window.cachedAiReport
+                || '<div class="report-empty">尚未生成 AI 诊断报告（可先点击「AI 网络拓扑诊断」生成后再导出）</div>';
+            // 统一合同级页眉标题与日期
+            document.querySelector('.print-only-header .print-only-header__title').textContent =
+                'AI 智装管家 · 专属推演方案';
+            const now = new Date();
+            const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+            document.getElementById('printHeaderDate').textContent = dateStr;
+            document.querySelectorAll('.print-all-date').forEach(el => { el.textContent = dateStr; });
+            document.body.className = 'print-mode-all';
             window.print();
         });
 
@@ -2090,13 +2464,14 @@
             window.print();
         });
 
-        // 打印前：图纸模式下施加等比缩放；打印后：还原并清除模式 class
+        // 打印前：图纸/全案模式下施加等比缩放；打印后：还原并清除模式 class
         window.addEventListener('beforeprint', () => {
-            if (document.body.classList.contains('print-mode-canvas')) fitCanvasForPrint();
+            const cls = document.body.classList;
+            if (cls.contains('print-mode-canvas') || cls.contains('print-mode-all')) fitCanvasForPrint();
         });
         window.addEventListener('afterprint', () => {
             resetCanvasAfterPrint();
-            document.body.classList.remove('print-mode-canvas', 'print-mode-report');
+            document.body.classList.remove('print-mode-canvas', 'print-mode-report', 'print-mode-all');
         });
 
         // ============================================================
@@ -2118,6 +2493,7 @@
 
         function saveBoardState() {
             if (restoring) return;
+            onBoardChanged(); // 任何落盘即视为画板变动：立即作废 AI 报告缓存
             const base = {
                 pixelRatio: window.PIXEL_RATIO,
                 calibrated,
@@ -2199,14 +2575,16 @@
             document.getElementById('moduleModalMask').classList.remove('show');
             if (currentConfirmAction) currentConfirmAction();
         });
-        function customConfirm(desc, action) {
+        function customConfirm(desc, action, confirmText) {
             document.getElementById('moduleModalDesc').innerHTML = desc;
+            document.getElementById('moduleConfirmBtn').textContent = confirmText || '确定清空';
             currentConfirmAction = action;
             document.getElementById('moduleModalMask').classList.add('show');
         }
 
         document.getElementById('clearBoardBtn').addEventListener('click', () => {
             customConfirm('确定要清空画板并删除本地缓存吗？此操作不可撤销。', () => {
+                localStorage.removeItem('shp_skip_wall_warn'); // 重置“不再提示”免打扰标记，恢复墙体警告闭环
                 localStorage.removeItem(BOARD_STORAGE_KEY);
                 location.reload();
             });

@@ -1141,7 +1141,14 @@
         let dragCtx = null;     // move context
         let resizeCtx = null;   // handle-resize context
         let selectedItem = null;
-        let topZ = 10;          // layer counter — click-to-front
+        // 物理图层隔离：大类分层基址 + 类内递增计数器，软装永不遮挡路由器/墙体
+        const Z_BASE = { soft: 10, custom: 20, hard: 50, appliance: 100 };
+        const zCounters = { soft: 0, custom: 0, hard: 0, appliance: 0 };
+        function bumpZ(item) {
+            zCounters[item.cat] = (zCounters[item.cat] || 0) + 1;
+            item.el.style.zIndex = (Z_BASE[item.cat] || 10) + zCounters[item.cat];
+        }
+        let copiedItemSpec = null; // 全局剪贴板：Ctrl+C/V 图元复制粘贴
         let editingItem = null;
         let pendingRot = 0;
         let lastTap = null;     // 触屏双击检测：{ item, time }
@@ -1317,7 +1324,8 @@
             el.style.height = h + 'px';
             el.style.left = x + 'px';
             el.style.top = y + 'px';
-            el.style.zIndex = ++topZ;
+            item.el = el;
+            bumpZ(item); // 创建时按大类分层分配 z-index
             el.innerHTML = `
                 <span class="placed__alarm">干涉报警！</span>
                 <span class="placed__label">${escapeHtml(item.name)}</span>
@@ -1386,7 +1394,7 @@
             if (selectedItem && selectedItem !== item) selectedItem.el.classList.remove('selected');
             selectedItem = item;
             item.el.classList.add('selected');
-            item.el.style.zIndex = ++topZ; // click-to-front layer promotion
+            bumpZ(item); // click-to-front：仅在本大类内提升层级，绝不跨大类遮挡
         }
 
         function deselect() {
@@ -1935,6 +1943,66 @@
                 else if (ruler.active) exitRuler();
                 else if (!editMask.hidden) closeEditor();
                 else deselect();
+                return;
+            }
+
+            // ===== 极客键盘交互矩阵（Delete 删除 / Space 旋转 / Ctrl+C/V 复制粘贴） =====
+            // 闸门：正在输入文本或存在打开的弹窗时，一律不触发快捷键
+            const tag = document.activeElement ? document.activeElement.tagName : '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            if (document.querySelector('.global-modal-mask.show')) return;
+            if (!editMask.hidden) return;
+
+            // Delete：删除选中图元（二次确认，不监听 Backspace 以免误伤）
+            if (e.key === 'Delete' && selectedItem) {
+                const item = selectedItem;
+                customConfirm('确定要删除选中的图元吗？', () => {
+                    item.el.remove();
+                    if (item.ringEl) item.ringEl.remove();
+                    placedItems = placedItems.filter(p => p.id !== item.id);
+                    if (selectedItem === item) selectedItem = null;
+                    refreshBoard();
+                    runCollisionChecks();
+                    saveBoardState(); // 删除图元后静默持久化
+                }, '删除');
+                return;
+            }
+
+            // Space：选中图元极速旋转 90°（阻止默认滚动）
+            if (e.code === 'Space' && selectedItem) {
+                e.preventDefault();
+                selectedItem.rot = (selectedItem.rot + 90) % 360;
+                selectedItem.el.style.transform = selectedItem.rot ? `rotate(${selectedItem.rot}deg)` : '';
+                runCollisionChecks();
+                saveBoardState();
+                return;
+            }
+
+            // Ctrl/Cmd + C：深拷贝选中图元核心规格至全局剪贴板
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && selectedItem) {
+                copiedItemSpec = {
+                    name: selectedItem.name, cat: selectedItem.cat,
+                    realW: selectedItem.realW, realH: selectedItem.realH,
+                    signal: selectedItem.signal, color: selectedItem.color,
+                    shape: selectedItem.shape, custom: selectedItem.custom,
+                    type: selectedItem.type, rot: selectedItem.rot,
+                    _x: selectedItem.el.offsetLeft, _y: selectedItem.el.offsetTop
+                };
+                showToast('图元已复制');
+                return;
+            }
+
+            // Ctrl/Cmd + V：基于原图元坐标向右下偏移 20px 粘贴新实例
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && copiedItemSpec) {
+                const spec = copiedItemSpec;
+                const px = clamp((spec._x || 0) + 20, 0, Math.max(0, canvas.clientWidth - 40));
+                const py = clamp((spec._y || 0) + 20, 0, Math.max(0, canvas.clientHeight - 40));
+                const pasted = createItem(spec, px, py);
+                pasted.rot = spec.rot || 0;
+                pasted.el.style.transform = pasted.rot ? `rotate(${pasted.rot}deg)` : '';
+                selectItem(pasted);
+                saveBoardState(); // 粘贴后静默持久化
+                showToast('图元已粘贴');
             }
         });
 
@@ -2145,6 +2213,13 @@
 
         // 统一墙体校验闸门：作为 AI 诊断主按钮的第一道关卡（重新诊断链路同样复用）
         function checkWallAndOpenMode() {
+            // 致命前置校验：缺失信号源核心时直接拦截，不进入后续任何流程
+            const hasRouter = placedItems.some(p => p.type === 'router');
+            if (!hasRouter) {
+                showToast('网络推演失败：画板中必须至少放置一个【路由器 AP】作为信号源核心');
+                return;
+            }
+
             const hasWall = placedItems.some(p => p.cat === 'hard');
             let skipWallWarn = false;
             try { skipWallWarn = localStorage.getItem('shp_skip_wall_warn') === '1'; } catch (e) {}

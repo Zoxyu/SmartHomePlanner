@@ -86,7 +86,11 @@
 
         /* ---------- Layout ---------- */
         .sandbox { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
-        @media (max-width: 900px) { .sandbox { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) {
+            .sandbox { grid-template-columns: 1fr; }
+            /* 移动端单栏排版：画板恢复静态流，避免 sticky 遮挡后续内容 */
+            .board-wrap { position: static; }
+        }
 
         /* ---------- Library panel ---------- */
         .library {
@@ -180,6 +184,10 @@
             border: 1px solid rgba(148, 163, 184, 0.12);
             border-radius: var(--radius); padding: 16px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+            /* 吸顶随动：左侧组件库滚动时画板始终驻留视口，拖拽不断链 */
+            position: sticky;
+            top: 28px; /* 与 body 的 top padding 保持一致，留出优雅的呼吸感 */
+            align-self: start;
         }
         .board-status {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -596,6 +604,7 @@
             body.print-mode-canvas .board-wrap {
                 background: transparent !important; border: none !important;
                 padding: 0 !important; margin: 6mm auto 0 auto !important;
+                position: static !important; /* 打印时禁用吸顶，避免图纸位移 */
             }
             /* 图纸专属页眉：横向打印时显示，黑色实线托底提升正式感 */
             body.print-mode-canvas .print-only-header {
@@ -676,6 +685,7 @@
             body.print-mode-all .board-wrap {
                 background: transparent !important; border: none !important;
                 padding: 0 !important; margin: 6mm auto 0 auto !important;
+                position: static !important; /* 打印时禁用吸顶，避免图纸位移 */
             }
             body.print-mode-all .grid-canvas {
                 background-color: transparent !important;

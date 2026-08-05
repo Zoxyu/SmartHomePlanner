@@ -9,9 +9,6 @@
     <style>
         :root {
             --accent: #38bdf8;
-            /* A 方：雾霾蓝（莫兰迪低饱和）/ B 方：茱萸粉（莫兰迪低饱和），柔和对冲不刺眼 */
-            --a-1: #8aa7c7; --a-2: #6f8bab;
-            --b-1: #c9a3a0; --b-2: #b08a8e;
             --transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         /* ===== 昼夜主题（默认夜间） ===== */
@@ -101,90 +98,93 @@
         .brand__title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.01em; margin-top: 8px; }
         .brand__subtitle { color: var(--text-dim); font-size: 0.9rem; margin-top: 8px; line-height: 1.7; }
 
-        /* PK 面板整体：分类切换时的淡出/位移过渡 */
+        /* 知识库面板整体：分类切换时的淡出/位移过渡 */
         .pk-panel { max-width: 100%; transition: opacity 0.26s ease, transform 0.26s ease; }
         .pk-panel.is-switching { opacity: 0; transform: translateY(16px); }
 
-        /* ---------- 顶部：1V1 对决头部 ---------- */
-        .vs-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 18px; margin-bottom: 26px; }
-        .mat-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 24px; backdrop-filter: blur(24px);
-            display: flex; flex-direction: column; align-items: center; text-align: center;
-        }
-        .mat-card--a { border-top: 3px solid var(--a-1); }
-        .mat-card--b { border-top: 3px solid var(--b-2); }
-        .mat-card__side { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.16em; }
-        .mat-card--a .mat-card__side { color: var(--a-1); }
-        .mat-card--b .mat-card__side { color: var(--b-2); }
-        .mat-card__name { font-size: 1.5rem; font-weight: 800; margin-top: 10px; letter-spacing: -0.01em; }
-        .mat-card__tag { font-size: 0.72rem; color: var(--text-dim); margin-top: 7px; }
-
-        .vs-badge {
-            align-self: center; width: 66px; height: 66px; border-radius: 50%; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 1.2rem; font-style: italic; color: #0f172a;
-            background: linear-gradient(135deg, var(--a-1), var(--b-2));
-            box-shadow: 0 0 30px rgba(138, 167, 199, 0.3), 0 0 30px rgba(201, 163, 160, 0.25);
+        /* ---------- 通用区块标题 ---------- */
+        .kb-section { margin-bottom: 26px; }
+        .kb-section__title {
+            font-size: 0.8rem; font-weight: 800; color: var(--text-dim);
+            letter-spacing: 0.1em; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
         }
 
-        /* ---------- 中部：雷达条图表（纯 CSS 横向对比柱） ---------- */
-        .bars {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 16px; padding: 26px 30px 18px; backdrop-filter: blur(24px);
+        /* ---------- 引言区：主色背景 + 顶部高光 ---------- */
+        .intro-box {
+            position: relative; overflow: hidden;
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 18px; padding: 22px 26px;
+            font-size: 0.98rem; line-height: 1.9; color: var(--text-light);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
         }
-        .bars__title {
-            font-size: 0.78rem; font-weight: 800; color: var(--text-dim);
-            letter-spacing: 0.1em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
-        }
-        .dim { padding: 17px 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.13); }
-        .dim:last-child { border-bottom: none; }
-        .dim__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 11px; flex-wrap: wrap; }
-        .dim__label { font-size: 0.94rem; font-weight: 700; }
-        .dim__note { font-size: 0.68rem; color: var(--text-faint); }
-        .dim__winner {
-            margin-left: auto; font-size: 0.64rem; font-weight: 800;
-            padding: 3px 11px; border-radius: 999px; white-space: nowrap;
-        }
-        .dim__winner--a { color: var(--a-1); background: rgba(138, 167, 199, 0.14); border: 1px solid rgba(138, 167, 199, 0.35); }
-        .dim__winner--b { color: var(--b-2); background: rgba(176, 138, 142, 0.14); border: 1px solid rgba(176, 138, 142, 0.35); }
-
-        .bar-row { display: grid; grid-template-columns: 26px 1fr 46px; align-items: center; gap: 12px; margin-top: 7px; }
-        .bar-row__side { font-size: 0.68rem; font-weight: 800; }
-        .bar-row--a .bar-row__side { color: var(--a-1); }
-        .bar-row--b .bar-row__side { color: var(--b-2); }
-        .bar-track { height: 14px; border-radius: 999px; background: rgba(148, 163, 184, 0.1); overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 999px; width: 0; transition: width 0.9s cubic-bezier(0.22, 0.9, 0.35, 1); }
-        .bar-fill--a { background: linear-gradient(90deg, var(--a-1), var(--a-2)); box-shadow: 0 0 12px rgba(138, 167, 199, 0.3); }
-        .bar-fill--b { background: linear-gradient(90deg, var(--b-1), var(--b-2)); box-shadow: 0 0 12px rgba(201, 163, 160, 0.3); }
-        .bar-row__score { font-size: 0.78rem; font-weight: 800; text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
-
-        /* ---------- 底部：客观选材建议（毛玻璃卡片） ---------- */
-        .verdict {
-            margin-top: 26px; position: relative; overflow: hidden;
-            border-radius: 18px; padding: 24px 30px;
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.07));
-            border: 1px solid rgba(56, 189, 248, 0.28);
-            backdrop-filter: blur(24px);
-        }
-        .verdict::before {
+        .intro-box::before {
             content: ''; position: absolute; inset: 0; pointer-events: none;
-            background: radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.18), transparent 55%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0) 45%);
         }
-        .verdict__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; position: relative; }
-        .verdict__icon { font-size: 1.25rem; }
-        .verdict__title { font-size: 0.84rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); }
-        .verdict__text { position: relative; font-size: 0.93rem; line-height: 1.9; color: var(--text-light); }
-        .verdict__text strong { color: var(--accent); font-weight: 800; }
+        html[data-theme="light"] .intro-box::before {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 45%);
+        }
 
-        /* ================= 移动端：侧栏 → 顶部横栏 ================= */
+        /* ---------- 术语解析卡片网格 ---------- */
+        .term-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .term-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px 22px;
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            transition: var(--transition);
+        }
+        .term-card:hover { transform: translateY(-3px); border-color: rgba(56, 189, 248, 0.4); }
+        .term-name { font-size: 1.05rem; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
+        .term-value {
+            display: inline-block; font-size: 0.66rem; font-weight: 700;
+            color: var(--text-dim); background: rgba(148, 163, 184, 0.12);
+            border: 1px solid var(--border); padding: 3px 10px;
+            border-radius: 999px; margin: 9px 0 11px;
+        }
+        .term-desc { font-size: 0.85rem; line-height: 1.8; color: var(--text-dim); }
+
+        /* ---------- 材料对比表格：咨询报告式底线分隔 ---------- */
+        .compare-table {
+            width: 100%; border-collapse: collapse;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden;
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        }
+        .compare-table th {
+            font-size: 0.72rem; font-weight: 800; color: var(--text-faint);
+            letter-spacing: 0.08em; text-align: left;
+            padding: 14px 18px; border-bottom: 2px solid var(--border);
+        }
+        .compare-table td {
+            padding: 16px 18px; border-bottom: 1px solid var(--border);
+            font-size: 0.85rem; line-height: 1.8; vertical-align: top;
+        }
+        .compare-table tr:last-child td { border-bottom: none; }
+        .ct-type { font-weight: 800; color: var(--text-light); white-space: nowrap; font-size: 0.9rem; }
+        .ct-pros { color: #10b981; }
+        .ct-cons { color: #f87171; }
+        .ct-scene { color: var(--text-dim); }
+
+        /* ---------- 注意事项列表：按 ✅/❌ 着色 ---------- */
+        .tips-list { display: flex; flex-direction: column; gap: 12px; }
+        .tip-item {
+            border-radius: 14px; padding: 15px 20px;
+            font-size: 0.88rem; line-height: 1.8; font-weight: 600;
+            border: 1px solid transparent;
+        }
+        .tip-item--good { background: rgba(16, 185, 129, 0.09); border-color: rgba(16, 185, 129, 0.24); color: #34d399; }
+        .tip-item--bad { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.22); color: #f87171; }
+        html[data-theme="light"] .tip-item--good { color: #047857; }
+        html[data-theme="light"] .tip-item--bad { color: #b91c1c; }
+
+        /* ================= 移动端 ================= */
         @media (max-width: 860px) {
             body { overflow: auto; }
             .main { padding: 24px 18px 48px; overflow: visible; }
-            .vs-header { grid-template-columns: 1fr; }
-            .vs-badge { justify-self: center; }
-            .bars { padding: 20px 18px 12px; }
-            .dim__winner { margin-left: 0; }
+            .compare-table { display: block; overflow-x: auto; white-space: normal; }
+            .term-card { padding: 18px; }
         }
     </style>
 </head>
@@ -193,9 +193,9 @@
     <main class="main">
         <div class="container">
             <header class="brand">
-                <span class="brand__eyebrow">AI 智装管家 · 选材决策参数库</span>
-                <h1 class="brand__title">选材决策，让客观参数说话</h1>
-                <p class="brand__subtitle">抛开营销话术，把两种材料拉上 PK 台逐项对标。切换上方类目，即刻展开雷达条对标与客观选材建议，结论由您自己判断。</p>
+                <span class="brand__eyebrow">AI 智装管家 · 建材科普知识库</span>
+                <h1 class="brand__title">硬核建材科普与知识库</h1>
+                <p class="brand__subtitle">国标参数解析 · 材料优劣横评 · 一线选购注意事项。切换上方类目，把装修水最深的材料一次讲透。</p>
             </header>
 
             <!-- 分类导航：横向滚动 Pill Tabs -->
@@ -220,55 +220,99 @@
         })();
 
         // ============================================================
-        // 初始演示数据：三组贴近真实装修场景的硬核对比
+        // 建材知识库数据：国标术语 + 优缺点横评 + 选购注意事项
         // ============================================================
-        const COMPARE_DATA = [
+        const KNOWLEDGE_DATA = [
             {
-                id: 'hardware',
-                icon: '🍴',
-                category: '五金 / 餐具',
-                desc: '316L 不锈钢 vs 纯钛',
-                materialA: { name: '316L 不锈钢', tag: '含钼奥氏体 · 医用 / 食品接触级' },
-                materialB: { name: '纯钛 TA1', tag: '航空级 · 极低析出风险' },
-                dimensions: [
-                    { label: '表面防刮花能力', note: '莫氏硬度与日常摩擦耐受', a: 90, b: 55, winner: 'a', winnerText: 'A 占优' },
-                    { label: '绝对抗腐蚀性', note: '钝化膜自修复 · 耐酸碱 / 海水', a: 80, b: 92, winner: 'b', winnerText: 'B 更佳' },
-                    { label: '生物亲和性', note: '长期接触人体 / 食材的安全性', a: 72, b: 96, winner: 'b', winnerText: 'B 更佳' },
-                    { label: '密度 / 轻量化', note: '钛 ≈4.5 vs 钢 ≈7.9 g/cm³ · 越低越轻', a: 40, b: 92, winner: 'b', winnerText: 'B 更轻' },
-                    { label: '性价比', note: '材料成本与终端售价比', a: 95, b: 38, winner: 'a', winnerText: 'A 占优' }
+                id: 'craft', icon: '📏', category: '施工工艺与工法', desc: '找平工艺与落地效果',
+                intro: '三分材料七分工。再顶级的建材，如果找平工艺不达标，全屋定制收口和灯光效果都会大打折扣。',
+                terms: [
+                    { name: '墙面顺平', value: '常规找平工艺', desc: '顺着墙面原有的起伏进行找平，保证局部平整，用长靠尺测量没有明显的坑洼。成本较低，适合贴墙纸或刷常规哑光乳胶漆。' },
+                    { name: '墙面垂平 (冲筋打点)', value: '极简风必备工艺', desc: '不仅要求表面绝对平整，还要求墙面绝对垂直于地面，阴阳角绝对方正（90度）。材料与人工成本极高。这是做无主灯洗墙灯、极简隐形门、全屋定制严丝合缝不打胶的必要前提。' },
+                    { name: '水泥自流平', value: '高精度地面找平', desc: '利用特种水泥加水混合后，依靠重力自由流动自动找平地面的工艺。厚度通常在 3-5mm，常用于铺贴微水泥、高端超薄木地板前的高精度找平。' }
                 ],
-                verdict: '316L 不锈钢的优势在于<strong>表面防刮花</strong>与<strong>性价比</strong>，日常抗造、维护成本低，适合高频使用的家庭餐具；纯钛的优势在于<strong>轻量</strong>与<strong>极低析出风险</strong>，生物亲和性更佳，适合对材质安全性与便携性有更高要求的场景。两者各有所长，建议依据预算与使用侧重自行选择。'
+                compare: [
+                    { type: '顺平 vs 垂平', pros: '顺平施工快、造价低，满足90%的刚需装修；垂平能让墙面如镜面般平直，定制柜可以做到真正的“无缝贴合”。', cons: '顺平在洗墙灯下会暴露出波浪纹，定制柜边缘易留大缝；垂平造价极高（通常大几十到上百元/平米），且严重吃房间尺寸（墙面会变厚2-4cm）。', scene: '预算有限做顺平；无主灯设计、法式/极简风必做局部垂平' },
+                    { type: '传统厚找平 vs 自流平', pros: '传统水泥砂浆厚找平（>2cm）便宜，适合填补大落差；自流平精度极高，平整度绝佳。', cons: '自流平对原基层要求高，施工不当极易开裂起壳，需严格涂刷界面剂封底。', scene: '厚找平用于铺常规厚度瓷砖/地板；自流平用于直铺微水泥或悬浮拼装地板' }
+                ],
+                tips: [
+                    '✅ 注意点：如果要做全屋定制（尤其是无把手、一门到顶的柜子），安装柜子的那一面墙和两侧的阴角，必须强制要求油漆工做“冲筋垂平”处理。',
+                    '❌ 误区：全屋所有墙面都要做冲筋垂平。没必要！预算有限的话，只在“定制柜靠墙处”、“装洗墙灯的背景墙”、“装极简踢脚线的位置”做局部垂平即可，其余区域顺平能省下一大笔钱。',
+                    '✅ 注意点：做水泥自流平前，原地面必须清理干净并涂刷界面剂（墙固/地固），否则自流平极易由于基层吸水过快导致严重开裂。'
+                ]
             },
             {
-                id: 'flooring',
-                icon: '🪵',
-                category: '地面硬装',
-                desc: '木纹砖 vs 纯实木地板',
-                materialA: { name: '木纹砖', tag: '釉面瓷质砖 · 极低甲醛释放 (需符合 ENF 级)' },
-                materialB: { name: '纯实木地板', tag: '天然原木 · 需定期保养' },
-                dimensions: [
-                    { label: '表面耐磨度', note: '莫氏硬度 6-7 vs 木材约 2-3', a: 95, b: 45, winner: 'a', winnerText: 'A 占优' },
-                    { label: '地暖导热率', note: '瓷砖 ≈1.5 vs 木材 ≈0.15 W/m·K', a: 92, b: 40, winner: 'a', winnerText: 'A 占优' },
-                    { label: '环保与稳定性', note: '瓷砖天然无醛 vs 木板需认准 GB/T 39600 ENF 级', a: 92, b: 60, winner: 'a', winnerText: 'A 占优' },
-                    { label: '后期打理成本', note: '免打蜡精油 · 直接拖洗', a: 90, b: 35, winner: 'a', winnerText: 'A 占优' },
-                    { label: '脚感温润度', note: '木质天然温弹 · 冬季不冰脚', a: 42, b: 93, winner: 'b', winnerText: 'B 更佳' }
+                id: 'tile', icon: '🪨', category: '瓷砖与石材', desc: '国标参数与分类解析',
+                intro: '瓷砖选购水极深，不要只看花色，核心要看物理性能检测报告，认准 GB/T 4100-2015 国家标准。',
+                terms: [
+                    { name: '吸水率 (E)', value: '核心防污抗冻指标', desc: '吸水率越低，密度越高，越不易渗污。国标规定：瓷质砖 E≤0.5%，炻瓷砖 0.5%<E≤3%。地砖务必选择 E≤0.5% 的纯瓷质砖；厨卫墙砖可选吸水率稍高的陶质砖（需泡水铺贴）以免脱落。' },
+                    { name: '莫氏硬度', value: '防刮花能力', desc: '数值为 1-10。优秀的抛釉砖莫氏硬度应达到 5-6，能抵抗日常鞋底夹带的泥沙摩擦。' },
+                    { name: '防滑系数', value: '涉水安全指标', desc: '认准 R 级防滑标准。干区可选 R9，厨卫及阳台涉水区域强烈建议选择 R10 甚至 R11 级别的柔面防滑砖。' }
                 ],
-                verdict: '木纹砖的优势在于<strong>耐磨</strong>、<strong>地暖导热快</strong>与<strong>打理省心</strong>，且天然无醛、尺寸稳定，适合铺设地暖、追求低维护的客餐厅与厨卫；纯实木地板的优势在于<strong>脚感温润</strong>与自然纹理，居住质感更佳，适合注重舒适体验、愿意定期保养的卧室与客厅。建议结合地暖情况与保养意愿权衡。'
+                compare: [
+                    { type: '抛釉砖', pros: '花色极多，光泽度高，易打理，性价比最高。', cons: '表面釉层较薄，重物砸落易崩瓷露底。', scene: '客餐厅地面、背景墙' },
+                    { type: '通体大理石', pros: '表里如一，拉槽、倒角切割后侧面依然有纹理。', cons: '造价偏高，对铺贴平整度要求极高。', scene: '全屋通铺、楼梯踏步、需倒角处' },
+                    { type: '微水泥 / 柔光砖', pros: '漫反射不刺眼，质感极其高级，法式/侘寂风首选。', cons: '表面有微小孔隙，极易渗入污渍（如酱油、茶水），打理成本高。', scene: '卧室、纯设计导向的客餐厅' }
+                ],
+                tips: [
+                    '✅ 注意点：买砖时必须向商家索要“检验报告”，查看放射性核素限量是否为“A类”（可在室内无限量使用）。',
+                    '✅ 注意点：优等品 > 一等品 > 合格品。购买时合同里必须写明“保证广东原产优等品”，提货时核对纸箱外包装的等级与色号标识。',
+                    '❌ 误区：盲目追求大板（如 750×1500mm 以上）。大板材料贵、人工贵、搬运损耗大，客餐厅面积小于 30㎡ 铺大板反而显拥挤，800×800mm 性价比最高。'
+                ]
             },
             {
-                id: 'finish',
-                icon: '🎨',
-                category: '定制饰面',
-                desc: '氟碳喷涂 vs 粉末喷涂',
-                materialA: { name: '氟碳喷涂 (PVDF)', tag: '两涂两烤 · 耐候涂层' },
-                materialB: { name: '普通静电粉末喷涂', tag: '环氧 / 聚酯 · 一涂一烤' },
-                dimensions: [
-                    { label: '漆面膜厚度均匀性', note: '氟碳流平佳 · 粉末边角易堆积', a: 90, b: 62, winner: 'a', winnerText: 'A 占优' },
-                    { label: '涂层理论厚度', note: 'PVDF ≥40μm 极薄服帖 vs 粉末 60-120μm 易失真', a: 90, b: 55, winner: 'a', winnerText: 'A 占优' },
-                    { label: '抗紫外线褪色率', note: 'PVDF 约 20 年保色 vs 粉末 3-5 年', a: 93, b: 55, winner: 'a', winnerText: 'A 占优' },
-                    { label: '金属质感细腻度', note: '哑光细腻 · 防指纹表现', a: 88, b: 58, winner: 'a', winnerText: 'A 占优' }
+                id: 'board', icon: '🪵', category: '定制板材', desc: '环保等级与基材剖析',
+                intro: '全屋定制是甲醛释放的重灾区。基材决定物理稳定性，胶水与封边决定环保性。',
+                terms: [
+                    { name: '环保等级', value: 'GB/T 39600-2021', desc: '新国标强制要求：E1级≤0.124mg/m³。更高级别：E0级≤0.050mg/m³，ENF级≤0.025mg/m³（目前全球最严苛）。家用建议起步 E0，预算充足首选 ENF 级，并认准 MDI 无醛生态胶。' },
+                    { name: '封边工艺', value: '锁住甲醛防潮湿', desc: '激光封边 > PUR 封边 > EVA 封边。激光封边无胶线，浑然一体；PUR 胶量少且防水防潮好，性价比最高；EVA 胶线明显，易发黄发黑。' }
                 ],
-                verdict: '氟碳喷涂 (PVDF) 的优势在于<strong>漆膜均匀服帖</strong>、<strong>抗紫外线保色持久</strong>与<strong>金属质感细腻</strong>，适合极窄边框门洞、背景墙等注重光影质感的显眼立面；粉末喷涂的优势在于<strong>性价比</strong>，成本更低，适合预算有限、对长期保色要求不高的柜体内部或次要立面。建议依据立面重要性与预算分配选择。'
+                compare: [
+                    { type: '颗粒板 (刨花板)', pros: '抗变形能力极强，握钉力优秀，极易做超高门板（一门到顶）。', cons: '防潮性最差，绝对不能泡水。', scene: '衣柜柜体、超高柜门、干燥区域' },
+                    { type: '多层实木板', pros: '防潮性优秀，承重能力强，不易受潮膨胀。', cons: '由于胶水层多，环保控制难度高于颗粒板；且极易因应力不均发生翘曲变形，做柜门必须加拉直器。', scene: '橱柜柜体、浴室柜、承重层板' },
+                    { type: '欧松板 (OSB)', pros: '结构稳定性强，承重变形极小，MDI 胶常用于此板材环保极佳。', cons: '切面粗糙，对加工锯片与封边机要求极高。', scene: '高端柜门、承重结构件' }
+                ],
+                tips: [
+                    '✅ 注意点：商家口中的“生态板”通常指的是大芯板（细木工板），其握钉力和抗变形能力最差，极易变形，谨慎用于全屋定制柜门。',
+                    '✅ 注意点：关注板材品牌的防伪溯源。知名板材（如万华、爱格、克诺斯邦）均可通过紫外线紫光灯照射板材截面，或扫描二维码查验真伪。'
+                ]
+            },
+            {
+                id: 'aux', icon: '🧱', category: '泥瓦辅材', desc: '水泥 / 砖 / 腻子',
+                intro: '辅材是房屋的骨骼与皮肤，被埋在深处，一旦选错或者用错标号，后期开裂脱落将无法补救。',
+                terms: [
+                    { name: '水泥标号', value: '凝结强度指标', desc: '家装通常使用 P.O 42.5 或 P.C 32.5 标号水泥。42.5 表示 28 天抗压强度需达到 42.5 MPa。铺地砖宜用 32.5 搭配沙子；贴墙砖如用 42.5 水泥极易因收缩力过大导致瓷砖被拉裂。' },
+                    { name: '耐水腻子', value: '防霉抗碱第一道防线', desc: '符合 JG/T 298-2010《建筑室内用腻子》的 N 型（耐水型）腻子。遇水不粉化、不掉粉。强烈建议全屋使用耐水腻子，特别是南方沿海（回南天）及一楼住户。' }
+                ],
+                compare: [
+                    { type: '标准红砖 (粘土砖)', pros: '抗压强度极高，隔音效果好，防水防潮。', cons: '自重大，增加楼板负荷；多地出于环保已限制生产粘土砖。', scene: '卫生间沉箱回填、新建承重隔墙' },
+                    { type: '轻质砖 (加气混凝土)', pros: '极轻，隔热保温效果好，施工速度快，不增加楼板负担。', cons: '吸水率极高，握钉力极差，膨胀螺丝挂不住重物。', scene: '室内非承重分隔墙、客餐厅隔断' },
+                    { type: '瓷砖背胶', pros: '极大增强瓷砖与墙面的粘结力，防止空鼓脱落。', cons: '刷涂后需严格遵守表干时间，且不能替代水泥砂浆。', scene: '全瓷/低吸水率墙砖上墙必选' }
+                ],
+                tips: [
+                    '✅ 注意点：新建轻质砖墙体时，如果在墙上需要挂电视、热水器等重物，必须提前在对应位置掏空并浇筑混凝土，否则重物极易掉落。',
+                    '❌ 误区：水泥越贵、标号越高越好。墙面找平与贴砖如果使用了标号过高的水泥，其凝固时的剧烈收缩会直接把空心砖拉裂。',
+                    '✅ 注意点：卫生间新建墙体，底部必须浇筑至少 20cm 高的防水地梁（止水带），千万不能直接在楼板上砌砖，否则水会顺着砖缝渗透到相邻房间的木地板下。'
+                ]
+            },
+            {
+                id: 'paint', icon: '🖌️', category: '涂料油漆', desc: '乳胶漆选购指南',
+                intro: '乳胶漆不仅要看环保，遮盖力与耐擦洗性能同样决定了入住几年后的墙面质感。',
+                terms: [
+                    { name: 'VOC 含量', value: '挥发性有机化合物', desc: '国标强制要求内墙涂料 VOC≤120g/L。优质的环保漆（如获得十环认证、蓝天使认证、芬兰M1认证）VOC 往往趋近于零（未检出）。' },
+                    { name: '对比率', value: '遮盖底层瑕疵能力', desc: '决定乳胶漆“白度”与遮盖力的核心参数。国标规定优等品对比率应≥0.95。钛白粉含量越高的乳胶漆，对比率越好，刷出来的墙面色彩越饱满均一。' },
+                    { name: '耐洗刷次数', value: '漆膜韧性', desc: '优等品需达到≥6000次。耐擦洗越好的漆，墙面弄脏后用湿抹布轻轻一擦就干净，且不留痕迹不掉粉。' }
+                ],
+                compare: [
+                    { type: '常规哑光乳胶漆', pros: '光线漫反射，能极大掩盖墙面基层批灰不平整的瑕疵，施工最容易。', cons: '耐污性较差，不适合经常触碰的区域。', scene: '卧室、客餐厅顶部与大面积墙面' },
+                    { type: '蛋壳光 / 丝光乳胶漆', pros: '漆膜致密光滑，极易擦洗，具有丝绸般的微反光质感。', cons: '对墙面平整度（顺平/冲筋找平）要求极高，只要有一点凸凹，在灯光下就会被无限放大。', scene: '儿童房、过道走廊下半墙' },
+                    { type: '艺术漆 (微水泥/蛋壳漆)', pros: '拥有极致的肌理感和特殊光影效果，极其高级。', cons: '造价极高（材料贵且极度依赖高级工匠的施工手法），破损后极难局部修补。', scene: '电视背景墙、沙发背景墙点缀' }
+                ],
+                tips: [
+                    '✅ 注意点：不要过度迷信“进口原装”。很多打着进口旗号的涂料，环保标准其实与国内一线品牌的高端线无异，但价格翻倍。务必查看检验报告。',
+                    '❌ 误区：漆调色越深越好。深色乳胶漆由于色浆含量高，施工时不能加水稀释，且稍有磕碰就会露白，极其难修补。家装建议以浅色调（奶咖、浅灰）为主。',
+                    '✅ 注意点：遵循“底漆1遍+面漆2遍”的施工工艺。千万不能为了省钱省去抗碱底漆，否则几年后墙面极易泛碱发黄发霉。'
+                ]
             }
         ];
 
@@ -278,14 +322,14 @@
         const catNav = document.getElementById('catNav');
         const pkPanel = document.getElementById('pkPanel');
         let currentCat = parseInt(localStorage.getItem('shp_compare_cat')) || 0;
-        if (currentCat >= COMPARE_DATA.length) currentCat = 0;
+        if (currentCat >= KNOWLEDGE_DATA.length) currentCat = 0;
         let switching = false; // 防止过渡期间重复触发
 
         // ============================================================
-        // 左侧分类导航渲染
+        // 分类导航渲染
         // ============================================================
         function buildNav() {
-            catNav.innerHTML = COMPARE_DATA.map((d, i) => `
+            catNav.innerHTML = KNOWLEDGE_DATA.map((d, i) => `
                 <button class="nav-item${i === currentCat ? ' active' : ''}" type="button" data-idx="${i}">
                     <span class="nav-item__icon">${d.icon}</span>
                     <span class="nav-item__meta">
@@ -303,72 +347,63 @@
         }
 
         // ============================================================
-        // 右侧 PK 面板渲染
+        // 知识库面板渲染：引言 → 术语网格 → 对比表格 → 避坑指南
         // ============================================================
         function renderPanel(data) {
-            const dimHtml = data.dimensions.map(d => `
-                <div class="dim">
-                    <div class="dim__head">
-                        <span class="dim__label">${d.label}</span>
-                        <span class="dim__note">${d.note}</span>
-                        <span class="dim__winner dim__winner--${d.winner}">${d.winnerText}</span>
-                    </div>
-                    <div class="bar-row bar-row--a">
-                        <span class="bar-row__side">A</span>
-                        <div class="bar-track"><div class="bar-fill bar-fill--a" data-score="${d.a}"></div></div>
-                        <span class="bar-row__score">${d.a}</span>
-                    </div>
-                    <div class="bar-row bar-row--b">
-                        <span class="bar-row__side">B</span>
-                        <div class="bar-track"><div class="bar-fill bar-fill--b" data-score="${d.b}"></div></div>
-                        <span class="bar-row__score">${d.b}</span>
-                    </div>
+            const termsHtml = data.terms.map(t => `
+                <div class="term-card">
+                    <div class="term-name">${t.name}</div>
+                    <div class="term-value">${t.value}</div>
+                    <div class="term-desc">${t.desc}</div>
                 </div>
             `).join('');
 
+            const compareRows = data.compare.map(c => `
+                <tr>
+                    <td class="ct-type">${c.type}</td>
+                    <td class="ct-pros">${c.pros}</td>
+                    <td class="ct-cons">${c.cons}</td>
+                    <td class="ct-scene">${c.scene}</td>
+                </tr>
+            `).join('');
+
+            const tipsHtml = data.tips.map(tip => {
+                const cls = tip.includes('✅') ? 'tip-item--good' : (tip.includes('❌') ? 'tip-item--bad' : '');
+                return `<div class="tip-item ${cls}">${tip}</div>`;
+            }).join('');
+
             pkPanel.innerHTML = `
-                <div class="vs-header">
-                    <div class="mat-card mat-card--a">
-                        <div class="mat-card__side">A 方</div>
-                        <div class="mat-card__name">${data.materialA.name}</div>
-                        <div class="mat-card__tag">${data.materialA.tag}</div>
-                    </div>
-                    <div class="vs-badge">VS</div>
-                    <div class="mat-card mat-card--b">
-                        <div class="mat-card__side">B 方</div>
-                        <div class="mat-card__name">${data.materialB.name}</div>
-                        <div class="mat-card__tag">${data.materialB.tag}</div>
-                    </div>
+                <div class="intro-box kb-section">${data.intro}</div>
+
+                <div class="kb-section">
+                    <div class="kb-section__title">📖 国标术语解析</div>
+                    <div class="term-grid">${termsHtml}</div>
                 </div>
 
-                <div class="bars">
-                    <div class="bars__title">📊 雷达条对标 · 逐项参数对比</div>
-                    ${dimHtml}
+                <div class="kb-section">
+                    <div class="kb-section__title">⚖️ 主流材料优劣横评</div>
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>材料类型</th>
+                                <th>优势</th>
+                                <th>劣势</th>
+                                <th>适用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>${compareRows}</tbody>
+                    </table>
                 </div>
 
-                <div class="verdict">
-                    <div class="verdict__head">
-                        <span class="verdict__icon">⚖️</span>
-                        <span class="verdict__title">客观选材建议</span>
-                    </div>
-                    <div class="verdict__text">${data.verdict}</div>
+                <div class="kb-section">
+                    <div class="kb-section__title">🛡️ 选购注意事项</div>
+                    <div class="tips-list">${tipsHtml}</div>
                 </div>
             `;
         }
 
-        // 柱条从 0 生长到目标宽度：先以 width:0 渲染，下一帧再赋值触发 CSS 过渡
-        function animateBars() {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    pkPanel.querySelectorAll('.bar-fill').forEach(fill => {
-                        fill.style.width = fill.dataset.score + '%';
-                    });
-                });
-            });
-        }
-
         // ============================================================
-        // 分类切换：淡出 → 换数据 → 淡入 + 柱条重生长
+        // 分类切换：淡出 → 换数据 → 淡入
         // ============================================================
         function switchCategory(idx) {
             if (idx === currentCat || switching) return;
@@ -379,14 +414,13 @@
 
             pkPanel.classList.add('is-switching');
             setTimeout(() => {
-                renderPanel(COMPARE_DATA[idx]);
+                renderPanel(KNOWLEDGE_DATA[idx]);
                 pkPanel.classList.remove('is-switching');
-                animateBars();
                 switching = false;
             }, 270); // 与 .pk-panel 过渡时长对齐
         }
 
-        // 事件委托：左侧分类点击
+        // 事件委托：分类点击
         catNav.addEventListener('click', (e) => {
             const btn = e.target.closest('.nav-item');
             if (!btn) return;
@@ -397,8 +431,7 @@
         // 初始化
         // ============================================================
         buildNav();
-        renderPanel(COMPARE_DATA[currentCat]);
-        animateBars();
+        renderPanel(KNOWLEDGE_DATA[currentCat]);
     </script>
 </body>
 </html>

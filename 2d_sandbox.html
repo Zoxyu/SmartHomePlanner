@@ -2627,10 +2627,14 @@
             mask.dataset.bound = '1';
             const close = () => { mask.hidden = true; };
             document.getElementById('aiResultCloseBtn').addEventListener('click', close);
-            // 重新诊断：关闭报告弹窗，重新走校验闭环后再进入模式选择
+            // 重做按钮：按当前展示态分流 —— 诊断报告走重新诊断（校验闭环），估价报告走重新估价（省市选择）
             document.getElementById('aiResultReDiagBtn').addEventListener('click', () => {
                 document.getElementById('aiResultMask').hidden = true;
-                checkWallAndOpenMode(); // 重新诊断同样需要走校验闭环
+                if (mask.dataset.mode === 'bom') {
+                    document.getElementById('bomModalMask').classList.add('show'); // 重新估价：重选省市再取行情
+                } else {
+                    checkWallAndOpenMode(); // 重新诊断：重新走校验闭环后进入模式选择
+                }
             });
             mask.addEventListener('click', (e) => { if (e.target === mask) close(); });
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) close(); });
@@ -2640,9 +2644,11 @@
         // 打开 AI 诊断报告（恢复诊断展示态：标题/重诊按钮复位，隐藏导出报价单按钮）
         function openAIResultMask() {
             const mask = ensureAiResultBindings();
-            mask.dataset.mode = 'ai'; // 标记当前展示态：供导出页眉区分
+            mask.dataset.mode = 'ai'; // 标记当前展示态：供导出页眉与重做按钮分流
             mask.querySelector('.modal__title').textContent = '🧠 AI 网络拓扑诊断报告';
-            document.getElementById('aiResultReDiagBtn').style.display = '';
+            const reDiagBtn = document.getElementById('aiResultReDiagBtn');
+            reDiagBtn.style.display = '';
+            reDiagBtn.textContent = '🔄 重新诊断'; // 从估价态切回时防止文案残留
             document.getElementById('aiResultPrintBtn').style.display = 'none';
             mask.hidden = false; // 正常通过这里唤起，保证事件已绑定
         }
@@ -2796,9 +2802,11 @@
             if (window.cachedEstimateReport) {
                 document.getElementById('aiResultBody').innerHTML = window.cachedEstimateReport.html;
                 const mask = ensureAiResultBindings();
-                mask.dataset.mode = 'bom'; // 标记当前展示态：供导出页眉区分
+                mask.dataset.mode = 'bom'; // 标记当前展示态：供导出页眉与重做按钮分流
                 mask.querySelector('.modal__title').textContent = `💰 ${window.cachedEstimateReport.city} · 物料清单与估价`;
-                document.getElementById('aiResultReDiagBtn').style.display = 'none';
+                const reDiagBtn = document.getElementById('aiResultReDiagBtn');
+                reDiagBtn.style.display = ''; // 重新估价入口：点击后重开省市选择弹窗
+                reDiagBtn.textContent = '🔄 重新估价';
                 document.getElementById('aiResultPrintBtn').style.display = ''; // 开启打印按钮
                 mask.hidden = false;
                 return;

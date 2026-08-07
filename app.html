@@ -282,6 +282,62 @@
             transform: translateY(-50%) scale(0.96);
             transition: transform 0.1s ease;
         }
+
+        /* --- Gorgeous CSS Toggle（#themeToggle ID 作用域，避免误伤 #dataManageBtn） --- */
+        #themeToggle {
+            position: fixed; top: 24px; left: calc(100vw - 88px); z-index: 200; /* vw 锚点与欢迎页 .theme-fab 屏幕坐标对齐，规避滚动条宽度造成的跨页位移 */
+            display: flex !important; align-items: center;
+            width: 64px !important; height: 32px !important;
+            padding: 0 !important; margin: 0 !important;
+            border-radius: 32px !important; border: 2px solid rgba(255,255,255,0.3) !important;
+            background: #60a5fa !important; overflow: hidden; cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.4), inset 0 2px 6px rgba(0,0,0,0.15) !important;
+            flex-shrink: 0;
+        }
+        html[data-theme="dark"] #themeToggle {
+            background: #1e293b !important; border-color: rgba(0,0,0,0.5) !important;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.4), inset 0 2px 6px rgba(0,0,0,0.4) !important;
+        }
+        /* 太阳/月亮 */
+        #themeToggle::after {
+            content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px;
+            border-radius: 50%; background: #fbbf24;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 0 6px rgba(255,255,255,0.15), 0 0 0 12px rgba(255,255,255,0.08);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 3;
+        }
+        html[data-theme="dark"] #themeToggle::after {
+            transform: translateX(32px); background: #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset -3px -2px 0 1px #94a3b8, inset 4px 6px 0 -1px rgba(255,255,255,0.5);
+        }
+        /* 云朵（右上角蓬松云团：圆形簇堆叠，拟真度更高） */
+        #themeToggle::before {
+            content: ''; position: absolute; top: 6px; right: 12px;
+            width: 9px; height: 9px; border-radius: 50%; background: #fff;
+            box-shadow:
+                6px 2px 0 2px #fff,   /* 右侧大云瓣 */
+                -5px 3px 0 1px #fff,  /* 左侧云瓣 */
+                2px -2px 0 0 #fff;    /* 顶部云尖 */
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 2;
+        }
+        html[data-theme="dark"] #themeToggle::before { transform: translateY(-26px); } /* 夜晚云朵向上飘出离场 */
+        /* 星星 */
+        #themeToggle .gt-stars {
+            position: absolute; top: 8px; left: 12px; width: 2px; height: 2px; background: #fff; border-radius: 50%;
+            box-shadow: 10px 10px 0 #fff, 20px -2px 0 #fff, 28px 8px 0 #fff;
+            opacity: 0; transform: translateY(-10px); transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 1;
+        }
+        html[data-theme="dark"] #themeToggle .gt-stars { opacity: 1; transform: translateY(0); }
+
+        /* 移动端覆盖：微缩胶囊维持视口右上悬浮，顶栏尾部预留空位避免重叠 */
+        @media (max-width: 860px) {
+            #themeToggle { top: 13px !important; left: calc(100vw - 68px) !important; margin: 0 !important; width: 56px !important; height: 28px !important; }
+            .sidebar { padding-right: 96px; } /* 顶栏右侧为悬浮胶囊预留净空 */
+            #themeToggle::after { width: 20px; height: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 0 5px rgba(255,255,255,0.15), 0 0 0 10px rgba(255,255,255,0.08); }
+            html[data-theme="dark"] #themeToggle::after { transform: translateX(24px); box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset -2px -1px 0 1px #94a3b8; }
+            #themeToggle::before { top: 5px; right: 10px; width: 8px; height: 8px; box-shadow: 5px 2px 0 1px #fff, -4px 2px 0 1px #fff, 2px -2px 0 0 #fff; }
+            #themeToggle .gt-stars { top: 6px; left: 10px; box-shadow: 8px 8px 0 #fff, 16px -2px 0 #fff, 22px 6px 0 #fff; }
+        }
     </style>
 </head>
 <body>
@@ -292,6 +348,13 @@
         <div class="aura__blob aura__blob--3"></div>
         <div class="aura__blob aura__blob--4"></div>
     </div>
+
+    <!-- 昼夜主题切换胶囊：独立于侧边栏直挂 body，逃离 backdrop-filter 包含块约束，确保 fixed 相对视口定位 -->
+    <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色主题">
+        <span class="gt-stars"></span>
+        <span class="theme-toggle__icon" id="themeIcon" style="display:none !important;">🌙</span>
+        <span class="theme-toggle__label" id="themeLabel" style="display:none !important;">深色主题</span>
+    </button>
 
     <!-- ===== Left: dark sidebar ===== -->
     <aside class="sidebar">
@@ -344,10 +407,6 @@
         </nav>
 
         <div class="sidebar__bottom">
-            <button class="theme-toggle" id="themeToggle" type="button" title="切换浅色/深色主题">
-                <span class="theme-toggle__icon" id="themeIcon">🌙</span>
-                <span class="theme-toggle__label" id="themeLabel">深色主题</span>
-            </button>
             <button class="theme-toggle" id="dataManageBtn" type="button" title="本地存储管理">
                 <span class="theme-toggle__icon">🗄️</span>
                 <span class="theme-toggle__label">数据清理</span>

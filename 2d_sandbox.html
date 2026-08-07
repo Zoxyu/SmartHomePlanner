@@ -2384,51 +2384,95 @@
             exportBtn.classList.toggle('export-btn--ready', state === 'ready');
             exportBtn.disabled = state === 'busy';
         }
-        // 画板任何变动（拖拽/增删/旋转/标定）均立即作废 AI 报告与估价缓存
+        // 画板任何变动（拖拽/增删/旋转/标定）均立即作废 AI 报告与估价缓存（含持久化副本）
         function onBoardChanged() {
             aiCacheSeq++;
             if (window.cachedAiReport) {
                 window.cachedAiReport = null;
+                try { localStorage.removeItem('shp_cache_ai_report'); } catch(e){}
                 if (!exportBtn.disabled) setAiBtnState('idle');
             }
-            // 估价缓存同步作废，按钮复位
             if (window.cachedEstimateReport) {
                 window.cachedEstimateReport = null;
+                try { localStorage.removeItem('shp_cache_bom_report'); } catch(e){}
                 if (!document.getElementById('bomBtn').disabled) setBomBtnState('idle');
             }
         }
 
-        // 统一墙体校验闸门：作为 AI 诊断主按钮的第一道关卡（重新诊断链路同样复用）
-        function checkWallAndOpenMode() {
-            const hasRouter = placedItems.some(p => p.type === 'router' || p.type === 'ap_panel');
-            if (!hasRouter) { showToast('推演失败：请至少放置一个【桌面路由器】或【面板AP】'); return; }
+        // ---------- Promise 异步确认框：串行弹窗链的基础设施 ----------
+        // 注：不克隆按钮节点，避免丢失初始化时绑定在 moduleConfirmBtn 上的 customConfirm 常驻监听器；
+        // 具名监听器在 cleanup 中精确移除，与 customConfirm 机制安全共存（异步期间 currentConfirmAction 为 null）
+        function asyncConfirm(desc, confirmText, showCheckbox = false) {
+            return new Promise((resolve, reject) => {
+                const mask = document.getElementById('moduleModalMask');
+                const descEl = document.getElementById('moduleModalDesc');
+                const confirmBtn = document.getElementById('moduleConfirmBtn');
+                const cancelBtn = mask.querySelector('.gm-btn--cancel');
 
+                // 每次唤起前先清理上一轮残留的复选框，防止墙体校验的“不再提示”泄漏到后续其他确认弹窗
+                const staleChk = document.getElementById('skipWallCheck');
+                if (staleChk) { const lbl = staleChk.closest('label'); (lbl || staleChk).remove(); }
+
+                const checkboxHtml = showCheckbox ? '<br><label style="cursor: pointer; margin-top:14px; display:inline-flex; align-items:center; gap:6px;"><input type="checkbox" id="skipWallCheck" style="width:16px; height:16px; accent-color:var(--accent);"> 我已知晓，不再提示</label>' : '';
+                descEl.innerHTML = desc + checkboxHtml;
+                confirmBtn.textContent = confirmText || '确定';
+
+                const cleanup = () => {
+                    mask.classList.remove('show');
+                    confirmBtn.removeEventListener('click', onConfirm);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    // 关闭后彻底移除复选框，避免污染 customConfirm 等后续弹窗内容
+                    const chk = document.getElementById('skipWallCheck');
+                    if (chk) { const lbl = chk.closest('label'); (lbl || chk).remove(); }
+                };
+
+                const onConfirm = () => {
+                    const chk = document.getElementById('skipWallCheck');
+                    const isChecked = chk ? chk.checked : false; // 先读状态再清理，避免延迟窗口内 DOM 被改写
+                    cleanup();
+                    setTimeout(() => resolve(isChecked), 350); // 等待 CSS 关闭动画彻底完成
+                };
+
+                const onCancel = () => {
+                    cleanup();
+                    reject(new Error('cancel'));
+                };
+
+                confirmBtn.addEventListener('click', onConfirm);
+                cancelBtn.addEventListener('click', onCancel);
+                mask.classList.add('show');
+            });
+        }
+
+        // 统一前置校验：Promise 串行队列，两道闸门独立排队，取消即中断
+        async function checkWallAndOpenMode() {
+            const hasRouter = placedItems.some(p => p.type === 'router' || p.type === 'ap_panel');
+            if (!hasRouter) { showToast('推演失败：画板中必须至少放置一个【路由器】或【面板AP】'); return; }
+
+            // 第一步：独立判断区域框选（绝不提供“不再提示”功能）
             const hasZone = placedItems.some(p => p.type === 'zone');
+            if (!hasZone) {
+                try {
+                    await asyncConfirm('检测到尚未框选【分析区域】（空心虚线框）。<br>缺乏面积数据，AI 将默认对全局包围盒进行盲测评估。是否继续？', '继续盲测', false);
+                } catch (e) { return; } // 用户点击取消，直接中断
+            }
+
+            // 第二步：独立判断墙体隔断（允许“不再提示”）
             const hasWall = placedItems.some(p => p.cat === 'hard');
             let skipWallWarn = false;
             try { skipWallWarn = localStorage.getItem('shp_skip_wall_warn') === '1'; } catch (e) {}
 
-            const step2_checkWall = () => {
-                if (!hasWall && !skipWallWarn) {
-                    setTimeout(() => {
-                        customConfirm('检测到尚未绘制【墙体】。缺乏阻挡数据，穿墙衰减将存在误差。继续推演？<br><label style="cursor: pointer; margin-top:10px; display:inline-block;"><input type="checkbox" id="skipWallCheck"> 不再提示</label>', () => {
-                            const chk = document.getElementById('skipWallCheck');
-                            if (chk && chk.checked) { try { localStorage.setItem('shp_skip_wall_warn', '1'); } catch (e) {} }
-                            openAIModeMask();
-                        }, '确定');
-                    }, 50); // 预留极小延迟确保前置 DOM 清理完毕
-                } else {
-                    openAIModeMask();
-                }
-            };
-
-            if (!hasZone) {
-                customConfirm('尚未框选【分析区域】。缺乏跨度数据，AI 将进行盲测。继续？', () => {
-                    setTimeout(step2_checkWall, 350); // 必须等待第一个弹窗退场 CSS 动画彻底结束
-                }, '继续盲测');
-            } else {
-                step2_checkWall();
+            if (!hasWall && !skipWallWarn) {
+                try {
+                    const isChecked = await asyncConfirm('检测到尚未绘制【硬装墙体/隔断】。<br>缺乏墙体阻挡数据，AI 预测的穿墙衰减将存在较大误差。是否继续？', '确定继续', true);
+                    if (isChecked) {
+                        try { localStorage.setItem('shp_skip_wall_warn', '1'); } catch (e) {}
+                    }
+                } catch (e) { return; } // 用户点击取消，直接中断
             }
+
+            // 两道闸门全部通过，唤起模式选择
+            openAIModeMask();
         }
 
         exportBtn.addEventListener('click', () => {
@@ -2466,7 +2510,7 @@
         // 核心流程：异步无感推演 —— 后台请求 -> 结果入缓存 -> 按钮转就绪态
         async function runAiAnalysis(mode) {
             setAiBtnState('busy');
-            showToast('AI 正在后台进行空间推演，您可以继续操作画板...');
+            showToast('🧠 AI 正在后台分析网络拓扑，稍后请查看...');
         
             // 记录发起时刻的画板状态序号，返回时校验是否已变动
             const reqSeq = aiCacheSeq;
@@ -2565,8 +2609,9 @@
                     return;
                 }
 
-                // 结果仅入缓存，不直接弹出遮罩层
+                // 结果仅入缓存，不直接弹出遮罩层，同步持久化跨页面保留
                 window.cachedAiReport = reportHtml;
+                try { localStorage.setItem('shp_cache_ai_report', reportHtml); } catch(e){}
                 setAiBtnState('ready');
                 showToast('✅ AI 诊断已完成！请点击上方按钮查看报告');
             } catch (err) {
@@ -2820,7 +2865,7 @@
 
             // 异步无感估价：后台执行，用户可继续操作画板
             setBomBtnState('busy');
-            showToast('正在后台向大模型查询当地行情，您可以继续操作...');
+            showToast('💸 正在后台运算当地行情估价，可随时查看...');
 
             try {
                 const resp = await fetch('http://127.0.0.1:8000/api/estimate', {
@@ -2854,6 +2899,7 @@
 
                 // 结果仅入缓存，不直接弹窗，按钮转就绪态
                 window.cachedEstimateReport = { html: data.html_report, city: city };
+                try { localStorage.setItem('shp_cache_bom_report', JSON.stringify({ html: data.html_report, city: city })); } catch(e){}
                 setBomBtnState('ready');
                 showToast(`✅ ${city} 的估价报告已生成，点击上方按钮查看并导出！`);
             } catch(e) {
@@ -2977,6 +3023,16 @@
             nextItemId = maxId + 1;
 
             refreshBoard();
+
+            // 恢复 AI 报告与估价单缓存（跨页面/刷新后状态不丢失）
+            try {
+                const savedAi = localStorage.getItem('shp_cache_ai_report');
+                if (savedAi) { window.cachedAiReport = savedAi; setAiBtnState('ready'); }
+
+                const savedBom = localStorage.getItem('shp_cache_bom_report');
+                if (savedBom) { window.cachedEstimateReport = JSON.parse(savedBom); setBomBtnState('ready'); }
+            } catch(e){}
+
             restoring = false;
         }
 

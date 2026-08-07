@@ -11,6 +11,7 @@ AI 智装管家 - 轻量级后端服务
 import json
 import logging
 import os
+from datetime import datetime
 from typing import Any, Dict, List
 
 from dotenv import load_dotenv
@@ -183,17 +184,18 @@ LAYOUT_OUTPUT_SCHEMA = (
 
 def build_spatial_guard(spatial_relations: str) -> str:
     """
-    空间幻觉遏制条款：将前端预计算的设备间物理距离注入 System Prompt。
-    大模型无法基于像素坐标准确心算距离，改由前端算好后强制其引用，
-    杜绝“紧挨着”“靠近”等与实测数据相悖的臆测描述。
+    空间幻觉遏制条款：引入“区域跨度”概念，严禁模型输出绝对面积，
+    并要求报告精简聚焦于设备相对距离与信号衰减。
     """
     if not spatial_relations:
         return ""
     return (
-        "【严控空间幻觉】系统已为你精确测算了各设备间的物理距离："
+        "【严控空间幻觉】前端传给你的面积仅为分析区域的『最大物理跨度包围盒』，绝对不是真实的得房面积，因为真实户型大多是不规则多边形！"
+        "你必须严格遵循以下三条原则："
+        "1. 报告必须精简！不要输出没用的废话，更不要去分析房屋的长宽比形状。"
+        "2. 直接针对该『区域跨度』内的设备相对距离、WiFi 信号穿墙衰减情况做一个精准概述即可。"
+        "3. 绝对禁止在报告中直接宣称“您的房子是 XX 平方米”。"
         + spatial_relations
-        + "。你必须严格依据此测算数据进行评估。"
-        "严禁在报告中使用‘紧挨着’、‘靠近’等与该测算数据相悖的臆测词汇！"
     )
 
 
@@ -346,6 +348,69 @@ async def analyze_layout(request: LayoutRequest):
         suggestions = []
 
     return {"summary": summary, "suggestions": suggestions}
+
+
+# ---------------------------------------------------------------------------
+# 区域估价：接收沙盒流转的 BOM 清单，调用大模型生成当地行情概算单
+# ---------------------------------------------------------------------------
+class EstimateRequest(BaseModel):
+    """区域估价请求体"""
+
+    location: Dict[str, str] = Field(..., description="省市信息")
+    items: List[Dict[str, Any]] = Field(..., description="图元清单")
+
+
+ESTIMATE_PROMPT = (
+    "你是一个专业的家装预算造价师。"
+    "用户会提供所在的省市，以及2D图纸上提取的硬装/软装/家电清单（包含物理长宽，单位mm）。"
+    "请结合当地近一年的真实物价、人工费行情，给出一份概算单。"
+    "要求："
+    "1. 必须以 HTML 格式输出排版（使用 <table>, <th>, <td>, <p>, <ul> 标签），直接可以在前端 div 中渲染。"
+    "2. 严禁使用任何 Markdown 标记（不要有 ```html 这种外壳）。"
+    "3. 强制输出一个合法的 JSON 对象，格式为：{\"html_report\": \"<p>你的HTML内容</p>\", \"total_cost\": 25000}，其中 total_cost 为你估算的整体开销总价（必须为纯数字）。"
+)
+
+
+@app.post("/api/estimate")
+async def estimate_bom(request: EstimateRequest):
+    """
+    接收沙盒流转的数据，调用大模型生成当地行情估价报告。
+    动态注入当前系统时间，使模型结合最新宏观经济与物价走势给出时效性预估。
+    """
+    user_content = json.dumps(request.model_dump(), ensure_ascii=False)
+    current_date = datetime.now().strftime("%Y年%m月%d日")
+
+    dynamic_prompt = ESTIMATE_PROMPT + (
+        f"\n\n当前系统时间是：{current_date}。请务必结合该时间节点近期的宏观经济、房地产市场走向及当期物价，"
+        "预估最新人工与辅材成本。请在概算单中，通过添加备注说明或者单价区间的方式，"
+        "展示【全国一线大牌】与【二线/本地高性价比品牌】的价格分层差异。"
+        "允许价格基于不同地域和真实行情产生合理浮动，但须保持相对的逻辑连贯性。"
+        "在报告最末尾，必须以显著格式添加免责声明："
+        "“注：以上价格基于当前时效（及市场趋势）预估，受地域、品牌定级及实际施工条件影响，仅供采购决策参考。”"
+    )
+
+    try:
+        completion = await llm_client.chat.completions.create(
+            model=LLM_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": dynamic_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=1500,
+            temperature=0.2,
+        )
+    except APIError as exc:
+        logger.error("大模型估价调用失败：%s", exc)
+        raise HTTPException(status_code=502, detail="估价服务不可用")
+
+    raw_content = completion.choices[0].message.content or ""
+    try:
+        result = json.loads(raw_content)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=502, detail="大模型返回格式错误")
+
+    return result
 
 
 # ---------------------------------------------------------------------------

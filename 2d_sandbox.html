@@ -190,7 +190,7 @@
             align-self: start;
         }
         .board-status {
-            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
             margin-bottom: 12px; font-size: 0.78rem; color: var(--text-dim);
         }
         .status-chip {
@@ -206,11 +206,11 @@
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         .export-btn {
-            margin-left: auto;
+            margin-left: 0; /* 移除 auto，靠 flex-wrap 自动排版 */
             border: 1px solid rgba(56, 189, 248, 0.45);
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(14, 165, 233, 0.12) 100%);
             color: var(--accent); font-size: 0.78rem; font-weight: 800;
-            padding: 9px 18px; border-radius: 10px; cursor: pointer;
+            padding: 8px 14px; border-radius: 10px; cursor: pointer;
             font-family: inherit; transition: var(--transition);
         }
         .export-btn:hover { background: rgba(56, 189, 248, 0.3); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); }
@@ -301,11 +301,12 @@
 
         /* Calibration overlay */
         .calib-banner {
-            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 12px; left: 16px; /* 左上角停靠，避免与右上角工具栏碰撞 */
+            transform: none; /* 移除 translateX */
             z-index: 70; background: var(--inner-bg); color: var(--accent);
             font-size: 0.78rem; font-weight: 700; padding: 8px 18px;
             border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.4);
-            pointer-events: none; white-space: nowrap; max-width: 92%;
+            pointer-events: none; white-space: nowrap; max-width: calc(100% - 240px); /* 预留右侧工具栏空间 */
             overflow: hidden; text-overflow: ellipsis;
         }
         .calib-dot {
@@ -632,10 +633,16 @@
             body.print-mode-report .container,
             body.print-mode-report .board-footer,
             body.print-mode-report #editMask { display: none !important; }
-            /* 仅保留报告 Modal，转为常规文档流 */
-            body.print-mode-report .report-mask {
+            /* 隐藏图纸模式的主页眉，避免与报告弹窗页眉重叠 */
+            body.print-mode-report > .print-only-header { display: none !important; }
+            /* 仅保留当前处于激活态的报告 Modal，转为常规文档流 */
+            body.print-mode-report .report-mask:not([hidden]) {
                 position: static !important; display: block !important;
                 background: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+            }
+            /* 确保未激活的弹窗在打印时绝对隐藏 */
+            body.print-mode-report .report-mask[hidden] {
+                display: none !important;
             }
             body.print-mode-report .modal--report {
                 width: 100% !important; max-width: 100% !important; max-height: none !important;
@@ -777,6 +784,14 @@
             margin-bottom: 24px; text-align: center; font-weight: 700;
         }
         .gm-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12); }
+        /* 高级下拉框：去原生箭头，自绘 SVG 指示符 */
+        select.gm-input {
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; background-size: 18px;
+            padding-right: 40px; cursor: pointer;
+        }
+        select.gm-input:hover, select.gm-input:focus { border-color: var(--accent); }
         .gm-btn--primary {
             background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: #fff; border: none;
@@ -815,6 +830,7 @@
                     <div class="gen-row">
                         <button class="gen-btn" id="genRectBtn" type="button">▭ 添加自定义矩形</button>
                         <button class="gen-btn" id="genCircleBtn" type="button">◯ 添加自定义圆形</button>
+                        <button class="gen-btn" id="genZoneBtn" type="button" style="border-color: #f59e0b; color: #f59e0b;">🔲 添加分析区域 (算面积)</button>
                     </div>
                 </div>
 
@@ -902,12 +918,13 @@
                                 <div class="lib-item__size">600 × 600 mm</div>
                             </span>
                         </div>
-                        <div class="lib-item" draggable="true" data-type="router" data-name="路由器 AP" data-cat="appliance" data-real-width="86" data-real-height="86" data-signal-radius="10000" data-color="#10b981" data-shape="circle">
-                            <span class="lib-item__swatch" style="background:#10b98133;border:1px solid #10b98180">📶</span>
-                            <span class="lib-item__meta">
-                                <span class="lib-item__name">路由器 AP</span>
-                                <div class="lib-item__size">信号半径 10000 mm</div>
-                            </span>
+                        <div class="lib-item" draggable="true" data-type="router" data-name="桌面路由器" data-cat="appliance" data-real-width="200" data-real-height="150" data-signal-radius="8000" data-color="#10b981" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#10b98133;border:1px solid #10b98180">📡</span>
+                            <span class="lib-item__meta"><span class="lib-item__name">桌面路由器</span><div class="lib-item__size">信号半径 8000 mm</div></span>
+                        </div>
+                        <div class="lib-item" draggable="true" data-type="ap_panel" data-name="86型面板AP" data-cat="appliance" data-real-width="86" data-real-height="86" data-signal-radius="5000" data-color="#0ea5e9" data-shape="rect">
+                            <span class="lib-item__swatch" style="background:#0ea5e933;border:1px solid #0ea5e980">🎛️</span>
+                            <span class="lib-item__meta"><span class="lib-item__name">86型面板AP</span><div class="lib-item__size">信号半径 5000 mm</div></span>
                         </div>
                     </div></div>
                 </div>
@@ -930,9 +947,10 @@
                         <span class="status-chip__dot"></span>
                         <span id="chipCollisionText">无干涉</span>
                     </span>
-                    <button class="export-btn" id="exportBtn" type="button">🧠 AI 网络拓扑诊断</button>
                     <button class="export-btn" id="printCanvasBtn" type="button">🖨️ 导出图纸</button>
-                    <button class="export-btn" id="reportBtn" type="button">📝 生成尺寸方案报告</button>
+                    <button class="export-btn" id="reportBtn" type="button">📝 尺寸方案</button>
+                    <button class="export-btn" id="bomBtn" type="button" style="background: rgba(168, 85, 247, 0.1); color: #c084fc; border-color: #c084fc;">💰 AI 物料估价</button>
+                    <button class="export-btn" id="exportBtn" type="button">🧠 AI 网络诊断</button>
                     <button class="export-btn" id="exportAllBtn" type="button">🖨️ 一键导出全案</button>
                     <button class="export-btn export-btn--danger" id="clearBoardBtn" type="button" title="清除本地缓存并重置画板">🗑️ 清空画板</button>
                 </div>
@@ -1004,11 +1022,6 @@
     <!-- ===== Size report modal ===== -->
     <div class="modal-mask report-mask" id="reportMask" hidden>
         <div class="modal modal--report">
-            <!-- 打印专属标准页眉：仅 print-mode-report 下显示 -->
-            <div class="print-only-header">
-                <span class="print-only-header__title">AI 智装管家 · 尺寸方案报告</span>
-                <span class="print-only-header__date"><span id="reportPrintDate">—</span></span>
-            </div>
             <div class="report-head">
                 <h3 class="modal__title">📝 尺寸方案报告</h3>
                 <div class="report-meta">
@@ -1030,6 +1043,34 @@
             <div class="gm-actions">
                 <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('moduleModalMask').classList.remove('show')" type="button">取消</button>
                 <button class="gm-btn gm-btn--danger" id="moduleConfirmBtn" type="button">确定清空</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 物料清单与估价：省市级联选择弹窗 ===== -->
+    <div class="global-modal-mask" id="bomModalMask">
+        <div class="global-modal">
+            <div class="gm-title">生成物料与估价清单</div>
+            <div class="gm-desc">人工费及辅材价格受地域影响极大。请选择项目所在省市，以获取当地近一年行情预估。</div>
+            <select id="bomProvince" class="gm-input" style="margin-bottom: 12px; appearance: auto;">
+                <option value="">请选择省/直辖市</option>
+                <option value="北京">北京市</option><option value="天津">天津市</option><option value="上海">上海市</option><option value="重庆">重庆市</option>
+                <option value="河北">河北省</option><option value="山西">山西省</option><option value="辽宁">辽宁省</option><option value="吉林">吉林省</option>
+                <option value="黑龙江">黑龙江省</option><option value="江苏">江苏省</option><option value="浙江">浙江省</option><option value="安徽">安徽省</option>
+                <option value="福建">福建省</option><option value="江西">江西省</option><option value="山东">山东省</option><option value="河南">河南省</option>
+                <option value="湖北">湖北省</option><option value="湖南">湖南省</option><option value="广东">广东省</option><option value="海南">海南省</option>
+                <option value="四川">四川省</option><option value="贵州">贵州省</option><option value="云南">云南省</option><option value="陕西">陕西省</option>
+                <option value="甘肃">甘肃省</option><option value="青海">青海省</option><option value="台湾">台湾省</option>
+                <option value="内蒙古">内蒙古自治区</option><option value="广西">广西壮族自治区</option><option value="西藏">西藏自治区</option>
+                <option value="宁夏">宁夏回族自治区</option><option value="新疆">新疆维吾尔自治区</option>
+                <option value="香港">香港特别行政区</option><option value="澳门">澳门特别行政区</option>
+            </select>
+            <select id="bomCity" class="gm-input" style="appearance: auto;">
+                <option value="">请先选择省份</option>
+            </select>
+            <div class="gm-actions">
+                <button class="gm-btn gm-btn--cancel" onclick="document.getElementById('bomModalMask').classList.remove('show')" type="button">取消</button>
+                <button class="gm-btn gm-btn--primary" id="bomConfirmBtn" style="background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);" type="button">流转并生成估价</button>
             </div>
         </div>
     </div>
@@ -1068,6 +1109,7 @@
             <div class="report-body" id="aiResultBody"></div>
             <div class="modal-actions report-actions">
                 <button class="m-btn m-btn--ghost" id="aiResultReDiagBtn" type="button">🔄 重新诊断</button>
+                <button class="m-btn m-btn--primary" id="aiResultPrintBtn" type="button" style="display:none;">🖨️ 导出报价单</button>
                 <button class="m-btn m-btn--ghost" id="aiResultCloseBtn" type="button">确认</button>
             </div>
         </div>
@@ -1076,24 +1118,9 @@
     <!-- ===== 一键导出全案：打印专用三页文档（屏幕隐藏，仅 print-mode-all 下渲染）===== -->
     <div class="print-all-doc" id="printAllDoc">
         <!-- 第一页：合同级页眉 + 实际画板（由 body.print-mode-all 控制原有 board-wrap 呈现） -->
-        <!-- 第二页：尺寸方案报告 -->
-        <div class="print-all-page">
-            <div class="print-only-header">
-                <span class="print-only-header__title">AI 智装管家 · 尺寸方案报告</span>
-                <span class="print-only-header__date"><span class="print-all-date">—</span></span>
-            </div>
-            <div class="print-all-sub">② 尺寸方案报告</div>
-            <div class="report-body" id="printAllReportBody"></div>
-        </div>
-        <!-- 第三页：AI 诊断报告 -->
-        <div class="print-all-page">
-            <div class="print-only-header">
-                <span class="print-only-header__title">AI 智装管家 · AI 网络拓扑诊断报告</span>
-                <span class="print-only-header__date"><span class="print-all-date">—</span></span>
-            </div>
-            <div class="print-all-sub">③ AI 网络拓扑诊断报告</div>
-            <div class="report-body" id="printAllAiBody"></div>
-        </div>
+        <div class="print-all-page"><div class="print-all-sub">二、尺寸方案报告</div><div class="report-body" id="printAllReportBody"></div></div>
+        <div class="print-all-page"><div class="print-all-sub">三、物料概算清单</div><div class="report-body" id="printAllBomBody"></div></div>
+        <div class="print-all-page"><div class="print-all-sub">四、AI 网络拓扑诊断</div><div class="report-body" id="printAllAiBody"></div></div>
     </div>
 
     <script>
@@ -1145,9 +1172,11 @@
         let resizeCtx = null;   // handle-resize context
         let selectedItem = null;
         // 物理图层隔离：大类分层基址 + 类内递增计数器，软装永不遮挡路由器/墙体
-        const Z_BASE = { soft: 10, custom: 20, hard: 50, appliance: 100 };
-        const zCounters = { soft: 0, custom: 0, hard: 0, appliance: 0 };
+        const Z_BASE = { zone: 5, soft: 10, custom: 20, hard: 50, appliance: 100 };
+        const zCounters = { zone: 0, soft: 0, custom: 0, hard: 0, appliance: 0 };
         function bumpZ(item) {
+            // 分析区域永久垫底，选中也不提升层级，绝不遮挡家具
+            if (item.cat === 'zone') { item.el.style.zIndex = 5; return; }
             zCounters[item.cat] = (zCounters[item.cat] || 0) + 1;
             item.el.style.zIndex = (Z_BASE[item.cat] || 10) + zCounters[item.cat];
         }
@@ -1255,6 +1284,12 @@
         function renderH(item) { return item.signal > 0 ? Math.max(MIN_RENDER, mmToPx(item.realH)) : Math.max(6, mmToPx(item.realH)); }
 
         function applyItemColor(item) {
+            // 分析区域图元：始终保持半透明虚线样式，不受颜色编辑影响
+            if (item.type === 'zone') {
+                item.el.style.background = 'rgba(245, 158, 11, 0.1)';
+                item.el.style.border = '2px dashed #f59e0b';
+                return;
+            }
             item.el.style.background = hexToRgba(item.color, 0.85);
             item.el.style.borderColor = item.color;
         }
@@ -1311,6 +1346,20 @@
         document.getElementById('genRectBtn').addEventListener('click', () => spawnCustom('rect'));
         document.getElementById('genCircleBtn').addEventListener('click', () => spawnCustom('circle'));
 
+        // 分析区域生成器：默认 3000×3000mm 的半透明虚线框选图元，用于限定 AI 重点分析范围并计算面积
+        document.getElementById('genZoneBtn').addEventListener('click', () => {
+            if (!guardInteraction()) return;
+            const opts = {
+                name: '分析区域 (拉伸计算面积)', cat: 'zone', realW: 3000, realH: 3000, signal: 0,
+                color: '#f59e0b', shape: 'rect', custom: true, type: 'zone'
+            };
+            const rect = canvas.getBoundingClientRect();
+            const centerX = (rect.width / 2 - cam.x) / cam.zoom;
+            const centerY = (rect.height / 2 - cam.y) / cam.zoom;
+            const item = createItem(opts, centerX - renderW(opts) / 2, centerY - renderH(opts) / 2);
+            selectItem(item);
+        });
+
         function spawnCustom(shape) {
             if (!guardInteraction()) return;
             customCount++;
@@ -1361,7 +1410,7 @@
                 <span class="placed__label">${escapeHtml(item.name)}</span>
                 <span class="placed__size"></span>
             `;
-            applyItemColor(item);
+            applyItemColor(item); // zone 样式守卫已内置于 applyItemColor，创建与状态重建双链路统一生效
             cameraLayer.appendChild(el); // 图元挂载至相机层，随缩放平移
             updateSizeLabel(item);
 
@@ -1733,6 +1782,7 @@
                 fp.locked = true;
                 setLockUI(true);
                 recalibBtn.hidden = false;
+                calibBanner.hidden = true; // 锁定后强制隐藏提示横幅，杜绝残留
                 if (!calibrated) { startCalibration(); } // 仅首次未标定时才自动呼出标定弹窗
             } else {
                 // Unlock → back to adjust mode, downstream interactions blocked
@@ -2302,8 +2352,29 @@
         // ---------- AI 报告缓存与按钮三态管理 ----------
         window.cachedAiReport = null; // 全局缓存：已渲染的报告 HTML
         let aiCacheSeq = 0;           // 画板变动计数器：用于作废缓存与在途请求结果
+        window.cachedEstimateReport = null; // 估价报告缓存：{ html, city }
+        function setBomBtnState(state) {
+            const btn = document.getElementById('bomBtn');
+            if (state === 'idle') {
+                btn.innerHTML = '💰 AI 物料估价';
+                btn.disabled = false;
+                btn.classList.remove('export-btn--busy', 'export-btn--ready');
+            }
+            if (state === 'busy') {
+                btn.innerHTML = '⏳ 行情估价中...';
+                btn.disabled = true;
+                btn.classList.add('export-btn--busy');
+                btn.classList.remove('export-btn--ready');
+            }
+            if (state === 'ready') {
+                btn.innerHTML = '📄 查看物料估价';
+                btn.disabled = false;
+                btn.classList.remove('export-btn--busy');
+                btn.classList.add('export-btn--ready');
+            }
+        }
         const AI_BTN_TEXT = {
-            idle:  '🧠 AI 网络拓扑诊断',
+            idle:  '🧠 AI 网络诊断',
             busy:  '⏳ AI 推演中...',
             ready: '📄 查看 AI 诊断报告'
         };
@@ -2313,41 +2384,50 @@
             exportBtn.classList.toggle('export-btn--ready', state === 'ready');
             exportBtn.disabled = state === 'busy';
         }
-        // 画板任何变动（拖拽/增删/旋转/标定）均立即作废 AI 报告缓存
+        // 画板任何变动（拖拽/增删/旋转/标定）均立即作废 AI 报告与估价缓存
         function onBoardChanged() {
             aiCacheSeq++;
             if (window.cachedAiReport) {
                 window.cachedAiReport = null;
                 if (!exportBtn.disabled) setAiBtnState('idle');
             }
+            // 估价缓存同步作废，按钮复位
+            if (window.cachedEstimateReport) {
+                window.cachedEstimateReport = null;
+                if (!document.getElementById('bomBtn').disabled) setBomBtnState('idle');
+            }
         }
 
         // 统一墙体校验闸门：作为 AI 诊断主按钮的第一道关卡（重新诊断链路同样复用）
         function checkWallAndOpenMode() {
-            // 致命前置校验：缺失信号源核心时直接拦截，不进入后续任何流程
-            const hasRouter = placedItems.some(p => p.type === 'router');
-            if (!hasRouter) {
-                showToast('网络推演失败：画板中必须至少放置一个【路由器 AP】作为信号源核心');
-                return;
-            }
+            const hasRouter = placedItems.some(p => p.type === 'router' || p.type === 'ap_panel');
+            if (!hasRouter) { showToast('推演失败：请至少放置一个【桌面路由器】或【面板AP】'); return; }
 
+            const hasZone = placedItems.some(p => p.type === 'zone');
             const hasWall = placedItems.some(p => p.cat === 'hard');
             let skipWallWarn = false;
             try { skipWallWarn = localStorage.getItem('shp_skip_wall_warn') === '1'; } catch (e) {}
 
-            if (!hasWall && !skipWallWarn) {
-                // 无墙且未勾选免打扰：拦截警告
-                customConfirm('检测到您尚未在图纸上绘制【硬装墙体/隔断】。缺乏墙体阻挡数据，AI 预测的 Wi-Fi 信号穿墙衰减将存在较大误差。是否仍要继续分析？'
-                    + '<div style="margin-top: 16px;"><label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;"><input type="checkbox" id="skipWallCheck" style="width: 16px; height: 16px; accent-color: var(--accent);"> 我已知晓，不再提示</label></div>', () => {
-                    const chk = document.getElementById('skipWallCheck');
-                    if (chk && chk.checked) {
-                        try { localStorage.setItem('shp_skip_wall_warn', '1'); } catch (e) {}
-                    }
-                    openAIModeMask(); // 确认后才进入模式选择
-                }, '确定');
+            const step2_checkWall = () => {
+                if (!hasWall && !skipWallWarn) {
+                    setTimeout(() => {
+                        customConfirm('检测到尚未绘制【墙体】。缺乏阻挡数据，穿墙衰减将存在误差。继续推演？<br><label style="cursor: pointer; margin-top:10px; display:inline-block;"><input type="checkbox" id="skipWallCheck"> 不再提示</label>', () => {
+                            const chk = document.getElementById('skipWallCheck');
+                            if (chk && chk.checked) { try { localStorage.setItem('shp_skip_wall_warn', '1'); } catch (e) {} }
+                            openAIModeMask();
+                        }, '确定');
+                    }, 50); // 预留极小延迟确保前置 DOM 清理完毕
+                } else {
+                    openAIModeMask();
+                }
+            };
+
+            if (!hasZone) {
+                customConfirm('尚未框选【分析区域】。缺乏跨度数据，AI 将进行盲测。继续？', () => {
+                    setTimeout(step2_checkWall, 350); // 必须等待第一个弹窗退场 CSS 动画彻底结束
+                }, '继续盲测');
             } else {
-                // 有墙或已免打扰：直达模式选择
-                openAIModeMask();
+                step2_checkWall();
             }
         }
 
@@ -2404,7 +2484,7 @@
 
             // 预计算空间距离矩阵：大模型无法基于像素坐标准确心算物理距离，前端算好直接交付
             let spatialRelations = '';
-            const routerItem = placedItems.find(p => p.type === 'router');
+            const routerItem = placedItems.find(p => p.type === 'router' || p.type === 'ap_panel');
             if (routerItem) {
                 const rx = (routerItem.el.offsetLeft + routerItem.el.offsetWidth / 2) * window.PIXEL_RATIO;   // mm
                 const ry = (routerItem.el.offsetTop + routerItem.el.offsetHeight / 2) * window.PIXEL_RATIO;   // mm
@@ -2438,7 +2518,15 @@
                 const spanH = ((maxY - minY) * window.PIXEL_RATIO / 1000).toFixed(1);
                 boundaryInfo = `【全局边界】当前图元分布的整体物理跨度约为 ${spanW}米 × ${spanH}米。`;
             }
-            spatialRelations = boundaryInfo + spatialRelations;
+
+            // 限定分析区域：提取手动框选图元的物理面积，注入 AI 上下文
+            const zoneItem = placedItems.find(p => p.type === 'zone');
+            let zoneInfo = '';
+            if (zoneItem) {
+                const areaSqm = ((zoneItem.realW / 1000) * (zoneItem.realH / 1000)).toFixed(2);
+                zoneInfo = `【限定分析区域】用户已手动框选了重点分析区域，该区域物理面积为 ${areaSqm} 平方米。请结合此面积评估设备覆盖率。`;
+            }
+            spatialRelations = boundaryInfo + zoneInfo + spatialRelations;
         
             try {
                 const resp = await fetch(AI_ANALYZE_API, {
@@ -2487,22 +2575,31 @@
             }
         }
         
-        // 打开结果展示弹窗（复用尺寸报告弹窗的展示/关闭范式）
-        function openAIResultMask() {
+        // 弹窗事件懒绑定抽离：诊断报告与估价报告双链路共用，保证任何唤起路径下事件均已就绪
+        function ensureAiResultBindings() {
             const mask = document.getElementById('aiResultMask');
-            if (!mask.dataset.bound) {
-                mask.dataset.bound = '1';
-                const close = () => { mask.hidden = true; };
-                document.getElementById('aiResultCloseBtn').addEventListener('click', close);
-                // 重新诊断：关闭报告弹窗，重新走墙体校验闭环后再进入模式选择
-                document.getElementById('aiResultReDiagBtn').addEventListener('click', () => {
-                    document.getElementById('aiResultMask').hidden = true;
-                    checkWallAndOpenMode(); // 重新诊断同样需要走墙体校验闭环
-                });
-                mask.addEventListener('click', (e) => { if (e.target === mask) close(); });
-                document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) close(); });
-            }
-            mask.hidden = false;
+            if (mask.dataset.bound) return mask;
+            mask.dataset.bound = '1';
+            const close = () => { mask.hidden = true; };
+            document.getElementById('aiResultCloseBtn').addEventListener('click', close);
+            // 重新诊断：关闭报告弹窗，重新走校验闭环后再进入模式选择
+            document.getElementById('aiResultReDiagBtn').addEventListener('click', () => {
+                document.getElementById('aiResultMask').hidden = true;
+                checkWallAndOpenMode(); // 重新诊断同样需要走校验闭环
+            });
+            mask.addEventListener('click', (e) => { if (e.target === mask) close(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !mask.hidden) close(); });
+            return mask;
+        }
+
+        // 打开 AI 诊断报告（恢复诊断展示态：标题/重诊按钮复位，隐藏导出报价单按钮）
+        function openAIResultMask() {
+            const mask = ensureAiResultBindings();
+            mask.dataset.mode = 'ai'; // 标记当前展示态：供导出页眉区分
+            mask.querySelector('.modal__title').textContent = '🧠 AI 网络拓扑诊断报告';
+            document.getElementById('aiResultReDiagBtn').style.display = '';
+            document.getElementById('aiResultPrintBtn').style.display = 'none';
+            mask.hidden = false; // 正常通过这里唤起，保证事件已绑定
         }
 
         // ============================================================
@@ -2569,8 +2666,6 @@
             const now = new Date();
             const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
             reportDate.textContent = dateStr;
-            // 同步填充打印专属标准页眉
-            document.getElementById('reportPrintDate').textContent = dateStr;
             reportMask.hidden = false;
         }
         function closeReport() { reportMask.hidden = true; }
@@ -2586,10 +2681,24 @@
         const boardWrap = document.querySelector('.board-wrap');
         const PX_PER_MM = 96 / 25.4;
 
+        // 动态全局打印页眉：各导出链路按需改写标题，日期统一刷新
+        function setGlobalPrintHeader(title) {
+            const now = new Date();
+            document.querySelector('body > .print-only-header .print-only-header__title').textContent = title;
+            document.getElementById('printHeaderDate').textContent = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
+        }
+
+        // 通用导出包装：临时改写网页 Title 以决定 PDF 默认文件名，打印结束后还原
+        function executePrint(docTitle) {
+            const originalTitle = document.title;
+            const dateStr = new Date().toISOString().split('T')[0];
+            document.title = `${docTitle}_${dateStr}`; // 修改网页 Title 从而改变 PDF 默认文件名
+            window.print();
+            document.title = originalTitle;
+        }
+
         function fitCanvasForPrint() {
-            // 打印防呆：重置相机至初始视图，避免用户缩放/平移污染导出图纸
-            cam.x = 0; cam.y = 0; cam.zoom = 1;
-            updateCamera();
+            // 所见即所得打印：保留用户当前的相机视角与缩放，不再重置相机
             const cw = canvas.offsetWidth;
             const ch = canvas.offsetHeight;
             if (!cw || !ch) return;
@@ -2619,48 +2728,152 @@
         }
 
         printCanvasBtn.addEventListener('click', () => {
-            if (!placedItems.length && !fp.loaded) {
-                showToast('画板为空：请先上传底图或拖入图元再导出图纸');
-                return;
-            }
-            deselect();
-            const now = new Date();
-            document.getElementById('printHeaderDate').textContent =
-                `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-            // 还原图纸模式专属页眉标题（全案导出会将其改写为统一合同标题）
-            document.querySelector('.print-only-header .print-only-header__title').textContent =
-                'AI 智装管家 · 全屋平面推演图纸';
-            document.body.className = 'print-mode-canvas';
-            window.print();
+            if (!placedItems.length && !fp.loaded) { showToast('画板为空，请先布置'); return; }
+            deselect(); setGlobalPrintHeader('AI 智装管家 · 全屋平面推演图纸');
+            document.body.className = 'print-mode-canvas'; executePrint('AI智装管家_图纸导出');
         });
 
-        // 一键导出全案：① 图纸 → ② 尺寸报告 → ③ AI 报告，三块强制分页
+        // 一键导出全案：① 图纸 → ② 尺寸报告 → ③ 物料概算 → ④ AI 诊断，四大件强制分页
         document.getElementById('exportAllBtn').addEventListener('click', () => {
-            if (!placedItems.length && !fp.loaded) {
-                showToast('画板为空：请先上传底图或拖入图元再导出全案');
-                return;
-            }
-            deselect();
-            // 注入②尺寸报告（复用 buildReport 生成的表格 HTML）
-            buildReport();
-            document.getElementById('printAllReportBody').innerHTML = reportBody.innerHTML;
-            // 注入③ AI 报告（未生成时给出占位提示）
-            document.getElementById('printAllAiBody').innerHTML = window.cachedAiReport
-                || '<div class="report-empty">尚未生成 AI 诊断报告（可先点击「AI 网络拓扑诊断」生成后再导出）</div>';
-            // 统一合同级页眉标题与日期
-            document.querySelector('.print-only-header .print-only-header__title').textContent =
-                'AI 智装管家 · 专属推演方案';
-            const now = new Date();
-            const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-            document.getElementById('printHeaderDate').textContent = dateStr;
-            document.querySelectorAll('.print-all-date').forEach(el => { el.textContent = dateStr; });
-            document.body.className = 'print-mode-all';
-            window.print();
+            if (!placedItems.length) { showToast('请先布置画板'); return; }
+            deselect(); setGlobalPrintHeader('AI 智装管家 · 专属推演全案');
+            buildReport(); document.getElementById('printAllReportBody').innerHTML = reportBody.innerHTML;
+            document.getElementById('printAllBomBody').innerHTML = window.cachedEstimateReport ? window.cachedEstimateReport.html : '<div class="report-empty">尚未生成物料估价</div>';
+            document.getElementById('printAllAiBody').innerHTML = window.cachedAiReport || '<div class="report-empty">尚未生成 AI 诊断报告</div>';
+            document.body.className = 'print-mode-all'; executePrint('AI智装管家_全屋推演全案');
         });
 
+        // ============================================================
+        // 物料清单与估价流转：省市地域选择 -> 组装标准化 Payload
+        // ============================================================
+        document.getElementById('bomBtn').addEventListener('click', () => {
+            // 存在估价缓存：直接唤起报告弹窗（开启导出按钮，隐藏重新诊断）
+            if (window.cachedEstimateReport) {
+                document.getElementById('aiResultBody').innerHTML = window.cachedEstimateReport.html;
+                const mask = ensureAiResultBindings();
+                mask.dataset.mode = 'bom'; // 标记当前展示态：供导出页眉区分
+                mask.querySelector('.modal__title').textContent = `💰 ${window.cachedEstimateReport.city} · 物料清单与估价`;
+                document.getElementById('aiResultReDiagBtn').style.display = 'none';
+                document.getElementById('aiResultPrintBtn').style.display = ''; // 开启打印按钮
+                mask.hidden = false;
+                return;
+            }
+            if (!placedItems.length) { showToast('画板为空，无法生成物料清单'); return; }
+            document.getElementById('bomModalMask').classList.add('show');
+        });
+
+        // 省市级联映射表（全量 34 省市区 + 地级市）
+        const cityMap = {
+            '北京': ['北京市'], '天津': ['天津市'], '上海': ['上海市'], '重庆': ['重庆市'],
+            '河北': ['石家庄市', '唐山市', '秦皇岛市', '邯郸市', '邢台市', '保定市', '张家口市', '承德市', '沧州市', '廊坊市', '衡水市'],
+            '山西': ['太原市', '大同市', '阳泉市', '长治市', '晋城市', '朔州市', '晋中市', '运城市', '忻州市', '临汾市', '吕梁市'],
+            '辽宁': ['沈阳市', '大连市', '鞍山市', '抚顺市', '本溪市', '丹东市', '锦州市', '营口市', '阜新市', '辽阳市', '盘锦市', '铁岭市', '朝阳市', '葫芦岛市'],
+            '吉林': ['长春市', '吉林市', '四平市', '辽源市', '通化市', '白山市', '松原市', '白城市', '延边朝鲜族自治州'],
+            '黑龙江': ['哈尔滨市', '齐齐哈尔市', '鸡西市', '鹤岗市', '双鸭山市', '大庆市', '伊春市', '佳木斯市', '七台河市', '牡丹江市', '黑河市', '绥化市', '大兴安岭地区'],
+            '江苏': ['南京市', '无锡市', '徐州市', '常州市', '苏州市', '南通市', '连云港市', '淮安市', '盐城市', '扬州市', '镇江市', '泰州市', '宿迁市'],
+            '浙江': ['杭州市', '宁波市', '温州市', '嘉兴市', '湖州市', '绍兴市', '金华市', '衢州市', '舟山市', '台州市', '丽水市'],
+            '安徽': ['合肥市', '芜湖市', '蚌埠市', '淮南市', '马鞍山市', '淮北市', '铜陵市', '安庆市', '黄山市', '滁州市', '阜阳市', '宿州市', '六安市', '亳州市', '池州市', '宣城市'],
+            '福建': ['福州市', '厦门市', '莆田市', '三明市', '泉州市', '漳州市', '南平市', '龙岩市', '宁德市'],
+            '江西': ['南昌市', '景德镇市', '萍乡市', '九江市', '新余市', '鹰潭市', '赣州市', '吉安市', '宜春市', '抚州市', '上饶市'],
+            '山东': ['济南市', '青岛市', '淄博市', '枣庄市', '东营市', '烟台市', '潍坊市', '济宁市', '泰安市', '威海市', '日照市', '临沂市', '德州市', '聊城市', '滨州市', '菏泽市'],
+            '河南': ['郑州市', '开封市', '洛阳市', '平顶山市', '安阳市', '鹤壁市', '新乡市', '焦作市', '濮阳市', '许昌市', '漯河市', '三门峡市', '南阳市', '商丘市', '信阳市', '周口市', '驻马店市'],
+            '湖北': ['武汉市', '黄石市', '十堰市', '宜昌市', '襄阳市', '鄂州市', '荆门市', '孝感市', '荆州市', '黄冈市', '咸宁市', '随州市', '恩施州'],
+            '湖南': ['长沙市', '株洲市', '湘潭市', '衡阳市', '邵阳市', '岳阳市', '常德市', '张家界市', '益阳市', '郴州市', '永州市', '怀化市', '娄底市', '湘西州'],
+            '广东': ['广州市', '韶关市', '深圳市', '珠海市', '汕头市', '佛山市', '江门市', '湛江市', '茂名市', '肇庆市', '惠州市', '梅州市', '汕尾市', '河源市', '阳江市', '清远市', '东莞市', '中山市', '潮州市', '揭阳市', '云浮市'],
+            '海南': ['海口市', '三亚市', '三沙市', '儋州市'],
+            '四川': ['成都市', '自贡市', '攀枝花市', '泸州市', '德阳市', '绵阳市', '广元市', '遂宁市', '内江市', '乐山市', '南充市', '眉山市', '宜宾市', '广安市', '达州市', '雅安市', '巴中市', '资阳市', '阿坝州', '甘孜州', '凉山州'],
+            '贵州': ['贵阳市', '六盘水市', '遵义市', '安顺市', '毕节市', '铜仁市', '黔西南州', '黔东南州', '黔南州'],
+            '云南': ['昆明市', '曲靖市', '玉溪市', '保山市', '昭通市', '丽江市', '普洱市', '临沧市', '楚雄州', '红河州', '文山州', '西双版纳州', '大理州', '德宏州', '怒江州', '迪庆州'],
+            '陕西': ['西安市', '铜川市', '宝鸡市', '咸阳市', '渭南市', '延安市', '汉中市', '榆林市', '安康市', '商洛市'],
+            '甘肃': ['兰州市', '嘉峪关市', '金昌市', '白银市', '天水市', '武威市', '张掖市', '平凉市', '酒泉市', '庆阳市', '定西市', '陇南市', '临夏州', '甘南州'],
+            '青海': ['西宁市', '海东市', '海北州', '黄南州', '海南州', '果洛州', '玉树州', '海西州'],
+            '台湾': ['台北市', '新北市', '桃园市', '台中市', '台南市', '高雄市'],
+            '内蒙古': ['呼和浩特市', '包头市', '乌海市', '赤峰市', '通辽市', '鄂尔多斯市', '呼伦贝尔市', '巴彦淖尔市', '乌兰察布市', '兴安盟', '锡林郭勒盟', '阿拉善盟'],
+            '广西': ['南宁市', '柳州市', '桂林市', '梧州市', '北海市', '防城港市', '钦州市', '贵港市', '玉林市', '百色市', '贺州市', '河池市', '来宾市', '崇左市'],
+            '西藏': ['拉萨市', '日喀则市', '昌都市', '林芝市', '山南市', '那曲市', '阿里地区'],
+            '宁夏': ['银川市', '石嘴山市', '吴忠市', '固原市', '中卫市'],
+            '新疆': ['乌鲁木齐市', '克拉玛依市', '吐鲁番市', '哈密市', '昌吉州', '博尔塔拉州', '巴音郭楞州', '阿克苏地区', '克孜勒苏州', '喀什地区', '和田地区', '伊犁州', '塔城地区', '阿勒泰地区'],
+            '香港': ['香港岛', '九龙', '新界'],
+            '澳门': ['澳门半岛', '离岛']
+        };
+        document.getElementById('bomProvince').addEventListener('change', (e) => {
+            const p = e.target.value;
+            const citySelect = document.getElementById('bomCity');
+            citySelect.innerHTML = p ? cityMap[p].map(c => `<option value="${c}">${c}</option>`).join('') : '<option value="">请先选择省份</option>';
+        });
+
+        document.getElementById('bomConfirmBtn').addEventListener('click', async () => {
+            const prov = document.getElementById('bomProvince').value;
+            const city = document.getElementById('bomCity').value;
+            if (!prov || !city) { showToast('请完整选择省份和城市'); return; }
+
+            const validItems = placedItems.filter(p => p.cat !== 'custom' && p.type !== 'zone');
+            const payload = {
+                location: { province: prov, city: city },
+                items: validItems.map(p => ({
+                    name: p.name, category: p.cat,
+                    width_mm: Math.round(p.realW), height_mm: Math.round(p.realH)
+                }))
+            };
+
+            document.getElementById('bomModalMask').classList.remove('show');
+
+            // 异步无感估价：后台执行，用户可继续操作画板
+            setBomBtnState('busy');
+            showToast('正在后台向大模型查询当地行情，您可以继续操作...');
+
+            try {
+                const resp = await fetch('http://127.0.0.1:8000/api/estimate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) throw new Error('API Request Failed');
+                const data = await resp.json();
+
+                // 将估价总额静默流转至智能记账本
+                if (data.total_cost) {
+                    const LEDGER_KEY = 'shp_ledger_state_v1';
+                    let transactions = [];
+                    try {
+                        const saved = localStorage.getItem(LEDGER_KEY);
+                        if (saved) transactions = JSON.parse(saved);
+                    } catch(e){}
+
+                    transactions.push({
+                        id: Date.now(),
+                        date: new Date().toISOString().split('T')[0],
+                        category: '硬装',
+                        subcategory: '全屋概算',
+                        summary: `${city} 智能推演物料估价`,
+                        amount: Number(data.total_cost) || 0,
+                        icon: '💰'
+                    });
+                    localStorage.setItem(LEDGER_KEY, JSON.stringify(transactions));
+                }
+
+                // 结果仅入缓存，不直接弹窗，按钮转就绪态
+                window.cachedEstimateReport = { html: data.html_report, city: city };
+                setBomBtnState('ready');
+                showToast(`✅ ${city} 的估价报告已生成，点击上方按钮查看并导出！`);
+            } catch(e) {
+                setBomBtnState('idle');
+                showToast('请求估价失败，请确认服务状态。');
+            }
+        });
+
+        // 2. 尺寸报告导出
         document.getElementById('reportPrintBtn').addEventListener('click', () => {
+            setGlobalPrintHeader('AI 智装管家 · 尺寸方案报告');
+            document.body.className = 'print-mode-report'; executePrint('AI智装管家_尺寸方案');
+        });
+
+        // 3. 估价与 AI 诊断报告共用导出：按 dataset.mode 区分页眉标题与 PDF 文件名
+        document.getElementById('aiResultPrintBtn').addEventListener('click', () => {
+            const mode = document.getElementById('aiResultMask').dataset.mode;
+            setGlobalPrintHeader(mode === 'bom' ? 'AI 智装管家 · 物料概算与估价' : 'AI 智装管家 · AI 拓扑诊断报告');
             document.body.className = 'print-mode-report';
-            window.print();
+            executePrint(mode === 'bom' ? 'AI智装管家_物料估价' : 'AI智装管家_AI网络诊断');
         });
 
         // 打印前：图纸/全案模式下施加等比缩放；打印后：还原并清除模式 class

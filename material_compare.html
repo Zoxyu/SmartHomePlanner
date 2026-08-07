@@ -179,12 +179,58 @@
         html[data-theme="light"] .tip-item--good { color: #047857; }
         html[data-theme="light"] .tip-item--bad { color: #b91c1c; }
 
+        /* ---------- 打印 / 导出避坑手册按钮 ---------- */
+        .btn-print {
+            margin-top: 18px;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: inherit; font-size: 0.85rem; font-weight: 700;
+            color: var(--accent, #38bdf8); cursor: pointer;
+            padding: 10px 22px; border-radius: 999px;
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.4);
+            transition: var(--transition);
+        }
+        .btn-print:hover { background: rgba(56, 189, 248, 0.2); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); transform: translateY(-1px); }
+
         /* ================= 移动端 ================= */
         @media (max-width: 860px) {
             body { overflow: auto; }
             .main { padding: 24px 18px 48px; overflow: visible; }
             .compare-table { display: block; overflow-x: auto; white-space: normal; }
             .term-card { padding: 18px; }
+        }
+
+        /* ================= 打印 / 导出 PDF：干净的纵向 A4 报告 ================= */
+        @media print {
+            @page { size: A4 portrait; margin: 12mm; }
+            body { background: #fff !important; color: #000 !important; }
+            /* 隐藏非必要的侧边栏、导航和打印按钮 */
+            .sidebar, .nav, .btn-print, #catNav { display: none !important; }
+            /* 保证核心卡片在打印时不被截断，且去除阴影等昂贵渲染效果 */
+            .main { margin: 0 !important; padding: 0 !important; width: 100% !important; overflow: visible !important; }
+            .term-grid, .compare-table, .tips-list, .intro-box {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                page-break-inside: avoid; /* 防止卡片被跨页切断 */
+            }
+            /* 深色主题强制转白底黑字，保证 PDF 可读性（intro-box 除外，其保留品牌底色） */
+            .term-card, .tip-item, .compare-table { background: #fff !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+            .term-card { border: 1px solid #ddd !important; page-break-inside: avoid; }
+            /* 新增专属的 .intro-box 打印样式，强制保留背景色 */
+            .intro-box {
+                background: rgba(56, 189, 248, 0.1) !important;
+                border: 1px solid rgba(56, 189, 248, 0.4) !important;
+                color: #1e293b !important; /* 确保在白纸上有足够的对比度 */
+                backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .brand__title, .term-name, .ct-type, .tip-item { color: #000 !important; }
+            .brand__subtitle, .term-desc, .term-value, .ct-scene, .kb-section__title { color: #444 !important; }
+            .tip-item--good { color: #047857 !important; background: rgba(16, 185, 129, 0.08) !important; }
+            .tip-item--bad { color: #b91c1c !important; background: rgba(239, 68, 68, 0.06) !important; }
+            .ct-pros { color: #047857 !important; }
+            .ct-cons { color: #b91c1c !important; }
+            .pk-panel { opacity: 1 !important; transform: none !important; }
         }
     </style>
 </head>
@@ -196,6 +242,7 @@
                 <span class="brand__eyebrow">AI 智装管家 · 建材科普知识库</span>
                 <h1 class="brand__title">硬核建材科普与知识库</h1>
                 <p class="brand__subtitle">国标参数解析 · 材料优劣横评 · 一线选购注意事项。切换上方类目，把装修水最深的材料一次讲透。</p>
+                <button class="btn-print" onclick="window.print()" type="button">🖨️ 打印 / 导出避坑手册</button>
             </header>
 
             <!-- 分类导航：横向滚动 Pill Tabs -->

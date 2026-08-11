@@ -211,15 +211,29 @@
             .logo { padding: 0; flex-shrink: 0; }
             .logo__badge, .logo__title, .nav__label, .nav-item__desc, .sidebar__footer { display: none; }
 
-            /* 中间导航区：横向滚动，隐藏滚动条 */
+            /* 中间导航区：横向排列，居中对齐 */
             .nav {
-                flex-direction: row; margin: 0; gap: 6px;
-                overflow-x: auto; flex: 1; padding-bottom: 2px;
-                scrollbar-width: none; /* Firefox */
+                flex-direction: row; margin: 0; gap: 8px;
+                overflow-x: visible; flex: 1; padding-bottom: 0;
+                justify-content: center; /* 居中显示所有模块 */
             }
-            .nav::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-            .nav-item { padding: 8px 12px; font-size: 0.8rem; gap: 6px; flex-shrink: 0; }
-            .nav-item__icon { width: 24px; height: 24px; font-size: 0.95rem; border-radius: 8px; }
+
+            /* 核心修复：解除 100% 宽度霸占，改为动态胶囊 */
+            .nav-item {
+                width: auto !important;
+                padding: 8px 14px;
+                font-size: 0.82rem;
+                gap: 6px;
+                flex-shrink: 0;
+                border-radius: 999px !important; /* 移动端采用全圆角胶囊 */
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            .nav-item__icon { width: 24px; height: 24px; font-size: 1rem; border-radius: 50%; }
+
+            /* 未激活态：隐藏文字，收缩为纯图标圆形 */
+            .nav-item:not(.active) { padding: 8px; }
+            .nav-item:not(.active) .nav-item__meta { display: none; }
+            .nav-item.active .nav-item__name { font-weight: 800; white-space: nowrap; }
 
             /* 右侧控制区：强制横向排列并居中 */
             .sidebar__bottom {

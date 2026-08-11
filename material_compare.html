@@ -46,15 +46,11 @@
             -webkit-print-color-adjust: exact; print-color-adjust: exact;
         }
 
-        /* ================= 分类导航：横向滚动 Pill Tabs ================= */
+        /* ================= 分类导航：弹性折行胶囊排版 ================= */
         #catNav {
-            display: flex; flex-direction: row; gap: 12px;
-            overflow-x: auto; padding-bottom: 4px;
+            display: flex; flex-direction: row; gap: 12px; flex-wrap: wrap; /* 核心：允许自动折行 */
             max-width: 100%; margin-bottom: 26px;
-            scrollbar-width: thin;
         }
-        #catNav::-webkit-scrollbar { height: 6px; }
-        #catNav::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 999px; }
         .nav-item {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 9px 18px; border-radius: 999px; white-space: nowrap;
@@ -191,12 +187,53 @@
         }
         .btn-print:hover { background: rgba(56, 189, 248, 0.2); box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25); transform: translateY(-1px); }
 
-        /* ================= 移动端 ================= */
+        /* ================= 移动端适配深度优化 ================= */
         @media (max-width: 860px) {
-            body { overflow: auto; }
-            .main { padding: 24px 18px 48px; overflow: visible; }
-            .compare-table { display: block; overflow-x: auto; white-space: normal; }
-            .term-card { padding: 18px; }
+            /* 1. 根容器控制：保持与外层 iframe 契合，防止整体横向滑动 */
+            body { overflow: hidden; }
+            .main {
+                padding: 20px 16px 40px;
+                overflow-y: auto;
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            /* 2. 头部排版：左对齐提升移动端阅读性，缩小字号避免折行断裂 */
+            .brand { margin-bottom: 24px; text-align: left; }
+            .brand__eyebrow { margin-bottom: 10px; }
+            .brand__title { font-size: 1.4rem; line-height: 1.35; margin-top: 0; }
+            .brand__subtitle { font-size: 0.85rem; margin-top: 8px; line-height: 1.6; }
+
+            /* 3. 导航栏：继承弹性折行，清理横滑残留 */
+            #catNav { margin-bottom: 20px; gap: 10px; justify-content: flex-start; }
+            .nav-item { padding: 8px 16px; font-size: 0.8rem; }
+
+            /* 4. 引言区块：收缩内边距 */
+            .intro-box { padding: 16px; font-size: 0.9rem; line-height: 1.7; border-radius: 14px; }
+
+            /* 5. 术语卡片网格：强制单列，覆盖原有的 minmax 防止撑破屏幕 */
+            .term-grid { grid-template-columns: 1fr; gap: 12px; width: 100%; }
+            .term-card { padding: 16px; }
+            .term-name { font-size: 1rem; }
+
+            /* 6. 核心修复：对比表格容器限制，开启内部独立横滑 */
+            .kb-section { width: 100%; max-width: 100%; overflow: hidden; }
+            .compare-table {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* iOS 弹性滚动 */
+                border-radius: 12px;
+                border-right: none; /* 弱化右侧边框让滚动更自然 */
+            }
+            .compare-table th, .compare-table td {
+                padding: 12px 14px;
+                font-size: 0.85rem;
+                min-width: 140px; /* 保证表格单元格不被极度压缩 */
+            }
+
+            /* 7. 注意事项列表：收缩内边距 */
+            .tip-item { padding: 14px 16px; font-size: 0.85rem; }
         }
 
         /* ================= 打印 / 导出 PDF：干净的纵向 A4 报告 ================= */
